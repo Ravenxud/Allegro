@@ -685,7 +685,7 @@ fun BrowserScreen(
     TabSwitcherOverlay(
         visible = showTabs,
         stub = tabsStub,
-        progress = tabsProgress,
+        progressProvider = { tabsProgress },
         state = state,
         onSelect = { controller.selectTab(it); showTabs = false },
         onClose = { controller.closeTab(it) },

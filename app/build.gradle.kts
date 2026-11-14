@@ -26,7 +26,7 @@ android {
         targetSdk = 36
         // 编译测试阶段：版本号统一带 beta 后缀（见 README「版本约定」）
         versionCode = 101
-        versionName = "0.49.2-beta"
+        versionName = "0.50.0-beta"
     }
 
     signingConfigs {

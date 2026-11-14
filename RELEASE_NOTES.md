@@ -1,3 +1,38 @@
+# 0.50.0-beta
+
+## 掉帧的真正原因：每帧整棵树重组
+
+`TabSwitcherOverlay` 里有一行 `val p = progress.coerceIn(0f, 1f)` —— 在**组合期**读动画值。
+后果：
+
+- 面板本身每帧重组
+- `TabGrid(entrance = p)` 把进度作为**参数**下传 → **每一张卡片每帧重组**
+- 飞行缩略图的 `rect = lerpRect(start, target, p)` 也在组合期算 → 每帧新建布局
+
+12 张卡 × 60fps ≈ 每秒 700 次以上重组，这才是卡顿来源，与 GPU/CPU 性能无关。
+
+## 改法：把进度读取全部下沉到绘制层
+
+| 位置 | 之前 | 现在 |
+|---|---|---|
+| 参数 | `progress: Float` | **`progressProvider: () -> Float`** |
+| 面板缩放/透明度 | 组合期算 | `graphicsLayer { }` 内读 |
+| 遮罩 | `background(alpha = 0.32f * p)` | **`drawBehind { drawRect(...) }`** 内读 |
+| 飞行缩略图 | 组合期算 rect + 尺寸 | 固定尺寸 + `graphicsLayer` 内算位移/缩放/圆角/淡出 |
+| 卡片错峰 | 作为参数下传 | 卡片自己的 `graphicsLayer` 内用 `cardIndex` 折算 |
+| 结束判定 | `if (p <= 0.001) return` | `snapshotFlow { progressProvider() }` 观察 |
+
+**重组次数从"每帧 × 卡片数"降到 0**（动画期间只更新 layer 属性，不重组）。
+
+## 请验
+
+1. 开合标签面板：**不再卡顿**（尤其多标签时）
+2. 手感与上一版一致（仍是慢速缓出）
+3. 卡片仍是逐张浮起
+4. 关闭后能正常回到网页（不会卡在面板上）
+
+---
+
 # 0.49.2-beta
 
 「还是太快」+「掉帧明显」——都定位到具体实现，不是调参。

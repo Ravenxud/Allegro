@@ -45,10 +45,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
@@ -70,6 +72,7 @@ import com.ravenxud.allegro.browser.TabState
 import com.ravenxud.allegro.ui.components.MiuixSheet
 import com.ravenxud.allegro.ui.components.SheetRow
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import top.yukonga.miuix.kmp.basic.Button
@@ -97,7 +100,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun TabSwitcherOverlay(
     visible: Boolean,
     stub: Bitmap?,
-    progress: Float,
+    progressProvider: () -> Float,
     state: BrowserState,
     onSelect: (String) -> Unit,
     onClose: (String) -> Unit,
@@ -125,14 +128,17 @@ fun TabSwitcherOverlay(
             lockedIndex = state.tabs.indexOfFirst { it.id == state.activeTabId }.coerceAtLeast(0)
         }
     }
-    LaunchedEffect(visible, progress) {
-        if (!visible && !dismissed && progress <= 0.001f) {
-            dismissed = true
-            onDismissed()
+    LaunchedEffect(visible) {
+        if (!visible) {
+            // 只在"进度归零"这一件事上等待；读值发生在 snapshotFlow 里，不触发重组
+            androidx.compose.runtime.snapshotFlow { progressProvider() }
+                .firstOrNull { it <= 0.001f }
+            if (!dismissed) {
+                dismissed = true
+                onDismissed()
+            }
         }
     }
-
-    if (!visible && progress <= 0.001f) return
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val screenWidth = constraints.maxWidth.toFloat()
@@ -147,7 +153,7 @@ fun TabSwitcherOverlay(
             density = density.density,
             topInset = statusTop,
         )
-        val p = progress.coerceIn(0f, 1f)
+        val pp = progressProvider
         val padPx = 12f * density.density
         val gapPx = 8f * density.density
         val cardWidthPx = (screenWidth - padPx * 2 - gapPx) / 2f
@@ -163,26 +169,25 @@ fun TabSwitcherOverlay(
                     .fillMaxSize()
                     .graphicsLayer {
                         // 背景图已预模糊，这里只做透明度/缩放，不再跑 RenderEffect
-                        alpha = 1f - 0.12f * p
-                        val bs = 0.99f + 0.01f * p
+                        alpha = 1f - 0.12f * pp()
+                        val bs = 0.99f + 0.01f * pp()
                         scaleX = bs
                         scaleY = bs
                     },
             )
         }
 
-        // 2) 遮罩
+        // 2) 遮罩（alpha 在 drawBehind 里算：组合期读进度会导致每帧重组）
         Box(
             Modifier
                 .fillMaxSize()
-                .background(
-                    Color.Black.copy(
-                        // Luna 的遮罩是 32%，我们的旧值 12% 偏"没发生什么"
-                        alpha = 0.32f * p *
-                            (1f - (dragOffset / screenHeight.coerceAtLeast(1f)).coerceIn(0f, 0.7f))
-                    )
-                )
-                .clickable(enabled = p > 0.5f, onClick = onDismiss),
+                .drawBehind {
+                    val p = pp().coerceIn(0f, 1f)
+                    val dragFade = 1f - (dragOffset / screenHeight.coerceAtLeast(1f))
+                        .coerceIn(0f, 0.7f)
+                    drawRect(Color.Black.copy(alpha = 0.32f * p * dragFade))
+                }
+                .clickable(onClick = onDismiss),
         )
 
         // 3) 网格：从 0.82 放大到 1
@@ -209,6 +214,7 @@ fun TabSwitcherOverlay(
                     )
                 }
                 .graphicsLayer {
+                    val p = pp()
                     alpha = p
                     // 幅度从 0.82 收到 0.92：整体只做轻微"浮起"，细部交给逐卡错峰
                     val scale = if (simplify) 1f else (0.92f + 0.08f * p)
@@ -218,7 +224,7 @@ fun TabSwitcherOverlay(
                 },
         ) {
             TabGrid(
-                entrance = p,
+                progressProvider = pp,
                 state = state,
                 gridState = gridState,
                 cardWidthPx = cardWidthPx,
@@ -235,49 +241,36 @@ fun TabSwitcherOverlay(
         }
 
         // 4) 页面缩略：截图 → 卡片矩形（共享元素）
-        // 用平滑缓动而不是线性：线段位移线性会显得"匀速拖拽"，缓动才有"飞过去"的感觉
-        if (p < 0.999f && screenWidth > 0f) {
-            val e = if (simplify) p else smoothstep(p)
-            val rect = lerpRect(start, target, e)
-            val scaleX = rect.width / start.width.coerceAtLeast(1f)
-            val scaleY = rect.height / start.height.coerceAtLeast(1f)
-            // 圆角 0 → 20dp；末端 25% 淡出，避免"压住卡片"再消失
-            val corner = 20.dp * e
-            val fade = 1f - ((e - 0.72f) / 0.28f).coerceIn(0f, 1f)
+        // 注意：所有随进度变化的量都必须在 graphicsLayer 里算，
+        // 在组合期算会让整棵树每帧重组（之前卡顿的根因）。
+        if (stub != null && screenWidth > 0f) {
             Box(
                 modifier = Modifier
-                    .graphicsLayer {
-                        translationX = rect.left
-                        translationY = rect.top
-                        transformOrigin = TransformOrigin(0f, 0f)
-                        this.scaleX = scaleX
-                        this.scaleY = scaleY
-                        alpha = fade
-                        // 固定投影：逐帧改 shadowElevation 会每帧重建阴影，明显掉帧
-                        shadowElevation = 10.dp.toPx()
-                    }
-                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(corner))
                     .size(
                         with(density) { start.width.toDp() },
                         with(density) { start.height.toDp() },
                     )
-                    .background(MiuixTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center,
+                    .graphicsLayer {
+                        val p = pp().coerceIn(0f, 1f)
+                        val e = if (simplify) p else smoothstep(p)
+                        val rect = lerpRect(start, target, e)
+                        transformOrigin = TransformOrigin(0f, 0f)
+                        translationX = rect.left
+                        translationY = rect.top
+                        scaleX = rect.width / start.width.coerceAtLeast(1f)
+                        scaleY = rect.height / start.height.coerceAtLeast(1f)
+                        alpha = 1f - ((e - 0.72f) / 0.28f).coerceIn(0f, 1f)
+                        shadowElevation = 10.dp.toPx()
+                        clip = true
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp * e)
+                    },
             ) {
-                if (stub != null) {
-                    Image(
-                        bitmap = stub.asImageBitmap(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                } else {
-                    Text(
-                        text = state.activeTab?.title?.take(1).orEmpty().ifBlank { "·" },
-                        fontSize = 56.sp,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                }
+                Image(
+                    bitmap = stub.asImageBitmap(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
 
@@ -342,7 +335,7 @@ private fun lerpRect(start: Rect, end: Rect, t: Float): Rect = Rect(
 
 @Composable
 private fun TabGrid(
-    entrance: Float,
+    progressProvider: () -> Float,
     state: BrowserState,
     gridState: LazyGridState,
     cardWidthPx: Float,
@@ -391,9 +384,9 @@ private fun TabGrid(
                 ) {
                     itemsIndexed(state.tabs, key = { _, it -> it.id }) { index, item ->
                         TabCard(
-                            // 20ms/张的错峰：用入场进度折算，保持可中断、可反向
-                            entrance = ((entrance - index * 0.045f) / 0.55f)
-                                .coerceIn(0f, 1f),
+                            // 20ms/张的错峰：在绘制层折算，组合期不读进度
+                            cardIndex = index,
+                            progressProvider = progressProvider,
                             tab = item,
                             active = item.id == state.activeTabId,
                             dragging = dragId == item.id,
@@ -471,7 +464,8 @@ private fun TabGrid(
 
 @Composable
 private fun TabCard(
-    entrance: Float,
+    cardIndex: Int,
+    progressProvider: () -> Float,
     tab: TabState,
     active: Boolean,
     dragging: Boolean,
@@ -500,8 +494,9 @@ private fun TabCard(
             .fillMaxWidth()
             .zIndex(if (dragging) 1f else 0f)
             .graphicsLayer {
-                // 单卡：0.9 → 1 浮起 + 淡入（错峰由 entrance 提供）
-                val e = entrance
+                // 单卡：0.9 → 1 浮起 + 淡入（错峰在这里折算）
+                val e = ((progressProvider() - cardIndex * 0.045f) / 0.55f)
+                    .coerceIn(0f, 1f)
                 alpha = e
                 translationX = dragOffset.x
                 translationY = dragOffset.y + (1f - e) * 24f
