@@ -1,14 +1,15 @@
 # 交接说明（给下一个 AI / 开发者）
 
 > 读完这一份就能接手开发。项目：**Allegro**（代码内部名 SimpleBrowser）—— 参考 Luna 的极简 Android 浏览器。
-> 最后更新：0.25.0-beta（versionCode 57）
+> 最后更新：0.26.0-beta（versionCode 58）
 
 ---
 
 ## 1. 一句话状态
 
 浏览核心、标签页 2.0、下载器、广告过滤、书签、设置、JS 注入管线、手势、应用内更新、
-阅读模式/朗读/分享/用户脚本、**离线页可打开（MHTML→HTML）**、**隐私报告 + 元素选择器** 均已完成并可编译；
+阅读模式/朗读/分享/用户脚本、离线页可打开（MHTML→HTML）、隐私报告 + 元素选择器、
+**站点设置（JS/图片/桌面版 UA/广告过滤/清数据）** 均已完成并可编译；
 阶段一还剩「WebDAV 同步」「大屏/标签组/HLS/无障碍」；动画与外观专项未开始。
 
 ## 2. 仓库与构建
@@ -85,6 +86,7 @@ di/          ServiceLocator(手写 DI，替代 Hilt)
 | 菜单动作 | 实现 `BrowserAction` → `ActionRegistry.builtIn` 加一行 |
 | 二级页面 | `SecondaryScreen` 加枚举 + `BrowserScreen` 加 `when` 分支 + `ScreenScaffold` 新页 |
 | 数据表 | Room 实体 + DAO + 版本号 +1 + `Migration`（**历史坑见下**） |
+| 站点级开关 | `SiteSettings` 加字段 → `SiteSettingsCodec` 编解码 → `applySiteSettings()` 落到 WebView → 页面加开关 |
 | 用户脚本 | 用户自带，无需改代码 |
 
 ## 6. 已知问题与技术债（接手先看这段）
@@ -114,6 +116,9 @@ di/          ServiceLocator(手写 DI，替代 Hilt)
    要按 `<base>`/页面 URL 解析后再替换（见 `MhtmlArchive` 与 ADR-8）。
 9. **隐私报告的域名榜落盘不能复用 Top N**：早期实现把「已落盘 Top 20」当全量合并写回，
    每次刷盘都会丢掉 20 名以外的域名。必须读全量再合并。
+10. **WebView 的 settings 是全局的**：`javaScriptEnabled`/`blockNetworkImage`/`userAgentString` 属于 WebView 实例，
+    而本项目一个 WebView 复用于多个标签页。所以站点设置必须在**每次导航（onPageStarted）重设一遍**，
+    只改一次会被下一个站点的页面覆盖。
 
 ## 8. 测试现状
 
@@ -123,7 +128,8 @@ app/src/test/java/.../FilterEngineTest   9 条  广告规则匹配/例外/同站
 app/src/test/java/.../BookmarksHtmlTest  4 条  书签 HTML 往返
 app/src/test/java/.../HomeDateTest       2 条  日期/问候
 app/src/test/java/.../MhtmlArchiveTest   9 条  MHTML 解析/相对引用/CSS 内联/QP 解码
-共 29 条，全绿
+app/src/test/java/.../SiteSettingsTest   6 条  编解码/域名继承链/摘要
+共 35 条，全绿
 ```
 
 真机验证清单见 `docs/TESTING.md`。**没有 instrumentation 测试，也没有截图测试**。
@@ -131,7 +137,7 @@ app/src/test/java/.../MhtmlArchiveTest   9 条  MHTML 解析/相对引用/CSS �
 ## 9. 下一步任务（按优先级）
 
 1. ~~离线页可打开~~ / ~~隐私报告 + 元素选择器~~（0.25.0 完成）
-2. 站点设置页（按域名：JS/图片/Cookie/UA/白名单统一入口，1 个版本）
+2. ~~站点设置页~~（0.26.0 完成；Cookie 只做了「清本站数据」，未做逐站开关）
 3. WebDAV 同步（1 个版本）
 4. 大屏 / 标签组 / HLS 下载 / 无障碍（1 个版本）
 5. 动画专项 26 项（1 个版本，见 `ROADMAP.md`）

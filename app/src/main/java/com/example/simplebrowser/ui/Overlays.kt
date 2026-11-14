@@ -106,6 +106,7 @@ fun AppMenu(
     onUserScripts: () -> Unit,
     onPrivacyReport: () -> Unit,
     onPickElement: () -> Unit,
+    onSiteSettings: () -> Unit,
     adBlockPaused: Boolean,
     onToggleAdBlockSite: () -> Unit,
     onDismiss: () -> Unit,
@@ -118,6 +119,7 @@ fun AppMenu(
         SheetRow(MiuixIcons.Share, stringResource(R.string.menu_share_page), onClick = onSharePage)
         SheetRow(MiuixIcons.Folder, stringResource(R.string.menu_offline_pages), onClick = onOfflinePages)
         SheetRow(MiuixIcons.Settings, stringResource(R.string.userscript_title), onClick = onUserScripts)
+        SheetRow(MiuixIcons.Settings, stringResource(R.string.menu_site_settings), onClick = onSiteSettings)
         SheetRow(MiuixIcons.Hide, stringResource(R.string.menu_pick_element), onClick = onPickElement)
         SheetRow(MiuixIcons.Blocklist, stringResource(R.string.menu_privacy_report), onClick = onPrivacyReport)
 

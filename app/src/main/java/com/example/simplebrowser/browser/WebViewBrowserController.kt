@@ -25,6 +25,8 @@ import com.example.simplebrowser.data.entity.TabEntity
 import com.example.simplebrowser.download.DownloadCenter
 import com.example.simplebrowser.data.repo.HistoryRepository
 import com.example.simplebrowser.data.repo.TabsRepository
+import com.example.simplebrowser.data.site.SiteSettings
+import com.example.simplebrowser.data.site.SiteSettingsRepository
 import com.example.simplebrowser.js.InjectAt
 import com.example.simplebrowser.js.JsContext
 import com.example.simplebrowser.js.JsInjector
@@ -55,6 +57,7 @@ class WebViewBrowserController(
     private val historyRepository: HistoryRepository,
     private val downloadCenter: DownloadCenter,
     private val adBlock: AdBlockRepository,
+    private val siteSettings: SiteSettingsRepository,
 ) : BrowserController, TabWebView.Callbacks {
 
     companion object {
@@ -382,7 +385,27 @@ class WebViewBrowserController(
 
     override fun onPageStarted(view: TabWebView, url: String) {
         updateTab(view.tabId) { it.copy(url = displayUrl(it, url), isLoading = true, progress = 0) }
+        val site = applySiteSettings(view, url)
+        if (site?.javaScript == false) return
         jsInjector.inject(view, InjectAt.DOC_START, JsContext(url, isDesktop(view.tabId)))
+    }
+
+    /**
+     * 把「站点设置」落到这台 WebView 上（WebView 的设置是全局单例，所以每次导航都要重设一遍）。
+     *
+     * 返回该站点生效的设置，调用方据此决定要不要注入 JS。
+     */
+    private fun applySiteSettings(view: TabWebView, url: String): SiteSettings? {
+        val site = siteSettings.forHost(FilterEngine.hostOf(url))
+        // 站点设置里的「桌面版」优先，但不清掉工具栏上临时切过来的桌面模式
+        val desktop = site?.desktopUa == true || isDesktop(view.tabId)
+        runCatching {
+            view.settings.javaScriptEnabled = site?.javaScript ?: true
+            view.settings.blockNetworkImage = site?.images == false
+            view.settings.userAgentString = if (desktop) DESKTOP_UA else view.mobileUserAgent
+            view.settings.loadsImagesAutomatically = site?.images ?: true
+        }
+        return site
     }
 
     /**
@@ -409,8 +432,11 @@ class WebViewBrowserController(
                 lastAccessedAt = System.currentTimeMillis(),
             )
         }
-        jsInjector.inject(view, InjectAt.DOC_END, JsContext(url, isDesktop(view.tabId)))
-        injectCosmetic(view, url)
+        val site = siteSettings.forHost(FilterEngine.hostOf(url))
+        if (site?.javaScript != false) {
+            jsInjector.inject(view, InjectAt.DOC_END, JsContext(url, isDesktop(view.tabId)))
+            injectCosmetic(view, url)
+        }
         scheduleScrollFallback(view)
         if (_state.value.tabs.firstOrNull { it.id == view.tabId }?.pageDarkEnabled == true) {
             view.evaluateJavascript("window.__sbDarkPage && window.__sbDarkPage(true)", null)
@@ -586,6 +612,48 @@ class WebViewBrowserController(
                 Toast.makeText(context, R.string.offline_saved, Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    // ------------------------------------------------------------ 站点设置
+
+    override fun currentHost(): String? =
+        FilterEngine.hostOf(_state.value.activeTab?.url.orEmpty())
+
+    override fun siteSettingsOf(host: String): SiteSettings =
+        siteSettings.forHost(host) ?: SiteSettings(host)
+
+    override fun saveSiteSettings(settings: SiteSettings) {
+        siteSettings.save(settings)
+    }
+
+    override fun resetSiteSettings(host: String) {
+        siteSettings.reset(host)
+    }
+
+    override fun configuredSiteSettings(): List<SiteSettings> = siteSettings.configured()
+
+    override fun clearCurrentSiteData() {
+        val host = currentHost() ?: return
+        clearSiteData(host)
+    }
+
+    /** 清 Cookie 与（API 29+）该源的 WebStorage；其它数据受 WebView API 限制只能全局清。 */
+    private fun clearSiteData(host: String) {
+        runCatching {
+            val cookieManager = android.webkit.CookieManager.getInstance()
+            val origin = "https://$host"
+            cookieManager.getCookie(origin)?.split(';')?.forEach { pair ->
+                val name = pair.substringBefore('=').trim()
+                if (name.isNotEmpty()) {
+                    cookieManager.setCookie("$origin/", "$name=; Max-Age=0; Path=/")
+                }
+            }
+            cookieManager.flush()
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                android.webkit.WebStorage.getInstance().deleteOrigin(origin)
+            }
+        }
+        Toast.makeText(context, R.string.site_data_cleared, Toast.LENGTH_SHORT).show()
     }
 
     override fun offlineEntries() = offlineStore.load()
@@ -923,6 +991,7 @@ class WebViewBrowserController(
 
     private fun injectCosmetic(view: TabWebView, url: String) {
         if (!adBlock.enabled.value) return
+        if (siteSettings.forHost(FilterEngine.hostOf(url))?.javaScript == false) return
         val selectors = adBlock.engine.value.cosmeticSelectors(url)
         if (selectors.isEmpty()) return
         view.evaluateJavascript(CosmeticInjector.script(selectors), null)

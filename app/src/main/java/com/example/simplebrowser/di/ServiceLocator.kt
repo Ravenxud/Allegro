@@ -4,6 +4,7 @@ import android.content.Context
 import com.example.simplebrowser.adblock.AdBlockRepository
 import com.example.simplebrowser.data.AppDatabase
 import com.example.simplebrowser.data.SettingsRepository
+import com.example.simplebrowser.data.site.SiteSettingsRepository
 import com.example.simplebrowser.data.UserScriptStore
 import com.example.simplebrowser.data.repo.BookmarkRepository
 import com.example.simplebrowser.data.repo.DownloadRepository
@@ -51,6 +52,9 @@ object ServiceLocator {
     lateinit var userScriptStore: UserScriptStore
         private set
 
+    lateinit var siteSettingsRepository: SiteSettingsRepository
+        private set
+
     /** 更新源变更后重建仓库实例。 */
     fun rebindUpdateRepo(repo: String) {
         updateRepository = UpdateRepository(appContext, repo)
@@ -70,6 +74,7 @@ object ServiceLocator {
             downloadCenter = DownloadCenter(appContext, downloadRepository)
             adBlockRepository = AdBlockRepository(appContext)
             userScriptStore = UserScriptStore(appContext)
+            siteSettingsRepository = SiteSettingsRepository(appContext)
             updateRepository = UpdateRepository(
                 appContext,
                 settingsRepository.updateRepo(),

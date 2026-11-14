@@ -187,4 +187,23 @@
     <string name="offline_saving">正在保存离线页…</string>
     <string name="offline_opening">正在打开离线页…</string>
     <string name="offline_open_failed">离线页已损坏，无法打开</string>
+    <string name="menu_site_settings">本站设置</string>
+    <string name="site_title">站点设置</string>
+    <string name="site_hint">设置只作用于当前域名（含子域继承），改完立即保存</string>
+    <string name="site_no_host">当前是首页或本地页，没有可设置的站点</string>
+    <string name="site_js">JavaScript</string>
+    <string name="site_js_summary">关闭后页面脚本不执行，部分站点会显示异常</string>
+    <string name="site_images">加载图片</string>
+    <string name="site_images_summary">关闭可省流量，图片位置留空</string>
+    <string name="site_desktop">桌面版网页</string>
+    <string name="site_desktop_summary">用桌面 User-Agent 请求，适合被强制跳转移动站的站点</string>
+    <string name="site_adblock">本站广告过滤</string>
+    <string name="site_adblock_summary">关闭后该站点的请求不再被拦截</string>
+    <string name="site_clear_data">清除本站数据</string>
+    <string name="site_clear_data_summary">删除 Cookie 与本地存储，需重新登录</string>
+    <string name="site_data_cleared">已清除本站数据</string>
+    <string name="site_reset">恢复默认</string>
+    <string name="site_configured_title">已配置的站点</string>
+    <string name="site_configured_empty">还没有配置过站点</string>
+    <string name="site_configured_empty_hint">在网页菜单里点「本站设置」就能按域名调整</string>
 </resources>

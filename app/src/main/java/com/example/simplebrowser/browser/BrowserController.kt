@@ -74,6 +74,24 @@ interface BrowserController {
     /** 读取当前页纯文本（用于朗读）。 */
     fun readPageText(onReady: (text: String) -> Unit)
 
+    // 站点设置
+
+    /** 当前标签页的域名；首页/本地页返回 null。 */
+    fun currentHost(): String?
+
+    /** 该域名生效的设置（含父域继承），没配置过时返回全默认值。 */
+    fun siteSettingsOf(host: String): com.example.simplebrowser.data.site.SiteSettings
+
+    fun saveSiteSettings(settings: com.example.simplebrowser.data.site.SiteSettings)
+
+    fun resetSiteSettings(host: String)
+
+    /** 用户显式配置过的站点（不含继承）。 */
+    fun configuredSiteSettings(): List<com.example.simplebrowser.data.site.SiteSettings>
+
+    /** 清除当前站点 Cookie 与 WebStorage。 */
+    fun clearCurrentSiteData()
+
     /** 保存当前页为离线页（内部先存 MHTML，再转成自包含 HTML）。 */
     fun saveOfflinePage()
 

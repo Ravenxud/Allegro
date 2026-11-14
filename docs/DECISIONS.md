@@ -62,3 +62,17 @@
   旧版本存的 `.mhtml` 首次打开时惰性转换并就地替换索引。
 - 局限：转换发生在保存之后，JS 动态渲染的内容、`<iframe>` 内部页面、视频流不在内联范围。
 
+## ADR-9 站点设置：域名继承链 + 只存非默认值 + 广告过滤复用白名单
+- 背景：需要按站点控制 JS / 图片 / 桌面版 UA / 广告过滤，且不能把"全默认"存成一堆死数据。
+- 决策：
+  1. 存储用 SharedPreferences（key = 域名，value = `js=1;img=1;ua=0`），**等于默认值就删除该 key**，
+     "已配置站点"列表因此等于存储里剩下的 key；
+  2. 匹配用继承链：`m.news.example.com` → `news.example.com` → `example.com`，精确优先，
+     不到二级后缀即停（不引入 Public Suffix List，见 `SiteSettingsCodec.hostCandidates`）；
+  3. 广告过滤**不另存一份**，直接读写 `AdBlockRepository` 的站点白名单——否则两处真值必然打架；
+  4. WebView 设置是实例级全局，必须每次 `onPageStarted` 重设（见 HANDOFF 坑 10）。
+- 后果：改设置后需 reload 才生效（页面上已明确如此）；JS 关闭时跳过全部 JS 注入（含元素隐藏与选择器），
+  避免"没反应又不知道原因"。
+- 局限：Cookie 只能"清除本站数据"（`CookieManager` 无逐站开关）；`WebStorage.deleteOrigin` 需要 API 29+，
+  更低版本只能清 Cookie。
+

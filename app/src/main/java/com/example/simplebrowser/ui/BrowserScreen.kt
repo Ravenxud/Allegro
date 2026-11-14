@@ -78,6 +78,7 @@ import com.example.simplebrowser.ui.screens.DownloadsScreen
 import com.example.simplebrowser.ui.screens.HistoryScreen
 import com.example.simplebrowser.ui.screens.OfflinePagesScreen
 import com.example.simplebrowser.ui.screens.PrivacyReportScreen
+import com.example.simplebrowser.ui.screens.SiteSettingsScreen
 import com.example.simplebrowser.ui.screens.ReaderScreen
 import com.example.simplebrowser.ui.screens.SettingsScreen
 import com.example.simplebrowser.ui.screens.UserScriptsScreen
@@ -509,6 +510,10 @@ fun BrowserScreen(
                         showAppMenu = false
                         controller.startElementPicker()
                     },
+                    onSiteSettings = {
+                        showAppMenu = false
+                        screen = SecondaryScreen.SITE
+                    },
                     adBlockPaused = controller.isAdBlockPausedForCurrentSite(),
                     onToggleAdBlockSite = { controller.toggleAdBlockForCurrentSite() },
                 )
@@ -571,6 +576,13 @@ fun BrowserScreen(
                     )
                     SecondaryScreen.HISTORY -> HistoryScreen(history, openAndBack, back)
                     SecondaryScreen.DOWNLOADS -> DownloadsScreen(downloads, downloadCenter, back)
+                    SecondaryScreen.SITE -> SiteSettingsScreen(
+                        host = controller.currentHost(),
+                        controller = controller,
+                        siteSettings = com.example.simplebrowser.di.ServiceLocator.siteSettingsRepository,
+                        adBlock = adBlock,
+                        onBack = back,
+                    )
                     SecondaryScreen.PRIVACY -> PrivacyReportScreen(
                         adBlock = adBlock,
                         onBack = back,
