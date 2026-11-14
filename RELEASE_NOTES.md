@@ -1,3 +1,41 @@
+# 0.35.5-beta
+
+按 Luna 的实际实现方向重做：**面板不遮、内容不透明、玻璃只做顶栏一条**。
+
+## 为什么要换方向（Luna 反编译结论）
+
+拆 `com.mt.luna` 1.1.3 的 `base.apk` 后，页面菜单的呈现链路是：
+
+- 菜单项是数据表（`oaa` / `xq1` / `laa`，分组 Tab / Privacy / PageInfo），顺序存 MMKV `page_menu_config`
+- 容器按窗口宽度分派：`vf8.a` → `kmb.g`（窄）/ `rmb.i`（宽）
+- 面板高度 = 屏幕高 × **0.667** 上限，fraction 由 `Animatable` 驱动 → 可拖
+- 呈现用**独立 Dialog 窗口**（`mjf.e` → `ae4`）：透明背景、`addFlags(65792)`、`setFitInsetsTypes(0)`、**没有任何 dim/遮罩**
+- 材质 `SheetMaterial(contentAlpha, barBackdrop)`：**内容区是半透明纯色，只有顶栏条用快照做玻璃**
+- 页面快照 `PixelCopy.request(window, rect, …)`（`ifb` / `x8a`），失败日志 `No preview: PixelCopy result=%d`
+
+结论：Luna 从不给整块面板做玻璃，因为整块面板的背面是 WebView 表面，抓不干净。
+
+## 本版改动
+
+1. **面板内容区恢复不透明**（`surface`），不再铺全页快照 → 重影彻底消失
+2. **玻璃只做顶栏挡板**（拖拽条 + 标题，26/52dp）：
+   - 用整窗快照按**屏幕坐标 1:1 对齐**（`onGloballyPositioned` 取面板顶 y，`requiredSize` + `offset` 反推）
+   - `FillBounds` + 18dp 模糊 + 34% `surface` tint
+   - 只在该条内裁剪，**不可能溢出到面板外**
+   - 底边 14dp 渐隐到不透明面板色，消除硬接缝
+3. 面板最大高度 64%，内容超长自己滚
+4. 遮罩仍为零（0.35.4 已移除）
+
+## 请验
+
+1. 打开网页（等加载完）→ 点菜单：**面板上方网页颜色/亮度完全不变**，没有任何灰层
+2. 面板里**不再出现文字/图标重影**，也不再有顶部深色横条
+3. 顶栏那一条能看到背后网页的模糊，且上下连续不发灰
+4. 长按链接菜单同样
+5. 面板从底部起、高度不到屏幕 2/3
+
+---
+
 # 0.35.4-beta
 
 ## 彻底移除面板遮罩

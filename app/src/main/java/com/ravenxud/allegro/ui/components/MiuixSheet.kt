@@ -22,12 +22,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -36,6 +40,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -84,9 +90,33 @@ fun MiuixSheet(
             exit = slideOutVertically(Motion.slide()) { it },
         ) {
             val panelShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            val surfaceColor = MiuixTheme.colorScheme.surface
+
+            // 顶栏挡板是唯一做玻璃的一条：把"整窗快照"按屏幕坐标 1:1 对齐后只露出这一条。
+            // 面板贴底且满宽 ⇒ 屏幕高 = 面板顶 y + 面板高，屏幕宽 = 面板宽，无需额外测量。
+            var panelTopPx by androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableIntStateOf(0)
+            }
+            var screenSizePx by androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf(androidx.compose.ui.unit.IntSize.Zero)
+            }
+            val bandHeight = if (title == null) 26.dp else 52.dp
+            // 行数会随功能增加（页面动作 9 行 + 常用 3 行 + 外观 3 行 + 更多），
+            // 早期写死 Column 会被屏幕裁掉，导致最底部的「设置」看不见 —— 必须可滚动并限高
+            val maxContentHeight =
+                (LocalConfiguration.current.screenHeightDp * 0.64f).dp - bandHeight
+
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .onGloballyPositioned { c ->
+                        panelTopPx = c.positionInWindow().y.toInt()
+                        screenSizePx = androidx.compose.ui.unit.IntSize(
+                            c.size.width,
+                            panelTopPx + c.size.height,
+                        )
+                    }
                     .then(
                         if (backdrop != null) {
                             // 真玻璃：模糊背后的 Compose 内容（首页/列表），而不是调 alpha 出重影
@@ -100,66 +130,95 @@ fun MiuixSheet(
                         },
                     ),
                 shape = panelShape,
-                // 不用半透明：背后多半是 WebView（抓不到、无法模糊），透出来只有文字重影。
-                // 真玻璃要等「网页区域快照模糊」（P5）；在那之前保持不透明 + 高光更干净。
-                color = MiuixTheme.colorScheme.surface,
+                // 内容区保持不透明：WebView 表面抓不到实时内容，半透明只会透出"文字重影"。
+                // 玻璃只做在顶栏挡板（见下），那里有可对齐的快照源。
+                color = surfaceColor,
             ) {
-                // 行数会随功能增加（页面动作 9 行 + 常用 3 行 + 外观 3 行 + 更多），
-                // 早期写死 Column 会被屏幕裁掉，导致最底部的「设置」看不见 —— 必须可滚动并限高
-                val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.64f).dp
-                androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth()) {
-                if (snapshot != null) {
-                    // 网页区域抓不到实时内容：用一张 PixelCopy 快照模糊后当玻璃底
-                    androidx.compose.foundation.Image(
-                        bitmap = snapshot.asImageBitmap(),
-                        contentDescription = null,
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                        modifier = Modifier
-                            .matchParentSize()
-                            .blur(20.dp),
-                    )
-                    androidx.compose.foundation.layout.Box(
-                        Modifier
-                            .matchParentSize()
-                            .background(MiuixTheme.colorScheme.background.copy(alpha = 0.18f)),
-                    )
-                }
-                Column(
-                    Modifier
-                        .navigationBarsPadding()
-                        .heightIn(max = maxHeight)
-                        .verticalScroll(rememberScrollState())
-                        .padding(bottom = 8.dp),
-                ) {
+                Column(Modifier.fillMaxWidth()) {
+                    // --------------------------- 顶栏挡板（玻璃） ---------------------------
                     Box(
                         Modifier
                             .fillMaxWidth()
-                            .height(1.dp)
-                            .background(Color.White.copy(alpha = 0.18f)),
-                    )
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        contentAlignment = Alignment.Center,
+                            .height(bandHeight)
+                            .clip(panelShape),
                     ) {
+                        if (snapshot != null && panelTopPx > 0 && screenSizePx.height > 0) {
+                            androidx.compose.foundation.Image(
+                                bitmap = snapshot.asImageBitmap(),
+                                contentDescription = null,
+                                contentScale = androidx.compose.ui.layout.ContentScale.FillBounds,
+                                modifier = Modifier
+                                    .requiredSize(
+                                        with(density) { screenSizePx.width.toDp() },
+                                        with(density) { screenSizePx.height.toDp() },
+                                    )
+                                    // 快照是整窗的：上移"面板顶"的距离，就与屏幕坐标重合
+                                    .offset { androidx.compose.ui.unit.IntOffset(0, -panelTopPx) }
+                                    .blur(18.dp),
+                            )
+                            // 轻微 tint：任何网页上都读得清标题，同时保留背后色彩
+                            Box(
+                                Modifier
+                                    .matchParentSize()
+                                    .background(surfaceColor.copy(alpha = 0.34f)),
+                            )
+                            // 底边渐隐到不透明面板色，消除"玻璃条 / 纯色区"的硬接缝
+                            Box(
+                                Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .fillMaxWidth()
+                                    .height(14.dp)
+                                    .background(
+                                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                                            listOf(Color.Transparent, surfaceColor),
+                                        ),
+                                    ),
+                            )
+                        }
+                        // 顶部细高光（玻璃边缘）
                         Box(
                             Modifier
-                                .size(width = 36.dp, height = 4.dp)
-                                .clip(CircleShape)
-                                .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.2f)),
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(Color.White.copy(alpha = 0.20f)),
                         )
+                        Column(
+                            Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Box(
+                                Modifier
+                                    .padding(vertical = 8.dp)
+                                    .size(width = 36.dp, height = 4.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        MiuixTheme.colorScheme.onSurface.copy(alpha = 0.22f),
+                                    ),
+                            )
+                            title?.let {
+                                Text(
+                                    text = it,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 20.dp, end = 20.dp, bottom = 8.dp),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    fontSize = 15.sp,
+                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                )
+                            }
+                        }
                     }
-                    title?.let {
-                        Text(
-                            text = it,
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            fontSize = 15.sp,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
+                    // --------------------------- 内容区（不透明） ---------------------------
+                    Column(
+                        Modifier
+                            .navigationBarsPadding()
+                            .heightIn(max = maxContentHeight)
+                            .verticalScroll(rememberScrollState())
+                            .padding(bottom = 8.dp),
+                    ) {
+                        content()
                     }
-                    content()
-                }
                 }
             }
         }
