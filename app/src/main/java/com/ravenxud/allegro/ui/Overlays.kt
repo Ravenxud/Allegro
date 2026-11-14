@@ -136,6 +136,8 @@ fun AppMenu(
     onDismiss: () -> Unit,
     /** 网页场景：走独立 Dialog 窗口 + 系统跨窗口模糊（唯一能真模糊网页的路径）。 */
     useDialogWindow: Boolean = false,
+    /** 网页滚动位移（px）：玻璃平移，零延迟跟手。 */
+    scrollOffsetPx: Int = 0,
 ) {
     val barActions: @Composable RowScope.() -> Unit = {
         SheetCircleButton(MiuixIcons.Settings) { onNavigate(SecondaryScreen.SETTINGS) }
@@ -209,6 +211,7 @@ fun AppMenu(
             snapshot = snapshot,
             showClose = true,
             scrollable = false,
+            scrollOffsetPx = scrollOffsetPx,
             actions = barActions,
             content = body,
         )

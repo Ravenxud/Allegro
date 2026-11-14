@@ -159,6 +159,7 @@ fun BrowserScreen(
     // 网页可见时，菜单的玻璃底来自一张 PixelCopy 快照（WebView 抓不到实时内容）
     // 注意：必须在面板打开前抓，否则 WebView 已 GONE，只能抓到空
     val sheetSnapshot by controller.sheetSnapshot.collectAsState()
+    val sheetScrollDelta by controller.sheetScrollDelta.collectAsState()
 
     // 首页是纯 Compose，可以被真正捕获并模糊；网页是 WebView，抓不到 → 只在首页给菜单玻璃
     val homeSurface = MiuixTheme.colorScheme.surface
@@ -655,6 +656,7 @@ fun BrowserScreen(
                     backdrop = if (isHome) homeBackdrop else null,
                     snapshot = if (isHome) null else sheetSnapshot,
                     useDialogWindow = false,
+                    scrollOffsetPx = sheetScrollDelta,
                     desktopSite = controller.isDesktopForCurrentSite(),
                     onToggleDesktopSite = { controller.toggleDesktopForCurrentSite() },
                     adBlockPaused = controller.isAdBlockPausedForCurrentSite(),

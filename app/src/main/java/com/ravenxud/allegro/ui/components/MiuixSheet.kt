@@ -83,6 +83,8 @@ fun MiuixSheet(
     actions: @Composable RowScope.() -> Unit = {},
     /** 内容是否可纵向滚动（网格分页面板传 false）。 */
     scrollable: Boolean = true,
+    /** 网页滚动位移（px）：玻璃跟着平移，做到零延迟跟手。 */
+    scrollOffsetPx: Int = 0,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Box(modifier.fillMaxSize()) {
@@ -119,6 +121,7 @@ fun MiuixSheet(
                 actions = actions,
                 glassAlpha = 0.72f,
                 scrollable = scrollable,
+                scrollOffsetPx = scrollOffsetPx,
                 content = content,
             )
         }
@@ -135,6 +138,7 @@ private fun SheetCard(
     actions: @Composable RowScope.() -> Unit,
     glassAlpha: Float,
     scrollable: Boolean,
+    scrollOffsetPx: Int,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val cardShape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
@@ -182,7 +186,7 @@ private fun SheetCard(
                                     ),
                                     dstOffset = androidx.compose.ui.unit.IntOffset(
                                         0,
-                                        size.height.toInt() - dstH,
+                                        size.height.toInt() - dstH - scrollOffsetPx,
                                     ),
                                     dstSize = androidx.compose.ui.unit.IntSize(
                                         size.width.toInt(),
@@ -566,6 +570,7 @@ fun MiuixSheetDialog(
                 actions = actions,
                 glassAlpha = if (blurOn) 0.52f else 0.9f,
                 scrollable = scrollable,
+                scrollOffsetPx = 0,
                 content = content,
             )
         }

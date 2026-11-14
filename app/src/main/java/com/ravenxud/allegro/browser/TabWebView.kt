@@ -46,7 +46,7 @@ class TabWebView @JvmOverloads constructor(
          * JS 侧的 onScrollY 只在"是否到顶"变化时上报，滚动过程完全静默，
          * 所以面板玻璃的"跟随滚动刷新"必须挂在这里。
          */
-        fun onContentScrolled(view: TabWebView)
+        fun onContentScrolled(view: TabWebView, scrollY: Int)
 
         fun onReaderExtracted(view: TabWebView, json: String)
 
@@ -92,7 +92,7 @@ class TabWebView @JvmOverloads constructor(
     override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
         super.onScrollChanged(l, t, oldl, oldt)
         // 交给上层节流处理（面板玻璃跟随滚动）
-        callbacks.onContentScrolled(this)
+        callbacks.onContentScrolled(this, t)
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {

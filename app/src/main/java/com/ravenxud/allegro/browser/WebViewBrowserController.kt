@@ -1137,6 +1137,8 @@ class WebViewBrowserController(
         requestCopy(activity.window, rect) { bitmap ->
             val scaled = bitmap?.let { blurForSheet(it) }
             _sheetSnapshot.value = scaled
+            capturedScrollY = activeView()?.scrollY ?: 0
+            _sheetScrollDelta.value = 0
             com.ravenxud.allegro.util.DiagLog.log(
                 "sheet-capture",
                 if (scaled == null) "null" else "${scaled.width}x${scaled.height}",
@@ -1207,12 +1209,29 @@ class WebViewBrowserController(
     /** 面板可见标志（UI 设置）：滚动时据此决定要不要刷新玻璃底图。 */
     private var sheetVisible = false
     private var lastSheetRefresh = 0L
+    /** 最近一次抓图时网页的 scrollY：用于把"滚动位移"换算成玻璃平移量。 */
+    private var capturedScrollY = 0
+    private val _sheetScrollDelta = kotlinx.coroutines.flow.MutableStateFlow(0)
+    override val sheetScrollDelta: kotlinx.coroutines.flow.StateFlow<Int> = _sheetScrollDelta
+    private val uiHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var idleCapture: Runnable? = null
 
     override fun setSheetVisible(visible: Boolean) {
         sheetVisible = visible
     }
 
-    override fun onContentScrolled(view: TabWebView) {
+    override fun onContentScrolled(view: TabWebView, scrollY: Int) {
+        if (!sheetVisible) return
+        // 1) 立刻用位移平移玻璃：零延迟跟手（不需要重新抓图）
+        _sheetScrollDelta.value = (scrollY - capturedScrollY).coerceIn(-4000, 4000)
+
+        // 2) 滚动停止 220ms 后校正一次（重抓 + 位移归零），避免边缘露出空白
+        idleCapture?.let { uiHandler.removeCallbacks(it) }
+        val task = Runnable { captureForSheet(null) }
+        idleCapture = task
+        uiHandler.postDelayed(task, 220)
+
+        // 3) 长时间连续滚动时的兜底刷新
         refreshSheetIfVisible()
     }
 
