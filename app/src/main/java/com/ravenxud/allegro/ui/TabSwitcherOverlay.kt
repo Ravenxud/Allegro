@@ -140,6 +140,10 @@ fun TabSwitcherOverlay(
         }
     }
 
+    // 关键：关闭且收尾完成后必须不渲染。
+    // 否则全屏遮罩（可点击）会常驻视图树，把整个 App 的触摸都吞掉。
+    if (!visible && dismissed) return
+
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val screenWidth = constraints.maxWidth.toFloat()
         val screenHeight = constraints.maxHeight.toFloat()
@@ -187,7 +191,7 @@ fun TabSwitcherOverlay(
                         .coerceIn(0f, 0.7f)
                     drawRect(Color.Black.copy(alpha = 0.32f * p * dragFade))
                 }
-                .clickable(onClick = onDismiss),
+                .clickable(enabled = visible, onClick = onDismiss),
         )
 
         // 3) 网格：从 0.82 放大到 1
