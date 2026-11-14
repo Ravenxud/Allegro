@@ -362,7 +362,8 @@ private fun TabGrid(
     var dragOffset by remember { mutableStateOf(Offset.Zero) }
     val spacingPx = with(LocalDensity.current) { 8.dp.toPx() }
 
-    Surface(Modifier.fillMaxSize()) {
+    // 必须透明：否则这张不透明面会把下面的"模糊页面背景"整块盖住（观感像白闪/遮罩）
+    Surface(Modifier.fillMaxSize(), color = Color.Transparent) {
         Column(Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = 12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
