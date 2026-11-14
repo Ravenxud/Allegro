@@ -40,7 +40,7 @@ import com.ravenxud.allegro.browser.TabState
 import com.ravenxud.allegro.data.model.ThemeMode
 import com.ravenxud.allegro.ui.components.MiuixSheet
 import com.ravenxud.allegro.ui.components.SheetCircleButton
-import com.ravenxud.allegro.ui.components.SheetGrid
+import com.ravenxud.allegro.ui.components.SheetPagedGrid
 import com.ravenxud.allegro.ui.components.SheetItem
 import com.ravenxud.allegro.ui.components.SheetRow
 import com.ravenxud.allegro.ui.components.SheetSection
@@ -143,7 +143,7 @@ fun AppMenu(
             SheetCircleButton(MiuixIcons.Settings) { onNavigate(SecondaryScreen.SETTINGS) }
         },
     ) {
-        SheetGrid(
+        SheetPagedGrid(
             listOf(
                 SheetItem(MiuixIcons.Search, stringResource(R.string.menu_reader), onClick = onReader),
                 SheetItem(MiuixIcons.Play, stringResource(R.string.menu_read_aloud), onClick = onReadAloud),

@@ -133,7 +133,7 @@ private fun SheetCard(
     val cardShape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
     val surfaceColor = MiuixTheme.colorScheme.surface
     // 面板总高上限（Luna 约 0.66 屏），内容再多也自己滚
-    val maxContentHeight = (LocalConfiguration.current.screenHeightDp * 0.66f).dp
+    val maxContentHeight = (LocalConfiguration.current.screenHeightDp * 0.58f).dp
     val hasWebGlass = backdrop == null && snapshot != null
 
     Surface(
@@ -305,10 +305,11 @@ data class SheetItem(
  * 每格：56dp 白色圆 + 24dp 图标 + 12sp 标签。
  */
 @Composable
-fun ColumnScope.SheetGrid(
+fun SheetGrid(
     items: List<SheetItem>,
     columns: Int = 4,
 ) {
+    Column(Modifier.fillMaxWidth()) {
     items.chunked(columns).forEach { row ->
         Row(
             Modifier
@@ -321,6 +322,49 @@ fun ColumnScope.SheetGrid(
             }
             repeat(columns - row.size) {
                 Spacer(Modifier.weight(1f))
+            }
+        }
+    }
+    }
+}
+
+/** 分页网格：一页最多 12 项（3 行 × 4 列），页面指示点居中。 */
+@Composable
+fun SheetPagedGrid(
+    items: List<SheetItem>,
+    columns: Int = 4,
+    rowsPerPage: Int = 3,
+) {
+    val pages = items.chunked(columns * rowsPerPage).ifEmpty { listOf(emptyList()) }
+    val pagerState = androidx.compose.foundation.pager.rememberPagerState { pages.size }
+    Column(Modifier.fillMaxWidth()) {
+        androidx.compose.foundation.pager.HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxWidth(),
+        ) { page ->
+            SheetGrid(pages[page], columns)
+        }
+        if (pages.size > 1) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                repeat(pages.size) { i ->
+                    val active = pagerState.currentPage == i
+                    Box(
+                        Modifier
+                            .padding(horizontal = 3.dp)
+                            .size(if (active) 7.dp else 6.dp)
+                            .clip(CircleShape)
+                            .background(
+                                MiuixTheme.colorScheme.onSurface.copy(
+                                    alpha = if (active) 0.55f else 0.18f,
+                                ),
+                            ),
+                    )
+                }
             }
         }
     }
