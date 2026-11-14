@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -23,6 +24,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
@@ -63,6 +66,7 @@ fun ShaderSmokeScreen(onBack: () -> Unit) {
     var backdropFound by remember { mutableStateOf(false) }
     // Backdrop 演示默认关闭：一旦库在某个机型上崩，也不能连带整个页面不能用
     var showBackdropDemo by remember { mutableStateOf(false) }
+    var showShaderOnBackdrop by remember { mutableStateOf(false) }
     var gpu by remember { mutableStateOf("未知") }
 
     DiagLog.log("smoke-enter", "sdk=${Build.VERSION.SDK_INT}")
@@ -167,11 +171,18 @@ fun ShaderSmokeScreen(onBack: () -> Unit) {
                                 }.getOrNull()?.asComposeRenderEffect()
                             },
                     ) {
+                        // 高对比棋盘 + 文字：折射与色散会明显把格子掰弯，便于肉眼判断
                         Box(
                             Modifier
-                                .fillMaxWidth()
-                                .height(120.dp)
-                                .background(Color.White.copy(alpha = 0.10f), RoundedCornerShape(28.dp)),
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(28.dp))
+                                .drawBehind { checkerboard(Color(0xFF2F3640), Color(0xFFF5F6FA)) },
+                        )
+                        Text(
+                            "AGSL",
+                            fontSize = 34.sp,
+                            color = Color(0xFF3D7EFF),
+                            modifier = Modifier.align(Alignment.Center),
                         )
                     }
                 }
@@ -189,6 +200,23 @@ fun ShaderSmokeScreen(onBack: () -> Unit) {
             if (showBackdropDemo) {
                 Spacer(Modifier.height(Spacing.s))
                 BackdropDemo()
+            }
+
+            Spacer(Modifier.height(Spacing.s))
+            Card(modifier = Modifier.fillMaxWidth()) {
+                SwitchPreference(
+                    checked = showShaderOnBackdrop,
+                    onCheckedChange = {
+                        showShaderOnBackdrop = it
+                        DiagLog.log("smoke-toggle", "shaderOnBackdrop=$it")
+                    },
+                    title = stringResource(R.string.shader_smoke_on_backdrop),
+                    summary = stringResource(R.string.shader_smoke_on_backdrop_summary),
+                )
+            }
+            if (showShaderOnBackdrop) {
+                Spacer(Modifier.height(Spacing.s))
+                ShaderOnBackdropDemo()
             }
 
             Spacer(Modifier.height(Spacing.m))
@@ -258,6 +286,78 @@ private fun BackdropDemo() {
                     },
                 ),
         )
+    }
+}
+
+/**
+ * 关键验证：用 Backdrop 捕获背景，再把**自研 AGSL** 通过 `BackdropEffectScope.renderEffect`
+ * 作用在这张背景上。这才是真玻璃的做法（折射的是页面，不是自己）。
+ */
+@Composable
+private fun ShaderOnBackdropDemo() {
+    val layer = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val backdrop = rememberLayerBackdrop(layer) {
+        drawRect(Color(0xFFEDEDED))
+        drawContent()
+    }
+    var failed by remember { mutableStateOf("") }
+    DiagLog.log("smoke-shader-backdrop", "enter")
+
+    Box(modifier = Modifier.fillMaxWidth().height(140.dp), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier.fillMaxWidth().height(140.dp).layerBackdrop(backdrop),
+        ) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                repeat(6) {
+                    Box(Modifier.size(18.dp, 140.dp).background(Color(0xFF3D7EFF)))
+                }
+            }
+        }
+        Box(
+            modifier = Modifier
+                .size(220.dp, 100.dp)
+                .drawBackdrop(
+                    backdrop = backdrop,
+                    shape = { RoundedCornerShape(28.dp) },
+                    effects = {
+                        runCatching {
+                            val shader = RuntimeShader(GLASS_SMOKE_SHADER)
+                            shader.setFloatUniform("size", size.width, size.height)
+                            shader.setFloatUniform("amount", 26f)
+                            renderEffect = RenderEffect
+                                .createRuntimeShaderEffect(shader, "content")
+                                .asComposeRenderEffect()
+                            DiagLog.log("smoke-shader-backdrop", "effect set")
+                        }.onFailure { e ->
+                            failed = e.message ?: e::class.java.simpleName
+                            DiagLog.log("smoke-shader-backdrop", "failed: $failed")
+                        }
+                    },
+                ),
+        )
+        if (failed.isNotEmpty()) {
+            Text("AGSL 失败：$failed", fontSize = 12.sp, color = Color(0xFFC62828))
+        }
+    }
+}
+
+/** 8×4 黑白棋盘，用来放大折射/色散造成的形变。 */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.checkerboard(
+    dark: Color,
+    light: Color,
+    cols: Int = 10,
+    rows: Int = 5,
+) {
+    val cw = size.width / cols
+    val ch = size.height / rows
+    for (r in 0 until rows) {
+        for (c in 0 until cols) {
+            drawRect(
+                color = if ((r + c) % 2 == 0) dark else light,
+                topLeft = androidx.compose.ui.geometry.Offset(c * cw, r * ch),
+                size = androidx.compose.ui.geometry.Size(cw, ch),
+            )
+        }
     }
 }
 
