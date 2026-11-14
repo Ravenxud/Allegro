@@ -61,7 +61,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun ShaderSmokeScreen(onBack: () -> Unit) {
     var compileOk by remember { mutableStateOf<Boolean?>(null) }
     var compileError by remember { mutableStateOf("") }
-    var uniformName by remember { mutableStateOf("content") }
+    // 固定为 "content"：改成不存在的名字会在部分设备上直接原生崩溃（0.33.2 实测）
+    val uniformName = "content"
     var showGlass by remember { mutableStateOf(false) }
     var backdropFound by remember { mutableStateOf(false) }
     // Backdrop 演示默认关闭：一旦库在某个机型上崩，也不能连带整个页面不能用
@@ -230,10 +231,8 @@ fun ShaderSmokeScreen(onBack: () -> Unit) {
                 HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
                 ArrowPreference(
                     title = stringResource(R.string.shader_smoke_uniform),
-                    summary = "当前：$uniformName（切成错误名应全黑，说明名字必须匹配）",
-                    onClick = {
-                        uniformName = if (uniformName == "content") "contentX" else "content"
-                    },
+                    summary = stringResource(R.string.shader_smoke_uniform_rule),
+                    onClick = { },
                 )
             }
 

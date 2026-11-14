@@ -148,7 +148,8 @@ Root
 ## 6. 三段 AGSL
 
 ### 6.1 IOR 玻璃（核心）
-- 输入：`uniform shader content`；**必须**与 `runtimeShaderEffect(..., "content")` 的输入名完全一致（写错不报错，画面全黑）。
+- 输入：`uniform shader content`；**必须**与 `runtimeShaderEffect(..., "content")` 的输入名完全一致。
+  早期文档写"写错不报错、画面全黑"——**实测是错的**：写错会直接原生崩溃，所以名字**不允许参数化**。
 - 参数：`size/cornerRadii/refractionHeight/refractionAmount/ior/dispersion/lightDir/tint/innerShadow`。
 - 硬约束：`refractionHeight ≤ minCornerRadius`（28dp 圆角 → 16dp 安全）、`refractionAmount ≤ min(w,h)`；越界夹紧并 `DiagLog.w`。
 - 色散：7 次采样，权重 r/g/b 各和为 1（已核算，不会整体偏色）。
@@ -225,7 +226,8 @@ SharedTransitionLayout {
 | 包名 | **`com.kyant.backdrop`**（不是 `io.github.kyant0.backdrop`） |
 | lint / 单测 / release 打包 | ✅ 全绿 |
 | 体积变化 | debug 13MB → **34MB**，release 1.9MB → **3.5MB**；原因：minSdk ≥ 28 后 **dex 改为不压缩存储**（安装更快、可 mmap），叠加新依赖 |
-| 待真机验证 | AGSL 是否能编译、Backdrop 是否出模糊（冒烟页：设置 → 诊断 → 着色器冒烟测试） |
+| 真机验证（0.33.2/0.33.3） | ✅ **AGSL 编译通过**、✅ **Backdrop 模糊生效**、✅ **自研 AGSL 作用在捕获背景上生效**（截图可见蓝竖条被弯曲、棋盘格被掰弯） |
+| 新发现（硬约束） | **`uniform shader content` 的名字必须固定为 `content`**：改成不存在的名字会让渲染线程**原生崩溃**（Java 层抓不到，0.33.2 实测复现），因此该演示已从冒烟页移除 |
 
 ## 9. 落地步骤（P0–P6）
 
