@@ -104,6 +104,8 @@ fun MiuixSheet(
                         Text(
                             text = it,
                             modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                             fontSize = 15.sp,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         )

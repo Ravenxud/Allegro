@@ -228,4 +228,9 @@
     <string name="sync_last">上次同步：%1$s</string>
     <string name="sync_never">尚未同步过</string>
     <string name="sync_note">账号密码保存在本机（未加密），请使用应用专用密码；不包含标签页、历史与下载记录。</string>
+    <string name="settings_search_engine">搜索引擎</string>
+    <string name="tab_new_page">新标签页</string>
+    <string name="link_open_external_failed">没有可打开该链接的应用</string>
+    <string name="page_crashed_reload">页面崩溃，已重新加载</string>
+    <string name="cd_stop_loading">停止加载</string>
 </resources>

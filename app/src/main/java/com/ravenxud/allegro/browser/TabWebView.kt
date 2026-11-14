@@ -10,6 +10,7 @@ import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
+import android.view.MotionEvent
 import android.webkit.WebView
 import android.webkit.WebView.HitTestResult
 import android.webkit.WebViewClient
@@ -47,6 +48,12 @@ class TabWebView @JvmOverloads constructor(
         fun onPageText(view: TabWebView, text: String)
 
         fun onBlobTooLarge(view: TabWebView, fileName: String)
+
+        /** 页面要求 window.open / target=_blank 打开新窗口。 */
+        fun onNewWindowRequest(view: TabWebView, url: String)
+
+        /** 渲染进程被杀（重页面/内存压力），调用方需要重建 WebView。 */
+        fun onRendererGone(view: TabWebView)
     }
 
     data class DownloadRequest(
@@ -64,6 +71,17 @@ class TabWebView @JvmOverloads constructor(
 
     var mobileUserAgent: String = ""
         private set
+
+    /**
+     * 网页里点输入框时，先把焦点从 Compose 的地址栏抢过来，
+     * 否则输入法会被 Compose 侧"占着"，表现就是点了输入框不弹键盘。
+     */
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (event.actionMasked == MotionEvent.ACTION_DOWN && !hasFocus()) {
+            requestFocus()
+        }
+        return super.onTouchEvent(event)
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     fun init() {
@@ -84,6 +102,8 @@ class TabWebView @JvmOverloads constructor(
             setRenderPriority(WebSettings.RenderPriority.HIGH)
             // 允许页面在后台预取，提升前进/后退命中率
             cacheMode = WebSettings.LOAD_DEFAULT
+            // 允许 window.open：飞书/微信这类站点大量使用弹窗，关掉会导致"点了没反应"
+            setSupportMultipleWindows(true)
             // 离线页是 files/offline 下的本地 HTML，需要 file:// 访问；
             // 只开 allowFileAccess，不开 allowFileAccessFromFileURLs（避免本地页跨域读文件）
             allowFileAccess = true
@@ -93,6 +113,8 @@ class TabWebView @JvmOverloads constructor(
             }
         }
 
+        isFocusable = true
+        isFocusableInTouchMode = true
         webViewClient = Client()
         webChromeClient = ChromeClient()
 
@@ -181,7 +203,25 @@ class TabWebView @JvmOverloads constructor(
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val url = request.url.toString()
             if (!request.isForMainFrame) return false
-            if (!url.startsWith("http://") && !url.startsWith("https://")) return true
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                // lark://、weixin://、intent:// 这类交给系统；解析不到就提示，别静默失败
+                val opened = runCatching {
+                    val intent = if (url.startsWith("intent:")) {
+                        android.content.Intent.parseUri(url, android.content.Intent.URI_INTENT_SCHEME)
+                    } else {
+                        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                    }
+                    context.startActivity(intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                }.isSuccess
+                if (!opened) {
+                    android.widget.Toast.makeText(
+                        context,
+                        com.ravenxud.allegro.R.string.link_open_external_failed,
+                        android.widget.Toast.LENGTH_SHORT,
+                    ).show()
+                }
+                return true
+            }
             callbacks.onUrlChanged(this@TabWebView, url)
             return false
         }
@@ -197,6 +237,14 @@ class TabWebView @JvmOverloads constructor(
 
         override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
             url?.let { callbacks.onUrlChanged(this@TabWebView, it) }
+        }
+
+        override fun onRenderProcessGone(
+            view: WebView?,
+            detail: android.webkit.RenderProcessGoneDetail?,
+        ): Boolean {
+            callbacks.onRendererGone(this@TabWebView)
+            return true
         }
 
         override fun onReceivedError(
@@ -218,6 +266,33 @@ class TabWebView @JvmOverloads constructor(
 
         override fun onProgressChanged(view: WebView?, newProgress: Int) {
             callbacks.onProgressChanged(this@TabWebView, newProgress)
+        }
+
+        /**
+         * window.open / target=_blank：用一个临时 WebView 收下目标 URL，
+         * 拿到后交给控制器开新标签，然后销毁临时实例（不真的在里面加载）。
+         */
+        override fun onCreateWindow(
+            view: WebView?,
+            isDialog: Boolean,
+            isUserGesture: Boolean,
+            resultMsg: android.os.Message?,
+        ): Boolean {
+            val transport = resultMsg?.obj as? WebView.WebViewTransport ?: return false
+            val probe = WebView(context)
+            probe.webViewClient = object : WebViewClient() {
+                override fun shouldOverrideUrlLoading(v: WebView, request: WebResourceRequest): Boolean {
+                    val target = request.url.toString()
+                    if (target.startsWith("http://") || target.startsWith("https://")) {
+                        callbacks.onNewWindowRequest(this@TabWebView, target)
+                    }
+                    v.destroy()
+                    return true
+                }
+            }
+            transport.webView = probe
+            resultMsg.sendToTarget()
+            return true
         }
 
         override fun onReceivedTitle(view: WebView?, title: String?) {

@@ -295,12 +295,16 @@ fun BrowserScreen(
                             }
                         },
                     )
+                    // 之前加载中会变成 ✕，容易被当成"关闭标签页"；统一用刷新图标，
+                    // 加载中点击=停止加载（行为不变，语义变清楚）
                     IconButton(onClick = {
                         if (tab?.isLoading == true) controller.stopLoading() else controller.reload()
                     }) {
                         Icon(
-                            imageVector = if (tab?.isLoading == true) MiuixIcons.Close else MiuixIcons.Refresh,
-                            contentDescription = stringResource(R.string.cd_refresh),
+                            imageVector = MiuixIcons.Refresh,
+                            contentDescription = stringResource(
+                                if (tab?.isLoading == true) R.string.cd_stop_loading else R.string.cd_refresh,
+                            ),
                         )
                     }
                 }

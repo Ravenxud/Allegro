@@ -115,6 +115,19 @@ fun SettingsScreen(
             }
 
 
+            SectionTitle(stringResource(R.string.settings_search_engine))
+            PreferenceCard {
+                // 0.28 改名时这段被误删，导致设置里没有搜索引擎可切
+                SearchEngines.builtIn.forEachIndexed { index, engine ->
+                    if (index > 0) ComponentDivider()
+                    RadioButtonPreference(
+                        title = engine.name,
+                        selected = engineId == engine.id,
+                        onClick = { settings.setSearchEngine(engine.id) },
+                    )
+                }
+            }
+
             SectionTitle(stringResource(R.string.home_section_bookmarks))
             PreferenceCard {
                 SwitchPreference(

@@ -389,7 +389,9 @@ class WebViewBrowserController(
     // --------------------------------------------------- WebView 回调
 
     override fun onPageStarted(view: TabWebView, url: String) {
-        updateTab(view.tabId) { it.copy(url = displayUrl(it, url), isLoading = true, progress = 0) }
+        updateTab(view.tabId) {
+            it.copy(url = keepRealUrl(it, displayUrl(it, url)), isLoading = true, progress = 0)
+        }
         val site = applySiteSettings(view, url)
         if (site?.javaScript == false) return
         jsInjector.inject(view, InjectAt.DOC_START, JsContext(url, isDesktop(view.tabId)))
@@ -414,6 +416,19 @@ class WebViewBrowserController(
     }
 
     /**
+     * 重页面（飞书等）在渲染进程重启、或者 window.open 被拦时，会短暂上报 `about:blank`。
+     * 一旦把它写进 tab.url，界面就会切回"新标签页"，用户看到的就是"打开后自己回到了首页"。
+     * 所以：已经有过真实 URL 的标签，不接受 about:blank 覆盖。
+     */
+    private fun keepRealUrl(tab: TabState, actual: String): String {
+        val suppressed = actual == "about:blank" && tab.url.isNotBlank() && tab.url != "about:blank"
+        if (suppressed) {
+            android.util.Log.i("BrowserNav", "忽略 about:blank 覆盖，保留 ${tab.url}")
+        }
+        return if (suppressed) tab.url else actual
+    }
+
+    /**
      * 离线页实际加载的是 `file://…/offline/x.html`，但地址栏应继续显示原网址。
      */
     private fun displayUrl(tab: TabState, actual: String): String =
@@ -425,10 +440,35 @@ class WebViewBrowserController(
             actual
         }
 
+    /** window.open / target=_blank：后台开新标签，不打断当前页。 */
+    override fun onNewWindowRequest(view: TabWebView, url: String) {
+        android.util.Log.i("BrowserNav", "window.open -> $url")
+        if (url.isBlank()) return
+        openTab(url, background = true)
+    }
+
+    /**
+     * 渲染进程被杀：WebView 实例已经不可用，必须销毁重建再重新加载。
+     * 不处理的话页面会变成一片空白（用户感知就是"页面自己没了"）。
+     */
+    override fun onRendererGone(view: TabWebView) {
+        android.util.Log.w("BrowserNav", "渲染进程被回收，重建 WebView（tab=${view.tabId}）")
+        val tab = _state.value.tabs.firstOrNull { it.id == view.tabId }
+        (view.parent as? FrameLayout)?.removeView(view)
+        pool.remove(view.tabId)
+        Toast.makeText(context, R.string.page_crashed_reload, Toast.LENGTH_SHORT).show()
+        val url = tab?.url.orEmpty()
+        if (url.isNotBlank() && url != "about:blank") {
+            val fresh = ensureView(view.tabId)
+            host?.addView(fresh)
+            fresh.loadUrl(url)
+        }
+    }
+
     override fun onPageFinished(view: TabWebView, url: String) {
         updateTab(view.tabId) {
             it.copy(
-                url = displayUrl(it, url),
+                url = keepRealUrl(it, displayUrl(it, url)),
                 title = it.title.ifBlank { url },
                 isLoading = false,
                 progress = 100,

@@ -520,8 +520,10 @@ private fun TabCard(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
+                        val blank = tab.url == "about:blank"
                         Text(
-                            text = tab.title.ifBlank { tab.url },
+                            text = if (blank) stringResource(R.string.tab_new_page)
+                            else tab.title.ifBlank { tab.url },
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             fontSize = 13.sp,
@@ -529,7 +531,8 @@ private fun TabCard(
                             else MiuixTheme.colorScheme.onSurface,
                         )
                         Text(
-                            text = tab.url,
+                            // 空白页不显示 about:blank 这种实现细节
+                            text = if (blank) "" else tab.url,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             fontSize = 11.sp,

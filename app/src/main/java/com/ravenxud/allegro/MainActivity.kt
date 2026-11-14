@@ -44,6 +44,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // 网页输入框获得焦点时要能看到键盘、且页面不被遮住
+        window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         ServiceLocator.init(applicationContext)
 
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
