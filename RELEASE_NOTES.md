@@ -1,3 +1,29 @@
+# 0.28.2-beta
+
+飞书"回新标签页"仍未解决，这一版不猜了：**把导航事件写成可导出的日志**，同时补三处兜底。
+
+## 新增
+
+- **诊断日志**：`filesDir/diag.log`，记录 `page-start / page-finish / main-frame-error /
+  blank-suppressed / renderer-gone / new-window / open-tab / close-tab / new-intent`，
+  上限 256KB 自动轮转。入口：**设置 → 诊断 → 导出诊断日志**（走系统分享，可直接发我）。
+  只记 URL 与错误码，不记页面内容与账号信息。
+
+## 兜底修复
+
+- `window.close()` 不再有任何效果（之前可能把主窗口关掉 → 看起来"页面自己没了"）
+- `ERR_ABORTED / ERR_UNSUPPORTED_SCHEME / ERR_REDIRECT_LOOP` 不再替换成错误页：
+  SPA 重定向时这类中断是正常的，替换反而把好页面冲掉
+- `window.open` 的探针 WebView 改到 post 里销毁，避免在回调中销毁打断 opener 的渲染进程
+
+## 怎么用
+
+1. 打开飞书，复现"回新标签页"
+2. 设置 → 诊断 → 导出诊断日志 → 把内容发我
+3. 顺手确认一下 设置 → 关于 → 版本号 是 `0.28.2-beta`（之前几次可能装的是旧包）
+
+---
+
 # 0.28.1-beta
 
 修 0.28.0 上你报的 6 个问题。

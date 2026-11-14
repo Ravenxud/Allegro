@@ -47,6 +47,8 @@ class MainActivity : ComponentActivity() {
         // 网页输入框获得焦点时要能看到键盘、且页面不被遮住
         window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         ServiceLocator.init(applicationContext)
+        com.ravenxud.allegro.util.DiagLog.init(this)
+        com.ravenxud.allegro.util.DiagLog.log("activity-create", intent?.dataString.orEmpty())
 
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             ServiceLocator.adBlockRepository.ensureLoaded()
@@ -93,6 +95,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        com.ravenxud.allegro.util.DiagLog.log("new-intent", intent?.dataString.orEmpty())
         extractUrl(intent)?.let { controller.openTab(it) }
     }
 

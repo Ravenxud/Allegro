@@ -233,4 +233,8 @@
     <string name="link_open_external_failed">没有可打开该链接的应用</string>
     <string name="page_crashed_reload">页面崩溃，已重新加载</string>
     <string name="cd_stop_loading">停止加载</string>
+    <string name="settings_diag_section">诊断</string>
+    <string name="settings_diag_log">导出诊断日志</string>
+    <string name="settings_diag_log_summary">记录导航事件，用于排查"页面回到新标签页"这类问题</string>
+    <string name="settings_diag_empty">还没有日志可导出</string>
 </resources>

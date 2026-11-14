@@ -23,8 +23,8 @@ android {
         minSdk = 26
         targetSdk = 37
         // 编译测试阶段：版本号统一带 beta 后缀（见 README「版本约定」）
-        versionCode = 63
-        versionName = "0.28.1-beta"
+        versionCode = 64
+        versionName = "0.28.2-beta"
     }
 
     signingConfigs {

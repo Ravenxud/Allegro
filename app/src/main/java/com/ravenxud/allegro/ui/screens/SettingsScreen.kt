@@ -259,6 +259,39 @@ fun SettingsScreen(
                 )
             }
 
+            SectionTitle(stringResource(R.string.settings_diag_section))
+            PreferenceCard {
+                ArrowPreference(
+                    title = stringResource(R.string.settings_diag_log),
+                    summary = stringResource(R.string.settings_diag_log_summary),
+                    onClick = {
+                        val file = com.ravenxud.allegro.util.DiagLog.currentFile()
+                        if (file == null) {
+                            Toast.makeText(context, R.string.settings_diag_empty, Toast.LENGTH_SHORT).show()
+                        } else {
+                            runCatching {
+                                val uri = androidx.core.content.FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.fileprovider",
+                                    file,
+                                )
+                                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                    putExtra(android.content.Intent.EXTRA_SUBJECT, "Allegro 诊断日志")
+                                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(
+                                    android.content.Intent.createChooser(intent, resources.getString(R.string.settings_diag_log)),
+                                )
+                            }.onFailure {
+                                Toast.makeText(context, R.string.settings_diag_empty, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    },
+                )
+            }
+
             SectionTitle(stringResource(R.string.settings_about))
             PreferenceCard {
                 BasicComponent(

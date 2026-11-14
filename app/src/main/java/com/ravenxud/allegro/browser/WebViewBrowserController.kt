@@ -66,6 +66,9 @@ class WebViewBrowserController(
         private const val MAX_RESTORED_TABS = 8
         private const val TAG = "StubCapture"
         private const val TAG_OFFLINE = "OfflinePage"
+        private const val ERROR_ABORTED = -3
+        private const val ERROR_UNSUPPORTED_SCHEME = -10
+        private const val ERROR_REDIRECT_LOOP = -21
         private const val DESKTOP_UA =
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
                 "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
@@ -122,6 +125,7 @@ class WebViewBrowserController(
     // ------------------------------------------------------------- 标签
 
     override fun openTab(url: String, background: Boolean): String {
+        com.ravenxud.allegro.util.DiagLog.log("open-tab", "bg=$background $url")
         val id = UUID.randomUUID().toString()
         val tab = TabState(
             id = id,
@@ -162,6 +166,7 @@ class WebViewBrowserController(
     }
 
     override fun closeTab(tabId: String) {
+        com.ravenxud.allegro.util.DiagLog.log("close-tab", tabId)
         val current = _state.value
         val index = current.tabs.indexOfFirst { it.id == tabId }
         if (index < 0) return
@@ -389,6 +394,7 @@ class WebViewBrowserController(
     // --------------------------------------------------- WebView 回调
 
     override fun onPageStarted(view: TabWebView, url: String) {
+        com.ravenxud.allegro.util.DiagLog.log("page-start", url)
         updateTab(view.tabId) {
             it.copy(url = keepRealUrl(it, displayUrl(it, url)), isLoading = true, progress = 0)
         }
@@ -423,7 +429,7 @@ class WebViewBrowserController(
     private fun keepRealUrl(tab: TabState, actual: String): String {
         val suppressed = actual == "about:blank" && tab.url.isNotBlank() && tab.url != "about:blank"
         if (suppressed) {
-            android.util.Log.i("BrowserNav", "忽略 about:blank 覆盖，保留 ${tab.url}")
+            com.ravenxud.allegro.util.DiagLog.log("blank-suppressed", "keep=${tab.url}")
         }
         return if (suppressed) tab.url else actual
     }
@@ -442,7 +448,7 @@ class WebViewBrowserController(
 
     /** window.open / target=_blank：后台开新标签，不打断当前页。 */
     override fun onNewWindowRequest(view: TabWebView, url: String) {
-        android.util.Log.i("BrowserNav", "window.open -> $url")
+        com.ravenxud.allegro.util.DiagLog.log("new-window", url)
         if (url.isBlank()) return
         openTab(url, background = true)
     }
@@ -452,7 +458,7 @@ class WebViewBrowserController(
      * 不处理的话页面会变成一片空白（用户感知就是"页面自己没了"）。
      */
     override fun onRendererGone(view: TabWebView) {
-        android.util.Log.w("BrowserNav", "渲染进程被回收，重建 WebView（tab=${view.tabId}）")
+        com.ravenxud.allegro.util.DiagLog.log("renderer-gone", "tab=${view.tabId}")
         val tab = _state.value.tabs.firstOrNull { it.id == view.tabId }
         (view.parent as? FrameLayout)?.removeView(view)
         pool.remove(view.tabId)
@@ -466,6 +472,7 @@ class WebViewBrowserController(
     }
 
     override fun onPageFinished(view: TabWebView, url: String) {
+        com.ravenxud.allegro.util.DiagLog.log("page-finish", url)
         updateTab(view.tabId) {
             it.copy(
                 url = keepRealUrl(it, displayUrl(it, url)),
@@ -511,6 +518,14 @@ class WebViewBrowserController(
         description: String,
         failingUrl: String?,
     ) {
+        com.ravenxud.allegro.util.DiagLog.log("main-frame-error", "$errorCode $description $failingUrl")
+        // 这些不是"页面坏了"，而是 SPA 重定向/被拦时的正常中断；替换成错误页反而会把好页面冲掉
+        if (errorCode == ERROR_ABORTED || errorCode == ERROR_UNSUPPORTED_SCHEME ||
+            errorCode == ERROR_REDIRECT_LOOP
+        ) {
+            updateTab(view.tabId) { it.copy(isLoading = false, progress = 100) }
+            return
+        }
         val url = failingUrl ?: return
         updateTab(view.tabId) { it.copy(isLoading = false, progress = 100) }
         view.loadDataWithBaseURL(null, ErrorPage.build(context, url, description), "text/html", "utf-8", null)

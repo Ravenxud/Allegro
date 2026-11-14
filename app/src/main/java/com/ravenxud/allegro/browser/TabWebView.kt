@@ -272,6 +272,9 @@ class TabWebView @JvmOverloads constructor(
          * window.open / target=_blank：用一个临时 WebView 收下目标 URL，
          * 拿到后交给控制器开新标签，然后销毁临时实例（不真的在里面加载）。
          */
+        /** 站点调 window.close() 时什么都不做：关掉主窗口会让用户"页面自己没了"。 */
+        override fun onCloseWindow(window: WebView?) = Unit
+
         override fun onCreateWindow(
             view: WebView?,
             isDialog: Boolean,
@@ -286,7 +289,7 @@ class TabWebView @JvmOverloads constructor(
                     if (target.startsWith("http://") || target.startsWith("https://")) {
                         callbacks.onNewWindowRequest(this@TabWebView, target)
                     }
-                    v.destroy()
+                    v.post { runCatching { v.destroy() } }
                     return true
                 }
             }
