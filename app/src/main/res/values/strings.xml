@@ -281,4 +281,13 @@
     <string name="menu_tab_groups">标签分组</string>
     <string name="move_to_group">移动到分组</string>
     <string name="move_to_group_none">移出分组</string>
+    <string name="shader_smoke_title">着色器冒烟测试</string>
+    <string name="shader_smoke_entry">检查 AGSL / 玻璃库在当前设备是否可用</string>
+    <string name="shader_smoke_env">系统 API：%1$s</string>
+    <string name="shader_smoke_preview">预览（竖条为背景，中间是折射玻璃）</string>
+    <string name="shader_smoke_enable">显示玻璃卡片</string>
+    <string name="shader_smoke_enable_summary">关闭后只看到背景竖条</string>
+    <string name="shader_smoke_uniform">切换 uniform 名称</string>
+    <string name="shader_smoke_backdrop">Backdrop 实跑演示（能看出模糊即库可用）</string>
+    <string name="shader_smoke_note">若玻璃卡片区域全黑：说明 uniform 名与效果输入不匹配（真实实现里必须叫 content）。若编译失败：把上面的报错发我。</string>
 </resources>

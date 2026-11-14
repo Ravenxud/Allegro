@@ -1,3 +1,43 @@
+# 0.33.0-beta（P0：玻璃基座）
+
+不是功能版，是**玻璃材质方案的第一步（P0）**：把环境和依赖打通，并给你一个可自测的冒烟页。
+
+## 变更
+
+- **设备基线抬到 `minSdk 33`（Android 13）/ `targetSdk 36`（Android 16）**
+  ⚠️ Android 12 及以下**装不上**了；`targetSdk` 从 37 回落到 36，升 37 另开一个 PR
+- 清理 3 处因 minSdk 抬升而恒真的版本分支（safeBrowsing / deleteOrigin / 通知权限）
+- 新增依赖（坐标与包名不同，注意）：
+  - `io.github.kyant0:backdrop:2.0.1` —— 包名是 **`com.kyant.backdrop`**
+  - `androidx.profileinstaller:1.4.1`
+  - `androidx.metrics:metrics-performance:1.0.0`（JankStats，后续验收用）
+- R8 保留规则：`com.kyant.backdrop.**` / `com.kyant.shapes.**`
+- **新增「着色器冒烟测试」页**：设置 → 诊断 → 着色器冒烟测试
+
+## 冒烟页要看什么
+
+| 项 | 期望 | 不对时说明什么 |
+|---|---|---|
+| AGSL：编译成功 | 绿色 | 红字会给出编译错误 → 这台设备/GPU 不支持该 shader |
+| Backdrop：类已打包 ✓ | 绿色 | 依赖没进包（R8/依赖问题） |
+| 预览：玻璃卡片 | 竖条背景在卡片区域被"吸"向边缘（折射） | 全黑 = `uniform content` 名不匹配 |
+| 切换 uniform 名称 | 切成 `contentX` 后应**全黑** | 不黑说明我对绑定关系的理解要修正 |
+| Backdrop 演示 | 红竖条被模糊成一片柔光 | 无变化 = 库未生效 |
+
+## 体积变化（预期内）
+
+debug 13MB → **34MB**，release 1.9MB → **3.5MB**。
+原因：`minSdk ≥ 28` 后 AGP 把 dex **改为不压缩存储**（安装更快、可 mmap），叠加新依赖。
+想压回去可开 `packaging { dex { useLegacyPackaging = true } }`，但会失去安装/启动收益。
+
+## 请验
+
+1. 装得上（Android 13+）
+2. 设置 → 诊断 → 着色器冒烟测试 → 看那 5 行状态与两个预览
+3. 把这一页**截图**发我（尤其红字部分，如果有）
+
+---
+
 # 0.32.1-beta
 
 修 0.32.0 「标签分组 → 创建」点了没反应。

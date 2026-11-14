@@ -113,10 +113,8 @@ class TabWebView @JvmOverloads constructor(
             // 离线页是 files/offline 下的本地 HTML，需要 file:// 访问；
             // 只开 allowFileAccess，不开 allowFileAccessFromFileURLs（避免本地页跨域读文件）
             allowFileAccess = true
-            // 安全浏览（与系统 WebView 联动）
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                safeBrowsingEnabled = true
-            }
+            // 安全浏览（与系统 WebView 联动）；minSdk 33 起无条件可用
+            safeBrowsingEnabled = true
         }
 
         isFocusable = true

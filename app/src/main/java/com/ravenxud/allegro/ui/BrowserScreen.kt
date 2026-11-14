@@ -79,6 +79,7 @@ import com.ravenxud.allegro.ui.screens.HistoryScreen
 import com.ravenxud.allegro.ui.screens.OfflinePagesScreen
 import com.ravenxud.allegro.ui.screens.PrivacyReportScreen
 import com.ravenxud.allegro.ui.screens.SiteRulesIo
+import com.ravenxud.allegro.ui.screens.ShaderSmokeScreen
 import com.ravenxud.allegro.ui.screens.TabGroupsScreen
 import com.ravenxud.allegro.ui.screens.SiteRulesScreen
 import com.ravenxud.allegro.ui.screens.SiteSettingsScreen
@@ -668,6 +669,7 @@ fun BrowserScreen(
                         sync = com.ravenxud.allegro.di.ServiceLocator.syncRepository,
                         onBack = back,
                     )
+                    SecondaryScreen.SHADER_SMOKE -> ShaderSmokeScreen(onBack = back)
                     SecondaryScreen.GROUPS -> TabGroupsScreen(
                         controller = controller,
                         onBack = back,
@@ -736,6 +738,7 @@ fun BrowserScreen(
                         onBack = back,
                         onOpenSync = { screen = SecondaryScreen.SYNC },
                         onOpenSiteRules = { screen = SecondaryScreen.SITE_RULES },
+                        onOpenShaderSmoke = { screen = SecondaryScreen.SHADER_SMOKE },
                         onClearData = {
                             scope.launch {
                                 history.clear()

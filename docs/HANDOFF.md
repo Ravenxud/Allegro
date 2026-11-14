@@ -1,7 +1,8 @@
 # 交接说明（给下一个 AI / 开发者）
 
 > 读完这一份就能接手开发。项目：**Allegro**（代码内部名 SimpleBrowser）—— 极简 Android 浏览器。
-> 最后更新：0.32.1-beta（versionCode 73）
+> 最后更新：0.33.0-beta（versionCode 74）
+> 设备基线：**minSdk 33 / targetSdk 36**（AGSL 与玻璃材质所需）
 > 数据库版本：**v3**（tabs.groupId + tab_groups 表）
 > 桌面版模式 v2 已落地：主文档代理（见 docs/DESKTOP_MODE.md）
 > 包名已改为 `com.ravenxud.allegro`（与旧包不兼容，需卸载重装）

@@ -10,6 +10,9 @@ room = "2.8.5"
 coroutines = "1.11.0"
 junit = "4.13.2"
 okhttp = "4.12.0"
+backdrop = "2.0.1"
+profileinstaller = "1.4.1"
+metrics = "1.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -23,6 +26,9 @@ room-compiler = { group = "androidx.room", name = "room-compiler", version.ref =
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+backdrop = { group = "io.github.kyant0", name = "backdrop", version.ref = "backdrop" }
+androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
+androidx-metrics-performance = { group = "androidx.metrics", name = "metrics-performance", version.ref = "metrics" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

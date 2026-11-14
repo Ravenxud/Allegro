@@ -55,6 +55,7 @@ fun SettingsScreen(
     onClearData: () -> Unit,
     onOpenSync: () -> Unit = {},
     onOpenSiteRules: () -> Unit = {},
+    onOpenShaderSmoke: () -> Unit = {},
 ) {
     val theme by settings.themeMode.collectAsState()
     val engineId by settings.searchEngineId.collectAsState()
@@ -289,6 +290,12 @@ fun SettingsScreen(
 
             SectionTitle(stringResource(R.string.settings_diag_section))
             PreferenceCard {
+                ArrowPreference(
+                    title = stringResource(R.string.shader_smoke_title),
+                    summary = stringResource(R.string.shader_smoke_entry),
+                    onClick = onOpenShaderSmoke,
+                )
+                ComponentDivider()
                 ArrowPreference(
                     title = stringResource(R.string.settings_diag_log),
                     summary = stringResource(R.string.settings_diag_log_summary),

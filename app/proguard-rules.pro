@@ -38,6 +38,14 @@
 -dontwarn org.bouncycastle.**
 -dontwarn org.openjsse.**
 
+# Backdrop（玻璃库）：类名被 R8 改掉后，冒烟页的 Class.forName 与 AGSL 相关反射会失效
+-keep class com.kyant.backdrop.** { *; }
+-keep class io.github.kyant0.** { *; }
+
+# 玻璃材质库（AGSL shader 字符串 + Compose 运行时反射）
+-keep class com.kyant.backdrop.** { *; }
+-keep class com.kyant.shapes.** { *; }
+
 # 保留行号，线上堆栈才有意义
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile

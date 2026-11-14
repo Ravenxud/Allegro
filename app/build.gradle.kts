@@ -20,11 +20,13 @@ android {
     defaultConfig {
 
         applicationId = "com.ravenxud.allegro"
-        minSdk = 26
-        targetSdk = 37
+        // 0.33 起：玻璃材质依赖 AGSL（RuntimeShader，API 33），放弃 Android 12 及以下
+        minSdk = 33
+        // 回落一版：Android 16 的行为变更有公开资料可回归；升 37 作为后续独立任务
+        targetSdk = 36
         // 编译测试阶段：版本号统一带 beta 后缀（见 README「版本约定」）
-        versionCode = 73
-        versionName = "0.32.1-beta"
+        versionCode = 74
+        versionName = "0.33.0-beta"
     }
 
     signingConfigs {
@@ -80,6 +82,9 @@ dependencies {
 
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.okhttp)
+    implementation(libs.backdrop)
+    implementation(libs.androidx.profileinstaller)
+    implementation(libs.androidx.metrics.performance)
     testImplementation(libs.junit)
 }
 

@@ -66,6 +66,10 @@ androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profi
 androidx-metrics = { group = "androidx.metrics", name = "metrics-performance", version.ref = "metrics" }
 ```
 
+> ⚠️ **包名与坐标不是一回事**（P0 实测）：Maven 坐标是 `io.github.kyant0:backdrop`，
+> 但 Kotlin 包名是 **`com.kyant.backdrop.*`**（`Backdrop` / `LayerBackdrop` / `drawBackdrop` / `blur` / `lens` / `vibrancy`）。
+> 文档里所有 `import io.github.kyant0.backdrop.*` 的写法都是错的。
+
 **不引入**：Haze（与 Backdrop 功能重叠且会打架）、Navigation Compose（本文 §0-6）、navigationevent（现有回调已够）、materialkolor（Maven 上未查到稳定坐标）、Material3。
 
 R8：`app/proguard-rules.pro` 追加
@@ -194,6 +198,18 @@ SharedTransitionLayout {
 6. **回滚**：`SettingsRepository` 隐藏 key `glass_enabled=false` → 全站 `Off`；外观页提供 High/Medium/Off。
 
 ---
+
+## 8.5 P0 实测记录（已完成）
+
+| 项 | 结果 |
+|---|---|
+| minSdk 33 / targetSdk 36 | ✅ 生效，manifest 已核对 |
+| 依赖解析 | ✅ `backdrop 2.0.1`（`backdrop-android` 变体）、`profileinstaller 1.4.1`、`metrics-performance 1.0.0` |
+| Backdrop 真实 API | `rememberLayerBackdrop(GraphicsLayer) { drawRect; drawContent }`、`Modifier.layerBackdrop(bd)`、`Modifier.drawBackdrop(bd, shape = {…}, effects = { blur(px); vibrancy() })`、`lens(h, amount, depthEffect, chromaticAberration)` |
+| 包名 | **`com.kyant.backdrop`**（不是 `io.github.kyant0.backdrop`） |
+| lint / 单测 / release 打包 | ✅ 全绿 |
+| 体积变化 | debug 13MB → **34MB**，release 1.9MB → **3.5MB**；原因：minSdk ≥ 28 后 **dex 改为不压缩存储**（安装更快、可 mmap），叠加新依赖 |
+| 待真机验证 | AGSL 是否能编译、Backdrop 是否出模糊（冒烟页：设置 → 诊断 → 着色器冒烟测试） |
 
 ## 9. 落地步骤（P0–P6）
 

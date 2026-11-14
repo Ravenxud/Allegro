@@ -913,9 +913,7 @@ class WebViewBrowserController(
                 }
             }
             cookieManager.flush()
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                android.webkit.WebStorage.getInstance().deleteOrigin(origin)
-            }
+            android.webkit.WebStorage.getInstance().deleteOrigin(origin)
         }
         Toast.makeText(context, R.string.site_data_cleared, Toast.LENGTH_SHORT).show()
     }
