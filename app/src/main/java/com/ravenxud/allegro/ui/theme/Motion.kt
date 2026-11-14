@@ -62,6 +62,22 @@ object Motion {
             spring(dampingRatio = 1f, stiffness = 520f)
     }
 
+    /** 列表增删移位的弹簧（Luna 的 Cards 曲线）。 */
+    object Lists {
+        val Placement: FiniteAnimationSpec<Float> =
+            spring(dampingRatio = 0.9f, stiffness = 320f)
+
+        /** 增删淡入淡出时长。 */
+        const val FADE_MS = 180
+    }
+
+    /** 按压反馈强度（0.96 缩小 + 0.9 透明）。 */
+    object Press {
+        const val SCALE = 0.96f
+        const val ALPHA = 0.9f
+        const val DURATION = Duration.Instant
+    }
+
     /** 跟手类场景用弹簧（可打断）。 */
     object Springs {
         val Snappy: FiniteAnimationSpec<Float> = spring(dampingRatio = 0.85f, stiffness = 380f)

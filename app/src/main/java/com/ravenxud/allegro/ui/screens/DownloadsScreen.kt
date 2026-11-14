@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import com.ravenxud.allegro.ui.components.pressScale
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -169,7 +170,9 @@ private fun DownloadCard(
 
     Card(
         onClick = { if (item.status == DownloadStatus.DONE) onOpen() },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .pressScale(),
     ) {
         Column(Modifier.padding(horizontal = Spacing.l, vertical = Spacing.m)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

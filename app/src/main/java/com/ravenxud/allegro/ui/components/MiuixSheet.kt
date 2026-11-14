@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import com.ravenxud.allegro.ui.glass.appGlass
 import com.ravenxud.allegro.ui.theme.Motion
 import top.yukonga.miuix.kmp.basic.Icon
+import com.ravenxud.allegro.ui.components.pressScale
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.basic.Surface
@@ -421,6 +422,7 @@ private fun SheetGridCell(item: SheetItem, modifier: Modifier) {
         modifier = modifier
             .height(SHEET_CELL_HEIGHT)
             .clip(RoundedCornerShape(18.dp))
+            .pressScale()
             .clickable(onClick = item.onClick),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import com.ravenxud.allegro.ui.components.pressScale
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -102,12 +103,14 @@ fun BookmarksScreen(
                     verticalArrangement = Arrangement.spacedBy(Spacing.s),
                 ) {
                     items(filtered, key = { it.url }) { bookmark ->
-                        BookmarkRow(
-                            bookmark = bookmark,
-                            folderName = folders.firstOrNull { it.id == bookmark.folderId }?.name,
-                            onOpen = { onOpen(bookmark.url) },
-                            onLongPress = { menuTarget = bookmark },
-                        )
+                        androidx.compose.foundation.layout.Box(Modifier.animateItem()) {
+                            BookmarkRow(
+                                bookmark = bookmark,
+                                folderName = folders.firstOrNull { it.id == bookmark.folderId }?.name,
+                                onOpen = { onOpen(bookmark.url) },
+                                onLongPress = { menuTarget = bookmark },
+                            )
+                        }
                     }
                     item { Spacer(Modifier.height(Spacing.l)) }
                 }
@@ -205,7 +208,9 @@ private fun BookmarkRow(
     Card(
         onClick = onOpen,
         onLongPress = onLongPress,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .pressScale(),
     ) {
         Row(
             modifier = Modifier.padding(start = Spacing.l, end = Spacing.m, top = Spacing.m, bottom = Spacing.m),

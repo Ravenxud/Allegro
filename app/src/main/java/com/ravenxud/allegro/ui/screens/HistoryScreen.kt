@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import com.ravenxud.allegro.ui.components.pressScale
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -86,11 +87,13 @@ fun HistoryScreen(
                         )
                     }
                     items(list, key = { it.url }) { entry ->
-                        HistoryRow(
-                            entry = entry,
-                            onOpen = { onOpen(entry.url) },
-                            onDelete = { scope.launch { repository.delete(entry.url) } },
-                        )
+                        androidx.compose.foundation.layout.Box(Modifier.animateItem()) {
+                            HistoryRow(
+                                entry = entry,
+                                onOpen = { onOpen(entry.url) },
+                                onDelete = { scope.launch { repository.delete(entry.url) } },
+                            )
+                        }
                     }
                 }
                 item(key = "bottom") { Spacer(Modifier.height(Spacing.l)) }
@@ -101,7 +104,12 @@ fun HistoryScreen(
 
 @Composable
 private fun HistoryRow(entry: HistoryEntity, onOpen: () -> Unit, onDelete: () -> Unit) {
-    Card(onClick = onOpen, modifier = Modifier.fillMaxWidth()) {
+    Card(
+        onClick = onOpen,
+        modifier = Modifier
+            .fillMaxWidth()
+            .pressScale(),
+    ) {
         Row(
             modifier = Modifier.padding(start = Spacing.l, end = Spacing.s, top = Spacing.m, bottom = Spacing.m),
             verticalAlignment = Alignment.CenterVertically,

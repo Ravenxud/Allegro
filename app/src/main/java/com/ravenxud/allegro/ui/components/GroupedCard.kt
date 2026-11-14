@@ -75,6 +75,7 @@ fun SettingRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = Dimens.RowHeight)
+            .pressScale()
             .clickable(onClick = onClick)
             .padding(start = Dimens.RowStart, end = Dimens.RowEnd, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -133,6 +134,7 @@ fun CircleIconButton(
             .size(size)
             .clip(CircleShape)
             .background(MiuixTheme.colorScheme.surface.copy(alpha = 0.92f))
+            .pressScale()
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
@@ -152,6 +154,7 @@ fun PillButton(
             .heightIn(min = Dimens.PillHeight)
             .clip(Shapes.Capsule)
             .background(MiuixTheme.colorScheme.surface.copy(alpha = 0.92f))
+            .pressScale()
             .clickable(onClick = onClick)
             .padding(horizontal = 18.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
