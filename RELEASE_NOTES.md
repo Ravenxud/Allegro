@@ -1,3 +1,36 @@
+# 0.52.0-beta
+
+路线 A 的第一批：**从 KernelSU Style UI Kit 引入两个组件**（保留 GPL-3.0 出处）。
+
+## 新增（`ui/components/vendor/`）
+
+| 文件 | 来源 | 改动 | 用途 |
+|---|---|---|---|
+| `ListPopupDefaults.kt` | `ui/component/MenuPositionProvider.kt` | **仅改包名**，逻辑未动 | 弹出层锚定定位 + 窗口边界钳制（我们 0.43 里打算手写的那块） |
+| `PercentInputDialog.kt` | `ui/component/miuix/ScaleDialog.kt` | 去掉上游 `R.string` 依赖 → `title` / `range` 参数化；范围可配 | 百分比输入（页面缩放、字号等） |
+
+两个文件都带完整出处头注释（上游仓库 + 原始路径 + 修改说明），并已登记在
+`ThirdPartyRegistry`，设置 →「开源许可」→「直接复用了以下项目的源码」可见。
+
+## 已确认的兼容性
+
+核对 Miuix 0.9.4 的 AAR：`PopupPositionProvider`、`OverlayDialog` 均存在，
+因此这两个组件可以**零改动依赖**直接用。
+
+## 说明
+
+本版只做"引入 + 编译通过"，**还没有接到界面上**。
+下一版把 `ListPopupDefaults` 接到标签页浮动菜单（0.43 遗留项），
+把 `PercentInputDialog` 接到「页面缩放」设置。
+
+## 请验
+
+1. 设置 → 关于 → 开源许可：**「直接复用了以下项目的源码」**里能看到 KernelSU Style UI Kit 与 KernelSU
+2. 打开该页不崩、条目可点击跳转
+3. 其余功能与上一版一致（本版未改界面）
+
+---
+
 # 0.51.0-beta
 
 引入第三方前置工作：**合规基础设施**（为后续接入 KernelSU Style UI Kit 等组件铺路）。
