@@ -16,6 +16,8 @@ import com.example.simplebrowser.R
 import com.example.simplebrowser.data.entity.ClosedTabEntity
 import com.example.simplebrowser.adblock.AdBlockRepository
 import com.example.simplebrowser.adblock.CosmeticInjector
+import com.example.simplebrowser.reader.OfflinePageStore
+import com.example.simplebrowser.reader.ReaderExtractor
 import com.example.simplebrowser.adblock.FilterEngine
 import com.example.simplebrowser.data.entity.DownloadEntity
 import com.example.simplebrowser.data.entity.TabEntity
@@ -76,6 +78,8 @@ class WebViewBrowserController(
     private val pool = WebViewPool(context, this)
     private val jsInjector = JsInjector(JsRegistry.default())
     private val menuActions = MenuActions(context)
+    private val offlineStore = OfflinePageStore(context)
+    private var readerCallback: ((String?) -> Unit)? = null
     private var lastClosed: ClosedTabEntity? = null
 
     /** 从数据库读出、尚未挂到 WebView 上的 saveState 字节。 */
@@ -502,6 +506,80 @@ class WebViewBrowserController(
 
     /** 已成功收到滚动上报的标签；用于"上报超时 → 禁用下拉"的兜底。 */
     private val scrollReported = mutableSetOf<String>()
+
+    override fun openReader(onReady: (String?) -> Unit) {
+        val view = activeView()
+        if (view == null) { onReady(null); return }
+        readerCallback = onReady
+        // 先注入 Readability 本体（90KB），再注入提取逻辑，避免单条脚本过大
+        val library = ReaderExtractor.readabilityScript()
+        if (library.isBlank()) { onReady(null); return }
+        val extractor = ReaderExtractor.script()
+        view.evaluateJavascript(library, null)
+        view.postDelayed({ view.evaluateJavascript(extractor, null) }, 60)
+        scope.launch {
+            kotlinx.coroutines.delay(12000)
+            // 超时兜底：避免一直等回调（Readability 90KB 注入在慢页面可能超过 4 秒）
+            readerCallback?.let { cb -> readerCallback = null; cb(null) }
+        }
+    }
+
+    override fun readPageText(onReady: (text: String) -> Unit) {
+        val view = activeView() ?: return onReady("")
+        val script = """
+            (function(){
+              if (window.top !== window) return '';
+              var main = document.querySelector('article,main,[role=main]') || document.body;
+              var text = main ? main.innerText : '';
+              text = text.replace(/\s+
+/g, '
+').trim();
+              if (text.length > 20000) text = text.slice(0, 20000);
+              if (window.__sbPageText) window.__sbPageText(window.__sbBridgeSecret || '', text);
+            })();
+        """.trimIndent()
+        pageTextCallback = onReady
+        view.evaluateJavascript(script, null)
+    }
+
+    override fun saveOfflinePage() {
+        val view = activeView() ?: return
+        val tab = _state.value.activeTab ?: return
+        val id = java.util.UUID.randomUUID().toString()
+        val file = offlineStore.fileFor(id)
+        runCatching {
+            view.saveWebArchive(file.absolutePath)
+            offlineStore.save(tab.title, tab.url, file)
+            Toast.makeText(context, R.string.offline_saved, Toast.LENGTH_SHORT).show()
+        }.onFailure {
+            Toast.makeText(context, R.string.offline_save_failed, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun offlineEntries() = offlineStore.load()
+
+    override fun deleteOfflineEntry(id: String) {
+        offlineStore.load().firstOrNull { it.id == id }?.let { offlineStore.delete(it) }
+    }
+
+    override fun sharePage() {
+        val tab = _state.value.activeTab ?: return
+        share(tab.url)
+    }
+
+    private var pageTextCallback: ((String) -> Unit)? = null
+
+    override fun onPageText(view: TabWebView, text: String) {
+        val cb = pageTextCallback ?: return
+        pageTextCallback = null
+        cb(text)
+    }
+
+    override fun onReaderExtracted(view: TabWebView, json: String) {
+        val cb = readerCallback ?: return
+        readerCallback = null
+        if (json.isBlank()) cb(null) else cb(ReaderExtractor.readerHtml(json))
+    }
 
     override fun onLongPress(view: TabWebView, hit: WebView.HitTestResult) {
         val extra = hit.extra ?: return

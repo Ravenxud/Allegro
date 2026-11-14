@@ -76,7 +76,10 @@ import com.example.simplebrowser.data.repo.HistoryRepository
 import com.example.simplebrowser.ui.screens.BookmarksScreen
 import com.example.simplebrowser.ui.screens.DownloadsScreen
 import com.example.simplebrowser.ui.screens.HistoryScreen
+import com.example.simplebrowser.ui.screens.OfflinePagesScreen
+import com.example.simplebrowser.ui.screens.ReaderScreen
 import com.example.simplebrowser.ui.screens.SettingsScreen
+import com.example.simplebrowser.ui.screens.UserScriptsScreen
 import com.example.simplebrowser.ui.theme.resolveDark
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -135,6 +138,9 @@ fun BrowserScreen(
     var showAppMenu by remember { mutableStateOf(false) }
     var screen by remember { mutableStateOf(SecondaryScreen.BROWSER) }
     var lastMenu by remember { mutableStateOf<MenuRequest?>(null) }
+    var readerHtml by remember { mutableStateOf<String?>(null) }
+    var readerTitle by remember { mutableStateOf("") }
+    val readAloud = remember { com.example.simplebrowser.reader.ReadAloudController(context) }
     var lastScreen by remember { mutableStateOf(SecondaryScreen.BROWSER) }
     LaunchedEffect(screen) { if (screen != SecondaryScreen.BROWSER) lastScreen = screen }
     LaunchedEffect(menu) { if (menu != null) lastMenu = menu }
@@ -456,12 +462,64 @@ fun BrowserScreen(
                     },
                     onCycleTheme = onCycleTheme,
                     onTogglePageDark = { controller.togglePageDark() },
+                    onReader = {
+                        showAppMenu = false
+                        controller.openReader { html ->
+                            if (html == null) {
+                                Toast.makeText(context, R.string.reader_not_article, Toast.LENGTH_SHORT).show()
+                            } else {
+                                readerTitle = controller.state.value.activeTab?.title.orEmpty()
+                                readerHtml = html
+                            }
+                        }
+                    },
+                    onReadAloud = {
+                        showAppMenu = false
+                        controller.readPageText { text ->
+                            if (text.isBlank()) {
+                                Toast.makeText(context, R.string.reader_not_article, Toast.LENGTH_SHORT).show()
+                            } else {
+                                readAloud.init()
+                                readAloud.speak(text)
+                            }
+                        }
+                    },
+                    onSaveOffline = {
+                        showAppMenu = false
+                        controller.saveOfflinePage()
+                    },
+                    onSharePage = {
+                        showAppMenu = false
+                        controller.sharePage()
+                    },
+                    onOfflinePages = {
+                        showAppMenu = false
+                        screen = SecondaryScreen.OFFLINE
+                    },
+                    onUserScripts = {
+                        showAppMenu = false
+                        screen = SecondaryScreen.USERSCRIPTS
+                    },
                     adBlockPaused = controller.isAdBlockPausedForCurrentSite(),
                     onToggleAdBlockSite = { controller.toggleAdBlockForCurrentSite() },
                 )
             }
 
         }
+    }
+
+    val html = readerHtml
+    if (html != null) {
+        ReaderScreen(
+            html = html,
+            title = readerTitle,
+            onBack = { readerHtml = null },
+            onSpeak = {
+                controller.readPageText { text -> readAloud.speak(text) }
+            },
+            onStopSpeak = { readAloud.stop() },
+        )
+        return
     }
 
     TabSwitcherOverlay(
@@ -504,6 +562,15 @@ fun BrowserScreen(
                     )
                     SecondaryScreen.HISTORY -> HistoryScreen(history, openAndBack, back)
                     SecondaryScreen.DOWNLOADS -> DownloadsScreen(downloads, downloadCenter, back)
+                    SecondaryScreen.USERSCRIPTS -> UserScriptsScreen(
+                        store = com.example.simplebrowser.di.ServiceLocator.userScriptStore,
+                        onBack = back,
+                    )
+                    SecondaryScreen.OFFLINE -> OfflinePagesScreen(
+                        load = { controller.offlineEntries() },
+                        onDelete = { controller.deleteOfflineEntry(it) },
+                        onBack = back,
+                    )
                     SecondaryScreen.SETTINGS -> SettingsScreen(
                         settings = settings,
                         adBlock = adBlock,

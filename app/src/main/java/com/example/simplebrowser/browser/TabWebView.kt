@@ -40,6 +40,10 @@ class TabWebView @JvmOverloads constructor(
         fun onBlobDownload(view: TabWebView, fileName: String, mimeType: String, base64: String)
         fun onScrollState(view: TabWebView, atTop: Boolean, allowPull: Boolean, scrollY: Int)
 
+        fun onReaderExtracted(view: TabWebView, json: String)
+
+        fun onPageText(view: TabWebView, text: String)
+
         fun onBlobTooLarge(view: TabWebView, fileName: String)
     }
 
@@ -113,6 +117,24 @@ class TabWebView @JvmOverloads constructor(
 
     /** 只用于 blob 下载回传，不暴露任何可执行能力。 */
     private inner class JsBridge {
+
+        @JavascriptInterface
+        fun onPageText(secret: String?, text: String?) {
+            if (!com.example.simplebrowser.js.BridgeAuth.isValid(secret)) return
+            post { callbacks.onPageText(this@TabWebView, text.orEmpty()) }
+        }
+
+        @JavascriptInterface
+        fun onReaderResult(secret: String?, json: String?) {
+            if (!com.example.simplebrowser.js.BridgeAuth.isValid(secret)) return
+            post { callbacks.onReaderExtracted(this@TabWebView, json.orEmpty()) }
+        }
+
+        @JavascriptInterface
+        fun onMediaFound(secret: String?, json: String?) {
+            if (!com.example.simplebrowser.js.BridgeAuth.isValid(secret)) return
+            android.util.Log.d("MediaSniffer", json.orEmpty().take(300))
+        }
 
         @JavascriptInterface
         fun onScrollY(secret: String?, atTop: Int, allowPull: Int, y: Int) {

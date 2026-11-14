@@ -19,12 +19,14 @@ class JsRegistry {
     companion object {
         /** 内置模块；后续新增脚本只需在这里 register 一行。 */
         fun default(): JsRegistry = JsRegistry().apply {
+            register(com.example.simplebrowser.js.modules.BridgePreludeModule())
             register(com.example.simplebrowser.js.modules.ViewportModule())
             register(com.example.simplebrowser.js.modules.ScrollStateModule())
             register(com.example.simplebrowser.js.modules.PageDarkModule())
             register(com.example.simplebrowser.js.modules.BlobDownloadModule())
             register(com.example.simplebrowser.js.modules.MediaSnifferModule())
             register(com.example.simplebrowser.js.modules.TopRoomModule())
+            register(com.example.simplebrowser.js.modules.UserScriptModule())
         }
     }
 }

@@ -57,6 +57,9 @@ import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.Folder
 import top.yukonga.miuix.kmp.icon.extended.Home
 import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.icon.extended.Share
+import top.yukonga.miuix.kmp.icon.extended.Play
+import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Theme
 
@@ -94,11 +97,25 @@ fun AppMenu(
     onNavigate: (SecondaryScreen) -> Unit,
     onCycleTheme: () -> Unit,
     onTogglePageDark: () -> Unit,
+    onReader: () -> Unit,
+    onReadAloud: () -> Unit,
+    onSaveOffline: () -> Unit,
+    onSharePage: () -> Unit,
+    onOfflinePages: () -> Unit,
+    onUserScripts: () -> Unit,
     adBlockPaused: Boolean,
     onToggleAdBlockSite: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     MiuixSheet(state = visibleState, onDismiss = onDismiss) {
+        SheetSection(stringResource(R.string.sheet_section_page))
+        SheetRow(MiuixIcons.Search, stringResource(R.string.menu_reader), onClick = onReader)
+        SheetRow(MiuixIcons.Play, stringResource(R.string.menu_read_aloud), onClick = onReadAloud)
+        SheetRow(MiuixIcons.Download, stringResource(R.string.menu_save_offline), onClick = onSaveOffline)
+        SheetRow(MiuixIcons.Share, stringResource(R.string.menu_share_page), onClick = onSharePage)
+        SheetRow(MiuixIcons.Folder, stringResource(R.string.menu_offline_pages), onClick = onOfflinePages)
+        SheetRow(MiuixIcons.Settings, stringResource(R.string.userscript_title), onClick = onUserScripts)
+
         SheetSection(stringResource(R.string.sheet_section_common))
         SheetRow(MiuixIcons.Home, stringResource(R.string.menu_home), onClick = onHome)
         SheetRow(MiuixIcons.Favorites, stringResource(R.string.app_menu_bookmark), onClick = onBookmark)

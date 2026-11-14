@@ -68,6 +68,23 @@ interface BrowserController {
     /** 当前标签的页面是否已在顶部（用于决定下拉刷新是否接管手势）。 */
     fun isActiveTabAtTop(): Boolean
 
+    /** 提取当前页正文并生成阅读页；失败回调 null。 */
+    fun openReader(onReady: (html: String?) -> Unit)
+
+    /** 读取当前页纯文本（用于朗读）。 */
+    fun readPageText(onReady: (text: String) -> Unit)
+
+    /** 保存当前页为离线 MHTML。 */
+    /** 离线页列表（阅读/离线页界面用）。 */
+    fun offlineEntries(): List<com.example.simplebrowser.reader.OfflinePageStore.Entry>
+
+    fun deleteOfflineEntry(id: String)
+
+    fun saveOfflinePage()
+
+    /** 分享当前页。 */
+    fun sharePage()
+
     // 长按菜单
     fun dismissMenu()
     fun copyToClipboard(text: String)
