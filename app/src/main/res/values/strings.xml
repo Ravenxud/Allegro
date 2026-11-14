@@ -289,5 +289,7 @@
     <string name="shader_smoke_enable_summary">关闭后只看到背景竖条</string>
     <string name="shader_smoke_uniform">切换 uniform 名称</string>
     <string name="shader_smoke_backdrop">Backdrop 实跑演示（能看出模糊即库可用）</string>
+    <string name="shader_smoke_backdrop_switch">启用 Backdrop 演示</string>
+    <string name="shader_smoke_backdrop_summary">默认关闭；若打开后闪退，说明库在这台设备上有问题</string>
     <string name="shader_smoke_note">若玻璃卡片区域全黑：说明 uniform 名与效果输入不匹配（真实实现里必须叫 content）。若编译失败：把上面的报错发我。</string>
 </resources>

@@ -59,10 +59,13 @@ fun ShaderSmokeScreen(onBack: () -> Unit) {
     var compileOk by remember { mutableStateOf<Boolean?>(null) }
     var compileError by remember { mutableStateOf("") }
     var uniformName by remember { mutableStateOf("content") }
-    var showGlass by remember { mutableStateOf(true) }
+    var showGlass by remember { mutableStateOf(false) }
     var backdropFound by remember { mutableStateOf(false) }
+    // Backdrop 演示默认关闭：一旦库在某个机型上崩，也不能连带整个页面不能用
+    var showBackdropDemo by remember { mutableStateOf(false) }
     var gpu by remember { mutableStateOf("未知") }
 
+    DiagLog.log("smoke-enter", "sdk=${Build.VERSION.SDK_INT}")
     val density = LocalDensity.current
     // 卡片固定 240dp x 120dp，转成 px 供 shader 计算边缘折射
     val sizePx = remember(density) {
@@ -162,20 +165,31 @@ fun ShaderSmokeScreen(onBack: () -> Unit) {
                                 renderEffect = runCatching {
                                     RenderEffect.createRuntimeShaderEffect(shader, uniformName)
                                 }.getOrNull()?.asComposeRenderEffect()
-                            }
-                            .background(Color.White.copy(alpha = 0.10f), RoundedCornerShape(28.dp)),
-                    )
+                            },
+                    ) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(120.dp)
+                                .background(Color.White.copy(alpha = 0.10f), RoundedCornerShape(28.dp)),
+                        )
+                    }
                 }
             }
 
             Spacer(Modifier.height(Spacing.xs))
-            Text(
-                stringResource(R.string.shader_smoke_backdrop),
-                fontSize = 12.sp,
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                modifier = Modifier.padding(start = Spacing.xs, bottom = Spacing.s),
-            )
-            BackdropDemo()
+            Card(modifier = Modifier.fillMaxWidth()) {
+                SwitchPreference(
+                    checked = showBackdropDemo,
+                    onCheckedChange = { showBackdropDemo = it },
+                    title = stringResource(R.string.shader_smoke_backdrop_switch),
+                    summary = stringResource(R.string.shader_smoke_backdrop_summary),
+                )
+            }
+            if (showBackdropDemo) {
+                Spacer(Modifier.height(Spacing.s))
+                BackdropDemo()
+            }
 
             Spacer(Modifier.height(Spacing.m))
             Card(modifier = Modifier.fillMaxWidth()) {
@@ -218,16 +232,18 @@ private fun BackdropDemo() {
         drawRect(Color(0xFFEDEDED))
         drawContent()
     }
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(140.dp)
-            .then(Modifier.layerBackdrop(backdrop)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            repeat(6) {
-                Box(Modifier.size(18.dp, 140.dp).background(Color(0xFFFF6B6B)))
+    // 关键：捕获层（背景）与玻璃层必须是兄弟；玻璃放进捕获容器里会自己抓自己（递归/崩溃）
+    Box(modifier = Modifier.fillMaxWidth().height(140.dp), contentAlignment = Alignment.Center) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(140.dp)
+                .layerBackdrop(backdrop),
+        ) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                repeat(6) {
+                    Box(Modifier.size(18.dp, 140.dp).background(Color(0xFFFF6B6B)))
+                }
             }
         }
         Box(
