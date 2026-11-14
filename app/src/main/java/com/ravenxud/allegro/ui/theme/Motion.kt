@@ -51,6 +51,17 @@ object Motion {
         val Overshoot: ComposeEasing = CubicBezierEasing(0.64f, 1.56f, 0.34f, 1f)
     }
 
+    /**
+     * Luna 标签页弹簧（取自其 tab switcher 常量：spring(0.9, 320) / spring(1.0, 520)）。
+     * Cards 用于卡片进场与落位，Snap 用于关闭/吸附这类"要更利落"的动作。
+     */
+    object Tabs {
+        val Cards: FiniteAnimationSpec<Float> =
+            spring(dampingRatio = 0.9f, stiffness = 320f)
+        val Snap: FiniteAnimationSpec<Float> =
+            spring(dampingRatio = 1f, stiffness = 520f)
+    }
+
     /** 跟手类场景用弹簧（可打断）。 */
     object Springs {
         val Snappy: FiniteAnimationSpec<Float> = spring(dampingRatio = 0.85f, stiffness = 380f)

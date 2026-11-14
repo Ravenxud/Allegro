@@ -161,7 +161,12 @@ fun TabSwitcherOverlay(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
-                    .graphicsLayer { alpha = 1f - 0.25f * p }
+                    .graphicsLayer {
+                        alpha = 1f - 0.15f * p
+                        val bs = 0.98f + 0.02f * p
+                        scaleX = bs
+                        scaleY = bs
+                    }
                     .blur(24.dp),
             )
         }
@@ -172,7 +177,8 @@ fun TabSwitcherOverlay(
                 .fillMaxSize()
                 .background(
                     Color.Black.copy(
-                        alpha = 0.12f * p *
+                        // Luna 的遮罩是 32%，我们的旧值 12% 偏"没发生什么"
+                        alpha = 0.32f * p *
                             (1f - (dragOffset / screenHeight.coerceAtLeast(1f)).coerceIn(0f, 0.7f))
                     )
                 )
@@ -195,22 +201,24 @@ fun TabSwitcherOverlay(
                         },
                         onDragEnd = {
                             if (dragOffset > with(density) { 96.dp.toPx() }) onDismiss()
-                            else scope.launch { animate(dragOffset, 0f) { value, _ -> dragOffset = value } }
+                            else scope.launch { animate(dragOffset, 0f, animationSpec = com.ravenxud.allegro.ui.theme.Motion.Tabs.Snap) { v, _ -> dragOffset = v } }
                         },
                         onDragCancel = {
-                            scope.launch { animate(dragOffset, 0f) { value, _ -> dragOffset = value } }
+                            scope.launch { animate(dragOffset, 0f, animationSpec = com.ravenxud.allegro.ui.theme.Motion.Tabs.Snap) { v, _ -> dragOffset = v } }
                         },
                     )
                 }
                 .graphicsLayer {
                     alpha = p
-                    val scale = if (simplify) 1f else (0.82f + 0.18f * p)
+                    // 幅度从 0.82 收到 0.92：整体只做轻微"浮起"，细部交给逐卡错峰
+                    val scale = if (simplify) 1f else (0.92f + 0.08f * p)
                     scaleX = scale
                     scaleY = scale
                     translationY = dragOffset
                 },
         ) {
             TabGrid(
+                entrance = p,
                 state = state,
                 gridState = gridState,
                 cardWidthPx = cardWidthPx,
@@ -320,6 +328,7 @@ private fun lerpRect(start: Rect, end: Rect, t: Float): Rect = Rect(
 
 @Composable
 private fun TabGrid(
+    entrance: Float,
     state: BrowserState,
     gridState: LazyGridState,
     cardWidthPx: Float,
@@ -367,6 +376,9 @@ private fun TabGrid(
                 ) {
                     itemsIndexed(state.tabs, key = { _, it -> it.id }) { index, item ->
                         TabCard(
+                            // 20ms/张的错峰：用入场进度折算，保持可中断、可反向
+                            entrance = ((entrance - index * 0.045f) / 0.55f)
+                                .coerceIn(0f, 1f),
                             tab = item,
                             active = item.id == state.activeTabId,
                             dragging = dragId == item.id,
@@ -444,6 +456,7 @@ private fun TabGrid(
 
 @Composable
 private fun TabCard(
+    entrance: Float,
     tab: TabState,
     active: Boolean,
     dragging: Boolean,
@@ -472,10 +485,12 @@ private fun TabCard(
             .fillMaxWidth()
             .zIndex(if (dragging) 1f else 0f)
             .graphicsLayer {
-                alpha = if (appeared) 1f else 0f
+                // 单卡：0.9 → 1 浮起 + 淡入（错峰由 entrance 提供）
+                val e = entrance
+                alpha = e
                 translationX = dragOffset.x
-                translationY = dragOffset.y
-                val s = if (dragging) 1.04f else 1f
+                translationY = dragOffset.y + (1f - e) * 24f
+                val s = if (dragging) 1.04f else (0.9f + 0.1f * e)
                 scaleX = s
                 scaleY = s
             }
@@ -520,10 +535,10 @@ private fun TabCard(
                         },
                         onDragEnd = {
                             if (offsetX < -dismissWidth * 0.6f) onClose()
-                            else scope.launch { animate(offsetX, 0f) { value, _ -> offsetX = value } }
+                            else scope.launch { animate(offsetX, 0f, animationSpec = com.ravenxud.allegro.ui.theme.Motion.Tabs.Snap) { v, _ -> offsetX = v } }
                         },
                         onDragCancel = {
-                            scope.launch { animate(offsetX, 0f) { value, _ -> offsetX = value } }
+                            scope.launch { animate(offsetX, 0f, animationSpec = com.ravenxud.allegro.ui.theme.Motion.Tabs.Snap) { v, _ -> offsetX = v } }
                         },
                     )
                 },
