@@ -162,12 +162,12 @@ fun TabSwitcherOverlay(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
-                        alpha = 1f - 0.15f * p
-                        val bs = 0.98f + 0.02f * p
+                        // 背景图已预模糊，这里只做透明度/缩放，不再跑 RenderEffect
+                        alpha = 1f - 0.12f * p
+                        val bs = 0.99f + 0.01f * p
                         scaleX = bs
                         scaleY = bs
-                    }
-                    .blur(24.dp),
+                    },
             )
         }
 
@@ -253,10 +253,8 @@ fun TabSwitcherOverlay(
                         this.scaleX = scaleX
                         this.scaleY = scaleY
                         alpha = fade
-                        // 飞行中带一点投影，落位时收掉
-                        shadowElevation = (14f * (1f - e)).dp.toPx()
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(corner)
-                        clip = true
+                        // 固定投影：逐帧改 shadowElevation 会每帧重建阴影，明显掉帧
+                        shadowElevation = 10.dp.toPx()
                     }
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(corner))
                     .size(

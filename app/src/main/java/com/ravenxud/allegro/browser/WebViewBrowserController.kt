@@ -1166,7 +1166,9 @@ class WebViewBrowserController(
         val windowRect = android.graphics.Rect(0, 0, decor.width, decor.height)
         requestCopy(window, windowRect) { bitmap ->
             if (bitmap != null) {
-                onCaptured(scaleDown(bitmap))
+                // 预模糊：480 宽 + 三次方框。面板只需 drawBitmap，
+                // 否则每帧对整屏做 RenderEffect 模糊就是掉帧的来源。
+                onCaptured(blurForSheet(bitmap))
             } else {
                 android.util.Log.e(TAG, "window copy failed")
                 onCaptured(null)

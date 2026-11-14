@@ -274,7 +274,7 @@ fun BrowserScreen(
 
     val tabsTransition = updateTransition(targetState = showTabs, label = "tabsTransition")
     val tabsProgress by tabsTransition.animateFloat(
-        transitionSpec = { spring(dampingRatio = 0.9f, stiffness = 260f) },
+        transitionSpec = { spring(dampingRatio = 1f, stiffness = 180f) },
         label = "tabsProgress",
     ) { if (it) 1f else 0f }
 
