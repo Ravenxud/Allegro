@@ -157,6 +157,7 @@
     <string name="offline_empty">还没有离线页面</string>
     <string name="offline_empty_hint">在菜单里点「保存离线页」即可收藏当前页</string>
     <string name="offline_saved">已保存到离线页面</string>
+    <string name="offline_saved_simple">已保存（简化版：图片/样式可能缺失）</string>
     <string name="offline_save_failed">保存失败</string>
     <string name="sheet_section_page">页面</string>
     <string name="userscript_title">用户脚本</string>

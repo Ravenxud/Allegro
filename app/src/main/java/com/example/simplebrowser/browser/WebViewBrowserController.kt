@@ -65,6 +65,7 @@ class WebViewBrowserController(
         private const val MAX_LIVE_WEBVIEWS = 4
         private const val MAX_RESTORED_TABS = 8
         private const val TAG = "StubCapture"
+        private const val TAG_OFFLINE = "OfflinePage"
         private const val DESKTOP_UA =
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
                 "(KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
@@ -586,32 +587,78 @@ class WebViewBrowserController(
         val tab = _state.value.activeTab ?: return
         val id = UUID.randomUUID().toString()
         val temp = File(context.cacheDir, "offline-$id.mhtml")
-        val archived = runCatching { view.saveWebArchive(temp.absolutePath) }.isSuccess &&
-            temp.exists() && temp.length() > 0
-        if (!archived) {
+        val archived = runCatching { view.saveWebArchive(temp.absolutePath) as Boolean? }.getOrNull() == true
+        android.util.Log.i(
+            TAG_OFFLINE,
+            "saveWebArchive=$archived size=${if (temp.exists()) temp.length() else -1} url=${tab.url}",
+        )
+        if (!archived || !temp.exists() || temp.length() == 0L) {
+            // WebView 自己放弃生成 MHTML（跨域 iframe / 超大页面都可能导致），走 DOM 快照兜底
             runCatching { temp.delete() }
-            Toast.makeText(context, R.string.offline_save_failed, Toast.LENGTH_SHORT).show()
+            saveDomSnapshot(view, tab, id)
             return
         }
+
         Toast.makeText(context, R.string.offline_saving, Toast.LENGTH_SHORT).show()
-        // WebView 存出来的是 MHTML，WebView 自己打不开，必须转成自包含 HTML
         CoroutineScope(Dispatchers.IO).launch {
-            val html = runCatching { MhtmlArchive.toHtml(temp.readBytes()) }.getOrNull()
-            if (html == null) {
-                runCatching { temp.delete() }
-                scope.launch {
-                    Toast.makeText(context, R.string.offline_save_failed, Toast.LENGTH_SHORT).show()
-                }
+            val converted = runCatching { MhtmlArchive.toHtml(temp.readBytes()) }.getOrNull()
+            runCatching { temp.delete() }
+            if (converted == null) {
+                android.util.Log.w(TAG_OFFLINE, "MHTML 解析失败，回退 DOM 快照")
+                view.post { saveDomSnapshot(view, tab, id) }
                 return@launch
             }
-            val target = offlineStore.htmlFileFor(id)
-            runCatching { target.writeText(html.html) }
-            runCatching { temp.delete() }
-            offlineStore.save(tab.title, tab.url, target)
-            scope.launch {
-                Toast.makeText(context, R.string.offline_saved, Toast.LENGTH_SHORT).show()
+            writeOffline(id, tab, converted.html, simple = converted.inlinedParts == 0)
+        }
+    }
+
+    /**
+     * 兜底方案：抓当前 DOM 的 outerHTML。
+     *
+     * 没有 MHTML 的完整资源，但至少"保存离线页"不会直接失败——正文与布局能看，
+     * 外链图片/样式在离线时会缺；界面提示是"简化版"。
+     */
+    private fun saveDomSnapshot(view: TabWebView, tab: TabState, id: String) {
+        val script = "(function(){try{return document.documentElement.outerHTML}catch(e){return ''}})()"
+        view.evaluateJavascript(script) { raw ->
+            val html = runCatching { com.example.simplebrowser.util.MiniJson.parse(raw) as? String }
+                .getOrNull()
+                .orEmpty()
+            if (html.length < 64) {
+                android.util.Log.w(TAG_OFFLINE, "DOM 快照为空（${html.length} 字符）")
+                Toast.makeText(context, R.string.offline_save_failed, Toast.LENGTH_SHORT).show()
+                return@evaluateJavascript
+            }
+            val doc = injectBaseHref(html, tab.url)
+            CoroutineScope(Dispatchers.IO).launch {
+                writeOffline(id, tab, doc, simple = true)
             }
         }
+    }
+
+    /** 给 DOM 快照插入 `<base href>`，让相对路径在离线/在线时都能解析到原站。 */
+    private fun injectBaseHref(html: String, url: String): String {
+        if (url.isBlank()) return html
+        val tag = "<base href=\"$url\">"
+        val head = Regex("<head\\b[^>]*>", RegexOption.IGNORE_CASE).find(html)
+        return if (head != null) {
+            html.substring(0, head.range.last + 1) + tag + html.substring(head.range.last + 1)
+        } else {
+            tag + html
+        }
+    }
+
+    private fun writeOffline(id: String, tab: TabState, html: String, simple: Boolean) {
+        val target = offlineStore.htmlFileFor(id)
+        val written = runCatching { target.writeText(html) }.isSuccess
+        if (!written) {
+            scope.launch { Toast.makeText(context, R.string.offline_save_failed, Toast.LENGTH_SHORT).show() }
+            return
+        }
+        offlineStore.save(tab.title, tab.url, target)
+        android.util.Log.i(TAG_OFFLINE, "离线页已保存 ${target.name} ${target.length()}B simple=$simple")
+        val message = if (simple) R.string.offline_saved_simple else R.string.offline_saved
+        scope.launch { Toast.makeText(context, message, Toast.LENGTH_SHORT).show() }
     }
 
     // ------------------------------------------------------------ 站点设置

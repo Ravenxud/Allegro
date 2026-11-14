@@ -146,6 +146,68 @@ class MhtmlArchiveTest {
     }
 
     @Test
+    fun `accepts LF only line endings`() {
+        val raw = buildString {
+            append("MIME-Version: 1.0\n")
+            append("Content-Type: multipart/related; boundary=\"bLF\"\n")
+            append("\n")
+            append("--bLF\n")
+            append("Content-Type: text/html\n")
+            append("\n")
+            append("<p>lf</p>\n")
+            append("--bLF--\n")
+        }
+        val result = MhtmlArchive.toHtml(raw.toByteArray())
+        assertNotNull(result)
+        assertEquals("<p>lf</p>", result!!.html.trim())
+    }
+
+    @Test
+    fun `treats html part without content type as html`() {
+        val raw = buildString {
+            append("Content-Type: multipart/related; boundary=\"bNC\"\r\n\r\n")
+            append("--bNC\r\n")
+            append("Content-Location: https://example.com/\r\n")
+            append("\r\n")
+            append("<!DOCTYPE html><html><body><p>no-ct</p></body></html>\r\n")
+            append("--bNC--\r\n")
+        }
+        val result = MhtmlArchive.toHtml(raw.toByteArray())
+        assertNotNull(result)
+        assertTrue(result!!.html.contains("no-ct"))
+    }
+
+    @Test
+    fun `parses archive without root headers`() {
+        val raw = buildString {
+            append("--bRoot\r\n")
+            append("Content-Type: text/html\r\n")
+            append("\r\n")
+            append("<p>rootless</p>\r\n")
+            append("--bRoot--\r\n")
+        }
+        val result = MhtmlArchive.toHtml(raw.toByteArray())
+        assertNotNull(result)
+        assertEquals("<p>rootless</p>", result!!.html.trim())
+    }
+
+    /**
+     * 真实 Chromium 快照（用 CDP Page.captureSnapshot 抓的，与 WebView.saveWebArchive 同一套生成器）。
+     * 这个用例是为了防"合成报文都对、真机报错"的老问题。
+     */
+    @Test
+    fun `parses real chromium snapshot`() {
+        val bytes = javaClass.getResourceAsStream("/mhtml/chromium_sample.mhtml")!!.readBytes()
+        val result = MhtmlArchive.toHtml(bytes) ?: error("真实报文解析失败")
+        assertTrue("中文没解出来", result.html.contains("离线页测试"))
+        assertTrue("中文段落缺失", result.html.contains("这是一段用来验证离线保存的文字"))
+        assertTrue("图片没内联", result.html.contains("data:image/png;base64,"))
+        assertTrue("cid 引用没替换", !result.html.contains("cid:"))
+        assertTrue("外链 css 没内联", result.html.contains("data:text/css"))
+        assertTrue("还残留本地文件路径", !result.html.contains("file:///tmp/web/"))
+    }
+
+    @Test
     fun `returns null for non mhtml input`() {
         assertNull(MhtmlArchive.toHtml("not an mhtml".toByteArray()))
         assertNull(MhtmlArchive.toHtml(ByteArray(0)))

@@ -1,0 +1,58 @@
+From: <Saved by Blink>
+Snapshot-Content-Location: file:///tmp/web/page.html
+Subject: =?utf-8?Q?=E7=9C=9F=E6=9C=BA=E6=A0=B7=E4=BE=8B?=
+Date: Sat, 14 Nov 2026 08:23:43 +0000
+MIME-Version: 1.0
+Content-Type: multipart/related;
+	type="text/html";
+	boundary="----MultipartBoundary--n1Fzoy7QscIj4YOQZNobOQMTcjT5NJgXyt4ew8K2H0----"
+
+
+------MultipartBoundary--n1Fzoy7QscIj4YOQZNobOQMTcjT5NJgXyt4ew8K2H0----
+Content-Type: text/html
+Content-ID: <frame-A9E2F6C37D87E43E311A66322476578D@mhtml.blink>
+Content-Transfer-Encoding: quoted-printable
+Content-Location: file:///tmp/web/page.html
+
+<!DOCTYPE html><html><head><meta http-equiv=3D"Content-Type" content=3D"tex=
+t/html; charset=3DUTF-8"><link rel=3D"stylesheet" type=3D"text/css" href=3D=
+"cid:css-0411f02e-349e-4ac6-9299-c03803cde3b2@mhtml.blink" /><title>=E7=9C=
+=9F=E6=9C=BA=E6=A0=B7=E4=BE=8B</title>
+<link rel=3D"stylesheet" href=3D"file:///tmp/web/s.css">
+
+</head><body>
+<h1>=E7=A6=BB=E7=BA=BF=E9=A1=B5=E6=B5=8B=E8=AF=95</h1>
+<p>=E4=B8=AD=E6=96=87=E6=AE=B5=E8=90=BD=EF=BC=9A=E8=BF=99=E6=98=AF=E4=B8=80=
+=E6=AE=B5=E7=94=A8=E6=9D=A5=E9=AA=8C=E8=AF=81=E7=A6=BB=E7=BA=BF=E4=BF=9D=E5=
+=AD=98=E7=9A=84=E6=96=87=E5=AD=97=E3=80=82</p>
+<img src=3D"file:///tmp/web/a.png" width=3D"24" height=3D"24">
+<div class=3D"inline"></div>
+
+</body></html>
+------MultipartBoundary--n1Fzoy7QscIj4YOQZNobOQMTcjT5NJgXyt4ew8K2H0----
+Content-Type: text/css
+Content-Transfer-Encoding: quoted-printable
+Content-Location: cid:css-0411f02e-349e-4ac6-9299-c03803cde3b2@mhtml.blink
+
+@charset "utf-8";
+
+.inline { background: url("a.png"); width: 40px; height: 40px; }
+------MultipartBoundary--n1Fzoy7QscIj4YOQZNobOQMTcjT5NJgXyt4ew8K2H0----
+Content-Type: image/png
+Content-Transfer-Encoding: base64
+Content-Location: file:///tmp/web/a.png
+
+iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAIAAABvFaqvAAAAH0lEQVR4nGP4HxBAFcQwatCoQaMG
+jRo0atCoQQNvEAB466XuBpBdMwAAAABJRU5ErkJggg==
+
+------MultipartBoundary--n1Fzoy7QscIj4YOQZNobOQMTcjT5NJgXyt4ew8K2H0----
+Content-Type: text/css
+Content-Transfer-Encoding: quoted-printable
+Content-Location: file:///tmp/web/s.css
+
+@charset "utf-8";
+
+body { font-family: sans-serif; color: rgb(51, 51, 51); }
+
+h1 { color: rgb(17, 85, 85); }
+------MultipartBoundary--n1Fzoy7QscIj4YOQZNobOQMTcjT5NJgXyt4ew8K2H0------

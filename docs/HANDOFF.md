@@ -1,7 +1,7 @@
 # 交接说明（给下一个 AI / 开发者）
 
 > 读完这一份就能接手开发。项目：**Allegro**（代码内部名 SimpleBrowser）—— 参考 Luna 的极简 Android 浏览器。
-> 最后更新：0.27.0-beta（versionCode 59）
+> 最后更新：0.27.1-beta（versionCode 60）
 
 ---
 
@@ -104,6 +104,7 @@ di/          ServiceLocator(手写 DI，替代 Hilt)
 | 8 | 包名仍是 `com.example.simplebrowser` | 与 Allegro 品牌不符 | 改包名会牵动 FileProvider authorities，建议 1.0 前一次改完 |
 | 9 | **WebDAV 密码明文存在 SharedPreferences** | 手机被 root / 备份泄露时可见 | 允许用户改用"应用专用密码"；后续接 EncryptedSharedPreferences |
 | 10 | 同步是整包覆盖，无自动合并 | 两台设备先后同步会互相覆盖 | 界面已写明方向；要增量需加墓碑与冲突解决，暂不做 |
+| 11 | 离线页主路径依赖 `saveWebArchive` | 部分页面（跨域 iframe / 超大）返回 false | 已有 DOM 快照兜底（提示"简化版"）；日志 tag `OfflinePage` 可定位 |
 
 ## 7. 踩过的坑（写下来避免重复踩）
 
@@ -119,7 +120,13 @@ di/          ServiceLocator(手写 DI，替代 Hilt)
    要按 `<base>`/页面 URL 解析后再替换（见 `MhtmlArchive` 与 ADR-8）。
 9. **隐私报告的域名榜落盘不能复用 Top N**：早期实现把「已落盘 Top 20」当全量合并写回，
    每次刷盘都会丢掉 20 名以外的域名。必须读全量再合并。
-10. **WebView 的 settings 是全局的**：`javaScriptEnabled`/`blockNetworkImage`/`userAgentString` 属于 WebView 实例，
+10. **底部面板不能写死高度**：`MiuixSheet` 早期是 `Column` 无滚动，功能一多（0.27 加到 18 行）
+    最底下的「设置」直接被屏幕裁掉，用户报"设置入口不见了"。现已 `heightIn(max=72%屏高)` + `verticalScroll`。
+    **新增菜单行后必须确认低分辨率机型上仍能看到最后一行。**
+11. **`saveWebArchive` 会失败**：页面含跨域 iframe 或体量过大时它直接返回 false（不是抛异常），
+    因此不能只判断"有没有抛异常"。现在：false/空文件 → 抓 DOM `outerHTML` 存成简化版离线页，
+    保证"保存"这个动作永远有结果，并在提示里说明"图片/样式可能缺失"。
+12. **WebView 的 settings 是全局的**：`javaScriptEnabled`/`blockNetworkImage`/`userAgentString` 属于 WebView 实例，
     而本项目一个 WebView 复用于多个标签页。所以站点设置必须在**每次导航（onPageStarted）重设一遍**，
     只改一次会被下一个站点的页面覆盖。
 
@@ -136,7 +143,8 @@ app/src/test/java/.../MiniJsonTest       6 条  极简 JSON 读写
 app/src/test/java/.../SyncPayloadTest    4 条  备份编解码/坏数据容错
 app/src/test/java/.../WebDavConfigTest   6 条  URL 拼接/编码/Basic 认证
 app/src/test/java/.../WebDavClientIntegrationTest 3 条  真连 WebDAV（默认跳过，见下）
-共 54 条，全绿（集成测试需 env）
+app/src/test/java/.../MhtmlArchiveTest   12 条（含**真实 Chromium 快照** fixture）
+共 58 条，全绿（集成测试需 env）
 ```
 
 真机验证清单见 `docs/TESTING.md`。**没有 instrumentation 测试，也没有截图测试**。
@@ -149,6 +157,10 @@ ALLEGRO_DAV_URL=http://127.0.0.1:8081/ gradle --no-daemon :app:testDebugUnitTest
 ```
 
 没有 `ALLEGRO_DAV_URL` 时该测试自动 `assumeTrue` 跳过，CI 不受影响。
+
+MHTML 解析用**真实 Chromium 产物**做回归：`scripts/capture_mhtml.py` 通过 CDP `Page.captureSnapshot`
+抓一份 MHTML（WebView 的 `saveWebArchive` 用的是同一套生成器），存到
+`app/src/test/resources/mhtml/chromium_sample.mhtml`。合成报文全绿但真机失败的问题，就靠这个用例兜住。
 
 ## 9. 下一步任务（按优先级）
 

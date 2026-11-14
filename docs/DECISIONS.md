@@ -89,3 +89,16 @@
   两台设备都改过数据时后同步的一方覆盖前者（界面已明示）。
 - 已知风险：密码明文存 SharedPreferences；后续可换 EncryptedSharedPreferences（需要额外依赖）。
 
+## ADR-11 离线页双路径：MHTML 优先，DOM 快照兜底
+- 背景：0.27.0 上线后真机反馈"离线页保存失败"。
+- 事实：`WebView.saveWebArchive` **返回 false 而不抛异常**（跨域 iframe、体量过大等），
+  早期代码只判断"是否抛异常 / 文件是否为空"，一失败就整条链路终止。
+- 决策：
+  1. 先判断返回值，false 或空文件 → 立刻走兜底；
+  2. 兜底 = `document.documentElement.outerHTML` + 注入 `<base href>`，落成 `.html`，
+     提示语明确写"简化版：图片/样式可能缺失"；
+  3. 主路径失败但报文可读时（解析返回 null）同样降级，不向用户抛"失败"。
+- 后果：保存动作永远有产物；代价是兜底页面离线时缺外链资源。
+- 验证方式：`scripts/capture_mhtml.py` 用本机 Chromium 的 `Page.captureSnapshot` 抓真实 MHTML
+  （与 WebView 同一套生成器），作为固定 fixture 进单测 —— 避免"合成报文全绿、真机失败"。
+

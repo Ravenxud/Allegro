@@ -51,18 +51,18 @@ object MhtmlArchive {
      */
     fun toHtml(source: ByteArray, maxInlineBytes: Int = MAX_TOTAL_INLINE): Result? {
         if (source.isEmpty()) return null
-        val rootEnd = indexOf(source, CRLF_CRLF, 0)
-        if (rootEnd < 0) return null
-        val rootHeaders = parseHeaders(source, 0, rootEnd)
-        val boundary = Regex("boundary\\s*=\\s*\"?([^\";\\r\\n]+)", RegexOption.IGNORE_CASE)
-            .find(rootHeaders["content-type"].orEmpty())
-            ?.groupValues?.get(1)
-            ?.trim()
-            ?: return null
+        if (startsWithPartDelimiter(source)) return toHtmlFromPartsOnly(source)
+        val headerEnd = findHeaderEnd(source, 0)
+            ?: return toHtmlFromPartsOnly(source)
+        val rootHeaders = parseHeaders(source, 0, headerEnd.first)
+        val boundary = resolveBoundary(rootHeaders["content-type"].orEmpty(), source)
+            ?: return toHtmlFromPartsOnly(source)
 
-        val parts = splitParts(source, rootEnd + CRLF_CRLF.size, boundary)
+        val parts = splitParts(source, headerEnd.second, boundary)
         if (parts.isEmpty()) return null
-        val main = parts.firstOrNull { it.isHtml } ?: return null
+        val main = parts.firstOrNull { it.isHtml }
+            ?: parts.filter { looksLikeHtml(it) }.maxByOrNull { it.body.size }
+            ?: return null
 
         val byKey = HashMap<String, Part>()
         parts.forEach { part ->
@@ -176,6 +176,63 @@ object MhtmlArchive {
         }
     }
 
+    /** 文件是不是直接以 `--boundary` 开头（有些实现不写根 MIME 头）。 */
+    private fun startsWithPartDelimiter(source: ByteArray): Boolean {
+        val head = String(source, 0, minOf(source.size, 256), Charsets.ISO_8859_1)
+        val first = head.lineSequence().firstOrNull()?.trim().orEmpty()
+        return first.startsWith("--") && first.length > 3
+    }
+
+    /** 返回 (头部结束位置, 正文开始位置)；支持 CRLF 与 LF 两种换行。 */
+    private fun findHeaderEnd(source: ByteArray, from: Int): Pair<Int, Int>? {
+        val crlf = indexOf(source, CRLF_CRLF, from)
+        val lflf = indexOf(source, "\n\n".toByteArray(Charsets.ISO_8859_1), from)
+        val first = when {
+            crlf < 0 -> lflf
+            lflf < 0 -> crlf
+            else -> minOf(crlf, lflf)
+        }
+        if (first < 0) return null
+        val bodyStart = if (first == crlf) first + CRLF_CRLF.size else first + 2
+        return first to bodyStart
+    }
+
+    /** 头里没有 boundary 时，扫描前 8KB 找 `--xxx` 形式的分隔线。 */
+    private fun resolveBoundary(contentType: String, source: ByteArray): String? {
+        val declared = Regex("boundary\\s*=\\s*\"?([^\";\\r\\n]+)\"?", RegexOption.IGNORE_CASE)
+            .find(contentType)?.groupValues?.get(1)?.trim()
+        if (!declared.isNullOrEmpty()) return declared
+        val head = String(source, 0, minOf(source.size, 8192), Charsets.ISO_8859_1)
+        return head.lineSequence()
+            .firstOrNull { it.trimStart().startsWith("--") && it.trim().length > 4 }
+            ?.trim()
+            ?.removePrefix("--")
+            ?.removeSuffix("--")
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+    }
+
+    private fun looksLikeHtml(part: Part): Boolean {
+        if (part.mime.startsWith("text/")) return false
+        val text = String(part.body, 0, minOf(part.body.size, 512), Charsets.ISO_8859_1)
+        return text.contains("<html", true) || text.contains("<!DOCTYPE", true)
+    }
+
+    /** 没有任何 MIME 头时的兜底：把第一段之前的内容当分隔线找出来继续解析。 */
+    private fun toHtmlFromPartsOnly(source: ByteArray): Result? {
+        val text = String(source, 0, minOf(source.size, 8192), Charsets.ISO_8859_1)
+        val boundary = text.lineSequence()
+            .firstOrNull { it.trimStart().startsWith("--") && it.trim().length > 4 }
+            ?.trim()?.removePrefix("--")?.removeSuffix("--")?.trim()
+            ?: return null
+        val parts = splitParts(source, 0, boundary)
+        if (parts.isEmpty()) return null
+        val main = parts.firstOrNull { it.isHtml }
+            ?: parts.filter { looksLikeHtml(it) }.maxByOrNull { it.body.size }
+            ?: return null
+        return Result(html = decode(main), partCount = parts.size, inlinedParts = 0)
+    }
+
     // ---------------------------------------------------------------- 报文解析
 
     private fun splitParts(source: ByteArray, start: Int, boundary: String): List<Part> {
@@ -210,15 +267,15 @@ object MhtmlArchive {
     }
 
     private fun parsePart(source: ByteArray, from: Int, to: Int): Part {
-        val headerEnd = indexOf(source, CRLF_CRLF, from)
+        val split = findHeaderEnd(source, from)
         val headers: Map<String, String>
         val bodyFrom: Int
-        if (headerEnd < 0 || headerEnd + CRLF_CRLF.size > to) {
+        if (split == null || split.first >= to || split.second > to) {
             headers = emptyMap()
             bodyFrom = from
         } else {
-            headers = parseHeaders(source, from, headerEnd)
-            bodyFrom = headerEnd + CRLF_CRLF.size
+            headers = parseHeaders(source, from, split.first)
+            bodyFrom = split.second
         }
         val raw = source.copyOfRange(bodyFrom.coerceAtMost(to), to)
         val encoding = headers["content-transfer-encoding"]?.trim()?.lowercase().orEmpty()
