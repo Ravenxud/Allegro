@@ -1131,8 +1131,7 @@ class WebViewBrowserController(
         // 注意：必须先于“把 WebView 置 GONE”调用，否则只能抓到空
         val activity = context as? android.app.Activity ?: return
         val decor = activity.window?.decorView ?: return
-        // 先清空：抓图期间若有任何一帧画到面板，宁可纯色也不显示上一张旧图
-        _sheetSnapshot.value = null
+        // 不清空旧图：抓到后原子替换。清空会让滚动刷新时面板闪回纯色。
         if (decor.width <= 0 || decor.height <= 0) return
         val rect = android.graphics.Rect(0, 0, decor.width, decor.height)
         requestCopy(activity.window, rect) { bitmap ->
@@ -1213,11 +1212,15 @@ class WebViewBrowserController(
         sheetVisible = visible
     }
 
-    /** 节流刷新：面板打开且网页滚动时，最多每 300ms 重抓一次。 */
+    override fun onContentScrolled(view: TabWebView) {
+        refreshSheetIfVisible()
+    }
+
+    /** 节流刷新：面板打开且网页滚动时，最多每 200ms 重抓一次。 */
     private fun refreshSheetIfVisible() {
         if (!sheetVisible) return
         val now = System.currentTimeMillis()
-        if (now - lastSheetRefresh < 300L) return
+        if (now - lastSheetRefresh < 200L) return
         lastSheetRefresh = now
         captureForSheet(null)
     }

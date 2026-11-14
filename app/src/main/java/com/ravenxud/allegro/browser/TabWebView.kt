@@ -41,6 +41,13 @@ class TabWebView @JvmOverloads constructor(
         fun onBlobDownload(view: TabWebView, fileName: String, mimeType: String, base64: String)
         fun onScrollState(view: TabWebView, atTop: Boolean, allowPull: Boolean, scrollY: Int)
 
+        /**
+         * 原生滚动回调（不依赖 JS 桥）。
+         * JS 侧的 onScrollY 只在"是否到顶"变化时上报，滚动过程完全静默，
+         * 所以面板玻璃的"跟随滚动刷新"必须挂在这里。
+         */
+        fun onContentScrolled(view: TabWebView)
+
         fun onReaderExtracted(view: TabWebView, json: String)
 
         fun onElementPicked(view: TabWebView, selector: String)
@@ -82,6 +89,12 @@ class TabWebView @JvmOverloads constructor(
      * 网页里点输入框时，先把焦点从 Compose 的地址栏抢过来，
      * 否则输入法会被 Compose 侧"占着"，表现就是点了输入框不弹键盘。
      */
+    override fun onScrollChanged(l: Int, t: Int, oldl: Int, oldt: Int) {
+        super.onScrollChanged(l, t, oldl, oldt)
+        // 交给上层节流处理（面板玻璃跟随滚动）
+        callbacks.onContentScrolled(this)
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (event.actionMasked == MotionEvent.ACTION_DOWN && !hasFocus()) {
             requestFocus()
