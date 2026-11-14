@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ravenxud.allegro.ui.theme.Motion
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
@@ -57,8 +58,8 @@ fun MiuixSheet(
     Box(modifier.fillMaxSize()) {
         AnimatedVisibility(
             visibleState = state,
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(160)),
+            enter = fadeIn(Motion.enter()),
+            exit = fadeOut(Motion.exit(Motion.Duration.Quick)),
         ) {
             Box(
                 Modifier
@@ -71,8 +72,8 @@ fun MiuixSheet(
         AnimatedVisibility(
             visibleState = state,
             modifier = Modifier.align(Alignment.BottomCenter),
-            enter = slideInVertically(tween(250)) { it },
-            exit = slideOutVertically(tween(200)) { it },
+            enter = slideInVertically(Motion.slide(Motion.Duration.Emphasized)) { it },
+            exit = slideOutVertically(Motion.slide()) { it },
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),

@@ -45,6 +45,7 @@ import com.ravenxud.allegro.data.model.SearchEngine
 import com.ravenxud.allegro.data.repo.BookmarkRepository
 import com.ravenxud.allegro.ui.home.HomeDate
 import com.ravenxud.allegro.ui.theme.Radius
+import com.ravenxud.allegro.ui.theme.Motion
 import com.ravenxud.allegro.ui.theme.Spacing
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
@@ -86,7 +87,7 @@ fun HomeScreen(
 
         AnimatedVisibility(
             visible = appear,
-            enter = fadeIn(tween(320)) + slideInVertically(tween(320)) { it / 28 },
+            enter = fadeIn(Motion.enter(Motion.Duration.Long)) + slideInVertically(Motion.slide(Motion.Duration.Long)) { it / 28 },
         ) {
             Column(
                 modifier = Modifier

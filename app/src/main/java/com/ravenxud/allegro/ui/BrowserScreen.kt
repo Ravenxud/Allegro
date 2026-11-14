@@ -87,6 +87,7 @@ import com.ravenxud.allegro.ui.screens.WebDavScreen
 import com.ravenxud.allegro.ui.screens.ReaderScreen
 import com.ravenxud.allegro.ui.screens.SettingsScreen
 import com.ravenxud.allegro.ui.screens.UserScriptsScreen
+import com.ravenxud.allegro.ui.theme.Motion
 import com.ravenxud.allegro.ui.theme.resolveDark
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -244,7 +245,7 @@ fun BrowserScreen(
     // 顶/底栏不再直接移除（会造成布局瞬间跳动），改为淡出 + 轻微位移
     val chromeAlpha by animateFloatAsState(
         targetValue = if (secondaryVisible) 0f else 1f,
-        animationSpec = tween(200),
+        animationSpec = Motion.color(),
         label = "chromeAlpha",
     )
 
@@ -368,7 +369,7 @@ fun BrowserScreen(
         bottomBar = {
             val barColor by animateColorAsState(
                 targetValue = MiuixTheme.colorScheme.surface,
-                animationSpec = tween(200),
+                animationSpec = Motion.color(),
                 label = "bottomBar",
             )
             Surface(
@@ -466,8 +467,8 @@ fun BrowserScreen(
 
             AnimatedVisibility(
                 visible = isHome,
-                enter = fadeIn(tween(200)) + slideInVertically(tween(200)) { it / 24 },
-                exit = fadeOut(tween(140)),
+                enter = fadeIn(Motion.enter()) + slideInVertically(Motion.slide()) { it / 24 },
+                exit = fadeOut(Motion.exit()),
             ) {
                 HomeScreen(
                     controller = controller,
@@ -479,8 +480,8 @@ fun BrowserScreen(
 
             AnimatedVisibility(
                 visibleState = contextMenuState,
-                enter = fadeIn(tween(160)) + slideInVertically(tween(220)) { it / 4 },
-                exit = fadeOut(tween(120)) + slideOutVertically(tween(180)) { it / 4 },
+                enter = fadeIn(Motion.enter(Motion.Duration.Quick)) + slideInVertically(Motion.slide()) { it / 4 },
+                exit = fadeOut(Motion.exit()) + slideOutVertically(Motion.exit()) { it / 4 },
             ) {
                 lastMenu?.let { request ->
                     ContextMenu(
@@ -520,8 +521,8 @@ fun BrowserScreen(
 
             AnimatedVisibility(
                 visibleState = appMenuState,
-                enter = fadeIn(tween(150)) + slideInVertically(tween(220)) { it / 4 },
-                exit = fadeOut(tween(120)) + slideOutVertically(tween(180)) { it / 4 },
+                enter = fadeIn(Motion.enter(Motion.Duration.Quick)) + slideInVertically(Motion.slide()) { it / 4 },
+                exit = fadeOut(Motion.exit()) + slideOutVertically(Motion.exit()) { it / 4 },
             ) {
                 AppMenu(
                     visibleState = appMenuState,
@@ -647,8 +648,8 @@ fun BrowserScreen(
 
             AnimatedVisibility(
                 visibleState = secondaryState,
-                enter = fadeIn(tween(260)) + slideInHorizontally(tween(320, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { it / 7 },
-                exit = fadeOut(tween(180)) + slideOutHorizontally(tween(260, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { it / 9 },
+                enter = fadeIn(Motion.enter(Motion.Duration.Emphasized)) + slideInHorizontally(Motion.slide(Motion.Duration.Long)) { it / 7 },
+                exit = fadeOut(Motion.exit(Motion.Duration.Quick)) + slideOutHorizontally(Motion.slide(Motion.Duration.Emphasized)) { it / 9 },
             ) {
                 val back: () -> Unit = { screen = SecondaryScreen.BROWSER }
                 val openAndBack: (String) -> Unit = {

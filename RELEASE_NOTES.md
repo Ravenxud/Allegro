@@ -1,3 +1,37 @@
+# 0.33.4-beta（P1：令牌与材质入口）
+
+纯内部重构，**视觉几乎零变化**（个别动画 ±20ms，肉眼不可辨）。目的是把"统一设计"从文档变成事实。
+
+## 变更
+
+- 新增 `ui/theme/Motion.kt`：全站唯一动效来源
+  - 时长 5 档：`Instant 120 / Quick 160 / Standard 200 / Emphasized 260 / Long 320`
+  - 曲线 4 条：`Standard`（等价于原来的 FastOutSlowIn，观感不变）、Decelerate、Accelerate、Overshoot
+  - 弹簧 3 组：Snappy / Gentle / Bouncy
+  - `PredictiveBack` 常量（0.06 / 0.25 / 28dp）——P2 起替代散落魔法数
+- **15 处裸 `tween(...)` 全部替换**（BrowserScreen / HomeScreen / MiuixSheet）
+- 新增 `ui/glass/GlassSpec.kt` 与 `ui/glass/GlassModifier.kt`：
+  - `Modifier.appGlass(backdrop, shape, spec)` —— 唯一材质入口；无捕获层时自动退化为半透明+描边
+  - `GlassQuality { High, Medium, Off }`，默认 High
+- 单测 +2（`GlassQualityTest`：无捕获层必须退化、有捕获层尊重用户档位）
+
+## 可验证的"统一"（随时可跑）
+
+```bash
+grep -rn "tween(" app/src/main/java | grep -v Motion.kt      # 应无输出
+grep -rn "com.kyant.backdrop" app/src/main/java | grep -v "ui/glass/" | grep -v ShaderSmoke
+```
+
+两条都为空，说明 U1/U3 成立。
+
+## 请验
+
+这版**不需要你验视觉**（预期与 0.33.3 完全一致）。只需确认：
+1. 能正常启动、能开网页、菜单/面板动画没有明显变化
+2. 设置 → 诊断 → 着色器冒烟测试仍可进入
+
+---
+
 # 0.33.3-beta（P0 验收通过）
 
 冒烟页结果已确认：**AGSL 与 Backdrop 在这台设备上都可用**，P3 可以按原计划走自研折射。
