@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
+import org.json.JSONArray
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
@@ -36,8 +36,13 @@ sealed interface UpdateState {
 /**
  * 应用内更新。
  *
- * 数据源：GitHub Releases API（`releases/latest`），仓库地址由设置项提供，
- * 默认指向占位仓库，未配置时直接返回"已是最新"，不会发任何请求。
+ * 数据源：GitHub Releases API（`/releases` 列表）。
+ *
+ * 为什么不用 `/releases/latest`：GitHub 的 latest 会**跳过 prerelease**，
+ * 而本项目的版本号长期是 `0.x.y-beta`；早期实现因此从来没检查到过更新。
+ * 现在拉列表后按语义化版本自己挑（见 [UpdateSelector]）。
+ *
+ * 仓库地址由设置项提供，未配置时直接返回"已是最新"，不会发任何请求。
  */
 class UpdateRepository(
     private val context: Context,
@@ -57,8 +62,10 @@ class UpdateRepository(
             return@withContext UpdateState.UpToDate
         }
         _state.value = UpdateState.Checking
+
+        // 读列表而不是 /releases/latest：后者会跳过 prerelease，beta 就永远收不到更新
         val json = runCatching {
-            val connection = (URL("https://api.github.com/repos/$repository/releases/latest")
+            val connection = (URL("https://api.github.com/repos/$repository/releases?per_page=30")
                 .openConnection() as HttpURLConnection).apply {
                 connectTimeout = 8000
                 readTimeout = 12000
@@ -73,38 +80,60 @@ class UpdateRepository(
             return@withContext _state.value
         }
 
-        val info = runCatching {
-            val root = JSONObject(json)
-            val tag = root.optString("tag_name").removePrefix("v")
-            val assets = root.optJSONArray("assets")
-            var url = ""
-            var size = 0L
-            if (assets != null) {
-                for (i in 0 until assets.length()) {
-                    val asset = assets.getJSONObject(i)
-                    val name = asset.optString("name")
-                    if (name.endsWith(".apk")) {
-                        url = asset.optString("browser_download_url")
-                        size = asset.optLong("size")
-                        break
-                    }
-                }
-            }
-            UpdateInfo(
-                versionName = tag,
-                notes = root.optString("body").take(500),
-                apkUrl = url,
-                sizeBytes = size,
-            )
-        }.getOrNull()
+        val candidates = runCatching { parseCandidates(json) }.getOrNull()
+        if (candidates == null) {
+            _state.value = UpdateState.Failed("更新信息格式异常")
+            return@withContext _state.value
+        }
 
-        val result = when {
-            info == null || info.apkUrl.isBlank() -> UpdateState.Failed("更新信息格式异常")
-            !isNewer(info.versionName) -> UpdateState.UpToDate
-            else -> UpdateState.Available(info)
+        val current = currentVersionName()
+        val picked = pickLatestRelease(candidates)?.takeIf { isNewerVersion(it.tag, current) }
+        val apk = picked?.assets?.firstOrNull { it.name.endsWith(".apk", ignoreCase = true) }
+
+        val result = if (picked == null || apk == null) {
+            UpdateState.UpToDate
+        } else {
+            UpdateState.Available(
+                UpdateInfo(
+                    versionName = picked.tag.removePrefix("v"),
+                    notes = picked.notes.take(500),
+                    apkUrl = apk.url,
+                    sizeBytes = apk.sizeBytes,
+                ),
+            )
         }
         _state.value = result
         result
+    }
+
+    /** GitHub release 数组 → 候选列表（纯解析，选版本交给 [pickLatestRelease]）。 */
+    private fun parseCandidates(json: String): List<ReleaseCandidate> {
+        val array = JSONArray(json)
+        val list = ArrayList<ReleaseCandidate>(array.length())
+        for (i in 0 until array.length()) {
+            val root = array.optJSONObject(i) ?: continue
+            val assetArray = root.optJSONArray("assets")
+            val assets = ArrayList<ReleaseAsset>(assetArray?.length() ?: 0)
+            if (assetArray != null) {
+                for (j in 0 until assetArray.length()) {
+                    val asset = assetArray.optJSONObject(j) ?: continue
+                    assets += ReleaseAsset(
+                        name = asset.optString("name"),
+                        url = asset.optString("browser_download_url"),
+                        sizeBytes = asset.optLong("size"),
+                    )
+                }
+            }
+            list += ReleaseCandidate(
+                tag = root.optString("tag_name"),
+                title = root.optString("name"),
+                notes = root.optString("body"),
+                prerelease = root.optBoolean("prerelease", false),
+                draft = root.optBoolean("draft", false),
+                assets = assets,
+            )
+        }
+        return list
     }
 
     /** 下载 APK 到私有目录，完成后返回可安装的文件。 */
@@ -166,18 +195,4 @@ class UpdateRepository(
         context.startActivity(intent)
     }.isSuccess
 
-    /** 简单版本比较：1.2.10 > 1.2.9。 */
-    private fun isNewer(candidate: String): Boolean {
-        val current = currentVersionName()
-        fun parts(v: String) = v.split('.', '-', '+')
-            .mapNotNull { it.takeWhile { ch -> ch.isDigit() }.toIntOrNull() }
-        val a = parts(candidate)
-        val b = parts(current)
-        for (i in 0 until maxOf(a.size, b.size)) {
-            val x = a.getOrElse(i) { 0 }
-            val y = b.getOrElse(i) { 0 }
-            if (x != y) return x > y
-        }
-        return false
-    }
 }

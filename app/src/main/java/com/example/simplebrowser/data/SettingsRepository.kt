@@ -51,8 +51,9 @@ class SettingsRepository(context: Context) {
 
 
 
-    /** 更新源：GitHub 仓库 "owner/repo"，留空表示不检查更新。 */
-    fun updateRepo(): String = prefs.getString(KEY_UPDATE_REPO, "").orEmpty()
+    /** 更新源：GitHub 仓库 "owner/repo"，留空表示不检查更新。默认指向本项目。 */
+    fun updateRepo(): String = prefs.getString(KEY_UPDATE_REPO, DEFAULT_UPDATE_REPO).orEmpty()
+
 
     fun setUpdateRepo(value: String) {
         prefs.edit().putString(KEY_UPDATE_REPO, value.trim()).apply()
@@ -72,5 +73,6 @@ class SettingsRepository(context: Context) {
         const val KEY_ENGINE = "search_engine"
         const val KEY_HOME_BOOKMARKS = "home_bookmarks"
         const val KEY_UPDATE_REPO = "update_repo"
+        const val DEFAULT_UPDATE_REPO = "Ravenxud/Allegro"
     }
 }

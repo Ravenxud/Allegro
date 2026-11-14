@@ -51,6 +51,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Blocklist
 import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.Edit
 import top.yukonga.miuix.kmp.icon.extended.Hide
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Download
@@ -118,7 +119,7 @@ fun AppMenu(
         SheetRow(MiuixIcons.Download, stringResource(R.string.menu_save_offline), onClick = onSaveOffline)
         SheetRow(MiuixIcons.Share, stringResource(R.string.menu_share_page), onClick = onSharePage)
         SheetRow(MiuixIcons.Folder, stringResource(R.string.menu_offline_pages), onClick = onOfflinePages)
-        SheetRow(MiuixIcons.Settings, stringResource(R.string.userscript_title), onClick = onUserScripts)
+        SheetRow(MiuixIcons.Edit, stringResource(R.string.userscript_title), onClick = onUserScripts)
         SheetRow(MiuixIcons.Settings, stringResource(R.string.menu_site_settings), onClick = onSiteSettings)
         SheetRow(MiuixIcons.Hide, stringResource(R.string.menu_pick_element), onClick = onPickElement)
         SheetRow(MiuixIcons.Blocklist, stringResource(R.string.menu_privacy_report), onClick = onPrivacyReport)
