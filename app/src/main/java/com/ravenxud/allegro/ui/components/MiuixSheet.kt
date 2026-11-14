@@ -33,12 +33,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -103,10 +106,8 @@ fun MiuixSheet(
             modifier = Modifier.align(Alignment.BottomCenter),
             // 弹簧进场：Luna 的手感不是匀速缓动，而是 340 刚度、略欠阻尼的落位
             enter = slideInVertically(
-                animationSpec = spring(
-                    dampingRatio = 0.82f,
-                    stiffness = 340f,
-                ),
+                // Luna 的卡片弹簧（0.9 / 320），这里按 IntOffset 特化
+                animationSpec = spring(dampingRatio = 0.9f, stiffness = 320f),
                 initialOffsetY = { it },
             ) + fadeIn(tween(Motion.Duration.Quick)),
             exit = slideOutVertically(
@@ -346,15 +347,16 @@ fun SheetGrid(
     Column(Modifier.fillMaxWidth()) {
     val rows = (items.size + ghosts + columns - 1) / columns
     repeat(rows) { rowIndex ->
-        val row = items.drop(rowIndex * columns).take(columns)
+        val base = rowIndex * columns
+        val row = items.drop(base).take(columns)
         Row(
             Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 10.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.Start,
         ) {
-            row.forEach { item ->
-                SheetGridCell(item, Modifier.weight(1f))
+            row.forEachIndexed { i, item ->
+                SheetGridCell(item, base + i, Modifier.weight(1f))
             }
             // 占位格与真实格同高：保证翻页时面板高度不变（不会"硬切面积"）
             repeat(columns - row.size) {
@@ -417,9 +419,29 @@ fun SheetPagedGrid(
 }
 
 @Composable
-private fun SheetGridCell(item: SheetItem, modifier: Modifier) {
+private fun SheetGridCell(item: SheetItem, index: Int, modifier: Modifier) {
+    // 逐格错峰 18ms：Luna 的错峰步长（20dp/张）换算到时间维度
+    var shown by androidx.compose.runtime.remember(item) {
+        androidx.compose.runtime.mutableStateOf(false)
+    }
+    androidx.compose.runtime.LaunchedEffect(item) {
+        kotlinx.coroutines.delay((index.coerceAtMost(12)) * 18L)
+        shown = true
+    }
+    val enter by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (shown) 1f else 0f,
+        animationSpec = com.ravenxud.allegro.ui.theme.Motion.Tabs.Cards,
+        label = "cellEnter",
+    )
     Column(
         modifier = modifier
+            .graphicsLayer {
+                alpha = enter
+                val sc = 0.9f + 0.1f * enter
+                scaleX = sc
+                scaleY = sc
+                translationY = (1f - enter) * 12f
+            }
             .height(SHEET_CELL_HEIGHT)
             .clip(RoundedCornerShape(18.dp))
             .pressScale()
