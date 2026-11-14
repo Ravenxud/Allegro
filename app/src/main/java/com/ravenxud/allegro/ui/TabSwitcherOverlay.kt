@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -100,6 +102,7 @@ fun TabSwitcherOverlay(
     onSelect: (String) -> Unit,
     onClose: (String) -> Unit,
     onNew: () -> Unit,
+    onNewIncognito: () -> Unit,
     onReopen: () -> Unit,
     onDismiss: () -> Unit,
     onDismissed: () -> Unit,
@@ -216,6 +219,7 @@ fun TabSwitcherOverlay(
                 onSelect = onSelect,
                 onClose = onClose,
                 onNew = onNew,
+                onNewIncognito = onNewIncognito,
                 onReopen = onReopen,
                 onDismiss = onDismiss,
                 onLongPress = { menuTab = it },
@@ -324,6 +328,7 @@ private fun TabGrid(
     onSelect: (String) -> Unit,
     onClose: (String) -> Unit,
     onNew: () -> Unit,
+    onNewIncognito: () -> Unit,
     onReopen: () -> Unit,
     onDismiss: () -> Unit,
     onLongPress: (TabState) -> Unit,
@@ -409,8 +414,8 @@ private fun TabGrid(
                     size = 52.dp,
                 )
                 com.ravenxud.allegro.ui.components.PillButton(
-                    label = stringResource(R.string.tabs_reopen),
-                    onClick = onReopen,
+                    label = stringResource(R.string.tabs_incognito),
+                    onClick = onNewIncognito,
                 )
                 com.ravenxud.allegro.ui.components.PillButton(
                     label = stringResource(R.string.tabs_count, state.tabs.size),
@@ -523,62 +528,70 @@ private fun TabCard(
                     )
                 },
         ) {
-            Column {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(0.62f)
-                        .clip(shape)
-                        .background(MiuixTheme.colorScheme.surfaceVariant)
-                        .then(
-                            if (active) Modifier.border(2.dp, MiuixTheme.colorScheme.primary, shape)
-                            else Modifier
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    val preview = tab.preview
-                    if (preview != null) {
-                        Image(
-                            bitmap = preview.asImageBitmap(),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                        )
-                    } else {
-                        Text(
-                            text = tab.title.take(1).ifBlank { "·" },
-                            fontSize = 28.sp,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
-                    }
+            // Luna 形态：预览铺满 + 标题条**叠在预览底部**（不是卡片下方）
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(0.62f)
+                    .clip(shape)
+                    .background(MiuixTheme.colorScheme.surfaceVariant)
+                    .then(
+                        if (active) Modifier.border(2.dp, MiuixTheme.colorScheme.primary, shape)
+                        else Modifier
+                    ),
+            ) {
+                val preview = tab.preview
+                if (preview != null) {
+                    Image(
+                        bitmap = preview.asImageBitmap(),
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                } else {
+                    Text(
+                        text = tab.title.take(1).ifBlank { "·" },
+                        fontSize = 28.sp,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        modifier = Modifier.align(Alignment.Center),
+                    )
                 }
+
+                // 底部标题条：40dp、半透明面、上边一条发丝线
                 Row(
-                    modifier = Modifier.fillMaxWidth()
-                        .padding(start = 8.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(40.dp)
+                        .background(MiuixTheme.colorScheme.surface.copy(alpha = 0.86f))
+                        .padding(start = 10.dp, end = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column(Modifier.weight(1f)) {
-                        val blank = tab.url == "about:blank"
-                        Text(
-                            text = if (blank) stringResource(R.string.tab_new_page)
-                            else tab.title.ifBlank { tab.url },
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            fontSize = 13.sp,
-                            color = if (active) MiuixTheme.colorScheme.primary
-                            else MiuixTheme.colorScheme.onSurface,
+                    val blank = tab.url == "about:blank"
+                    tab.favicon?.let {
+                        Image(
+                            bitmap = it.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
                         )
-                        Text(
-                            // 空白页不显示 about:blank 这种实现细节
-                            text = if (blank) "" else tab.url,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            fontSize = 11.sp,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        )
+                        Spacer(Modifier.width(8.dp))
                     }
-                    IconButton(onClick = onClose, modifier = Modifier.size(36.dp)) {
-                        Icon(MiuixIcons.Close, stringResource(R.string.cd_close))
+                    Text(
+                        text = if (blank) stringResource(R.string.tab_new_page)
+                        else tab.title.ifBlank { tab.url },
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 13.sp,
+                        color = if (active) MiuixTheme.colorScheme.primary
+                        else MiuixTheme.colorScheme.onSurface,
+                    )
+                    IconButton(onClick = onClose, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            MiuixIcons.Close,
+                            stringResource(R.string.cd_close),
+                            modifier = Modifier.size(16.dp),
+                        )
                     }
                 }
             }

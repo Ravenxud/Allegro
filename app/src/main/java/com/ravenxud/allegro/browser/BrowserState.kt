@@ -33,4 +33,6 @@ data class TabState(
     val lastAccessedAt: Long = 0L,
     /** 所属分组；null 表示未分组。 */
     val groupId: String? = null,
+    /** 隐身标签：不写历史、不进最近关闭（网络层不做承诺）。 */
+    val incognito: Boolean = false,
 )

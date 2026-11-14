@@ -49,7 +49,7 @@ interface BrowserController {
     fun clearSheetSnapshot()
 
     // 标签
-    fun openTab(url: String, background: Boolean = false): String
+    fun openTab(url: String, background: Boolean = false, incognito: Boolean = false): String
     fun selectTab(tabId: String)
 
     /** 按顺序切换标签（+1 下一个 / -1 上一个，循环）。 */

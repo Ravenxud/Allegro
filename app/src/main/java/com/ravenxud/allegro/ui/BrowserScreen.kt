@@ -689,6 +689,7 @@ fun BrowserScreen(
         onSelect = { controller.selectTab(it); showTabs = false },
         onClose = { controller.closeTab(it) },
         onNew = { controller.openTab("about:blank"); showTabs = false },
+        onNewIncognito = { controller.openTab("about:blank", incognito = true); showTabs = false },
         onReopen = { controller.restoreLastClosed(); showTabs = false },
         onDismiss = { showTabs = false },
         onDismissed = {

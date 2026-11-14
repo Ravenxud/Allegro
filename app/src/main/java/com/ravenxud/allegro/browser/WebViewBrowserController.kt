@@ -173,14 +173,15 @@ class WebViewBrowserController(
 
     // ------------------------------------------------------------- 标签
 
-    override fun openTab(url: String, background: Boolean): String {
-        com.ravenxud.allegro.util.DiagLog.log("open-tab", "bg=$background $url")
+    override fun openTab(url: String, background: Boolean, incognito: Boolean): String {
+        com.ravenxud.allegro.util.DiagLog.log("open-tab", "bg=$background incognito=$incognito $url")
         val id = UUID.randomUUID().toString()
         val tab = TabState(
             id = id,
             url = url,
             title = url,
             lastAccessedAt = System.currentTimeMillis(),
+            incognito = incognito,
         )
         _state.update { it.copy(tabs = it.tabs + tab) }
         if (!background) {
@@ -1391,6 +1392,8 @@ class WebViewBrowserController(
 
     private fun recordHistory(tabId: String, url: String) {
         if (!url.startsWith("http://") && !url.startsWith("https://")) return
+        // 隐身标签不留下痕迹
+        if (_state.value.tabs.firstOrNull { it.id == tabId }?.incognito == true) return
         val title = _state.value.tabs.firstOrNull { it.id == tabId }?.title.orEmpty()
         CoroutineScope(Dispatchers.IO).launch {
             runCatching { historyRepository.record(url, title) }
