@@ -1,3 +1,27 @@
+# 0.53.0-beta
+
+把上一版引入的定位逻辑**真正接上**：标签长按菜单从「贴底 sheet」改为**锚定在卡片旁的浮动菜单**。
+
+## 改动
+
+- 新增 `ui/components/AnchoredMenu.kt`：锚定在父布局上的浮层（`Popup` + 自定义 `PopupPositionProvider`）
+  - 优先贴锚点下方；下方放不下翻到上方；左右/底部做窗口钳制
+  - 逻辑参考上一版引入的 `MenuPositionProvider`（KernelSU Style UI Kit, GPL-3.0），
+    改为 Compose 1.12 的 `PopupPositionProvider` 签名（第二参数是 `IntSize`）
+  - 圆角 `Shapes.FloatingPanel`、12dp 投影、232dp 宽、行内 `MenuActionRow`（带按压反馈）
+- 标签长按菜单改用 `AnchoredMenu`：**菜单出现在被长按的那张卡片旁边**
+- 标签卡片补上按压反馈（其他卡片早已有，这张漏了）
+- 删除原来的贴底 sheet 菜单实现
+
+## 请验
+
+1. 长按任意标签卡：菜单**出现在该卡片附近**（不再是屏幕底部弹起）
+2. 长按靠下的卡片：菜单应自动翻到卡片**上方**，不会被底栏挡住
+3. 点菜单外区域能关闭；四个动作仍正常（关闭其他 / 移动到分组 / 复制链接 / 关闭）
+4. 标签卡片按下有内缩反馈
+
+---
+
 # 0.52.0-beta
 
 路线 A 的第一批：**从 KernelSU Style UI Kit 引入两个组件**（保留 GPL-3.0 出处）。

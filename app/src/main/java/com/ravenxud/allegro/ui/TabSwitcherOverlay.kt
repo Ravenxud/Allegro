@@ -70,6 +70,7 @@ import com.ravenxud.allegro.R
 import com.ravenxud.allegro.browser.BrowserState
 import com.ravenxud.allegro.browser.TabState
 import com.ravenxud.allegro.ui.components.MiuixSheet
+import com.ravenxud.allegro.ui.components.pressScale
 import com.ravenxud.allegro.ui.components.SheetRow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
@@ -236,6 +237,12 @@ fun TabSwitcherOverlay(
                 onMove = onMove,
                 onSelect = onSelect,
                 onClose = onClose,
+                menuTabId = menuTab?.id,
+                onMenuDismiss = { menuTab = null },
+                onMenuCloseOthers = { menuTab?.let { onCloseOthers(it.id) }; menuTab = null },
+                onMenuMoveToGroup = { menuTab?.let { onMoveToGroup(it.id) }; menuTab = null },
+                onMenuCopyLink = { menuTab?.let { onCopyLink(it.url) }; menuTab = null },
+                onMenuClose = { menuTab?.let { onClose(it.id) }; menuTab = null },
                 onNew = onNew,
                 onNewIncognito = onNewIncognito,
                 onReopen = onReopen,
@@ -278,29 +285,6 @@ fun TabSwitcherOverlay(
             }
         }
 
-        // 5) 长按菜单
-        MiuixSheet(
-            visible = menuTab != null,
-            onDismiss = { menuTab = null },
-            title = menuTab?.title,
-        ) {
-            val tab = menuTab
-            if (tab != null) {
-                SheetRow(MiuixIcons.Close, stringResource(R.string.tabs_close_others)) {
-                    onCloseOthers(tab.id); menuTab = null
-                }
-                SheetRow(MiuixIcons.Folder, stringResource(R.string.move_to_group)) {
-                    menuTab = null
-                    onMoveToGroup(tab.id)
-                }
-                SheetRow(MiuixIcons.Copy, stringResource(R.string.tabs_copy_link)) {
-                    onCopyLink(tab.url); menuTab = null
-                }
-                SheetRow(MiuixIcons.Delete, stringResource(R.string.tabs_close_tab)) {
-                    onClose(tab.id); menuTab = null
-                }
-            }
-        }
     }
 }
 
@@ -344,6 +328,12 @@ private fun TabGrid(
     gridState: LazyGridState,
     cardWidthPx: Float,
     cardHeightPx: Float,
+    menuTabId: String?,
+    onMenuDismiss: () -> Unit,
+    onMenuCloseOthers: () -> Unit,
+    onMenuMoveToGroup: () -> Unit,
+    onMenuCopyLink: () -> Unit,
+    onMenuClose: () -> Unit,
     onMove: (Int, Int) -> Unit,
     onSelect: (String) -> Unit,
     onClose: (String) -> Unit,
@@ -391,6 +381,12 @@ private fun TabGrid(
                             // 20ms/张的错峰：在绘制层折算，组合期不读进度
                             cardIndex = index,
                             progressProvider = progressProvider,
+                            menuOpen = menuTabId == item.id,
+                            onMenuDismiss = onMenuDismiss,
+                            onMenuCloseOthers = onMenuCloseOthers,
+                            onMenuMoveToGroup = onMenuMoveToGroup,
+                            onMenuCopyLink = onMenuCopyLink,
+                            onMenuClose = onMenuClose,
                             tab = item,
                             active = item.id == state.activeTabId,
                             dragging = dragId == item.id,
@@ -470,6 +466,12 @@ private fun TabGrid(
 private fun TabCard(
     cardIndex: Int,
     progressProvider: () -> Float,
+    menuOpen: Boolean,
+    onMenuDismiss: () -> Unit,
+    onMenuCloseOthers: () -> Unit,
+    onMenuMoveToGroup: () -> Unit,
+    onMenuCopyLink: () -> Unit,
+    onMenuClose: () -> Unit,
     tab: TabState,
     active: Boolean,
     dragging: Boolean,
@@ -540,6 +542,7 @@ private fun TabCard(
             onLongPress = onLongPress,
             modifier = Modifier
                 .fillMaxWidth()
+                .pressScale()
                 .offset { IntOffset(offsetX.roundToInt(), 0) }
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
@@ -624,6 +627,33 @@ private fun TabCard(
                     }
                 }
             }
+        }
+
+        // 长按菜单：锚定在本卡片旁边（不再是贴底 sheet）
+        com.ravenxud.allegro.ui.components.AnchoredMenu(
+            expanded = menuOpen,
+            onDismiss = onMenuDismiss,
+        ) {
+            com.ravenxud.allegro.ui.components.MenuActionRow(
+                icon = MiuixIcons.Close,
+                label = stringResource(R.string.tabs_close_others),
+                onClick = onMenuCloseOthers,
+            )
+            com.ravenxud.allegro.ui.components.MenuActionRow(
+                icon = MiuixIcons.Folder,
+                label = stringResource(R.string.move_to_group),
+                onClick = onMenuMoveToGroup,
+            )
+            com.ravenxud.allegro.ui.components.MenuActionRow(
+                icon = MiuixIcons.Copy,
+                label = stringResource(R.string.tabs_copy_link),
+                onClick = onMenuCopyLink,
+            )
+            com.ravenxud.allegro.ui.components.MenuActionRow(
+                icon = MiuixIcons.Delete,
+                label = stringResource(R.string.tabs_close_tab),
+                onClick = onMenuClose,
+            )
         }
     }
 }
