@@ -81,7 +81,23 @@ R8：`app/proguard-rules.pro` 追加
 
 ---
 
-## 4. 架构与唯一入口
+## 4. 架构与唯一入口（"统一设计"的准确定义）
+
+> 常被问"统一设计到底指什么、在哪"。这里给出**可检验**的定义与当前状态。
+> 统一 = 四条硬约束同时成立；缺一条就不算统一。
+
+| # | 约束 | 检验方式 | 现状（0.33.2） |
+|---|---|---|---|
+| U1 | 动效时长/曲线/spring **只**来自 `ui/theme/Motion.kt` | `grep -rn "tween(" app/src/main` 只命中 `Motion.kt` | ❌ 15 处裸 `tween` 散在 3 个文件（BrowserScreen / HomeScreen / MiuixSheet） |
+| U2 | 材质**只**经 `Modifier.appGlass` / `barGlass` | call site 不得出现 `renderEffect` / `renderLayer` / `drawBackdrop` | ❌ 玻璃尚不存在，仅冒烟页有临时用法 |
+| U3 | call site 不直接依赖材质库 | `grep -rn "com.kyant.backdrop" app/src/main` 只命中 `ui/glass/**` | ❌ 冒烟页直接 import（P0 临时例外） |
+| U4 | 间距/圆角/尺寸**只**来自 `ui/theme/Tokens.kt` | 无裸 `xx.dp` 的硬性数值（允许 0/1dp 与描边） | 🟡 已存在 `Spacing/Radius/IconSize`，但新代码（桌面/同步/分组）仍有裸 dp |
+
+**代码现状**（诚实说明）：`ui/theme/Motion.kt`、`ui/glass/*` **都还不存在**；
+统一设计目前只存在于文档（本文 §4 + §6/§7，以及 `ANIMATION.md` 的令牌层）。
+**P1（0.33.3）的任务就是把 U1 落地**，U2/U3 由 P2 落地，U4 随各阶段顺手清理。
+
+## 4.1 分层与依赖方向
 
 ```
 L3 细节：三段 AGSL（IOR / 超椭圆 / 镜像）+ 噪声      ui/glass/GlassShaders.kt
