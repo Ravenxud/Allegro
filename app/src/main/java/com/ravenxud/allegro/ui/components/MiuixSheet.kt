@@ -47,8 +47,8 @@ import com.ravenxud.allegro.ui.glass.appGlass
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
- * 统一底部面板：32% 遮罩 + 顶部 28dp 圆角 + 拖拽条 + 分组行。
- * 主菜单、长按菜单共用，避免两套样式。
+ * 统一底部面板：无遮罩 + 顶部 28dp 圆角 + 拖拽条 + 分组行。
+ * 面板外保持网页原始亮度，点击空白处仍可关闭；主菜单、长按菜单共用。
  */
 @Composable
 fun MiuixSheet(
@@ -68,10 +68,11 @@ fun MiuixSheet(
             enter = fadeIn(Motion.enter()),
             exit = fadeOut(Motion.exit(Motion.Duration.Quick)),
         ) {
+            // 只负责接收面板外点击，不绘制任何颜色。
+            // 即使低透明度黑色遮罩也会改变网页观感，因此这里必须完全透明。
             Box(
                 Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.18f))
                     .clickable(onClick = onDismiss),
             )
         }
