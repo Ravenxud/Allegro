@@ -42,6 +42,8 @@ class TabWebView @JvmOverloads constructor(
 
         fun onReaderExtracted(view: TabWebView, json: String)
 
+        fun onElementPicked(view: TabWebView, selector: String)
+
         fun onPageText(view: TabWebView, text: String)
 
         fun onBlobTooLarge(view: TabWebView, fileName: String)
@@ -82,6 +84,9 @@ class TabWebView @JvmOverloads constructor(
             setRenderPriority(WebSettings.RenderPriority.HIGH)
             // 允许页面在后台预取，提升前进/后退命中率
             cacheMode = WebSettings.LOAD_DEFAULT
+            // 离线页是 files/offline 下的本地 HTML，需要 file:// 访问；
+            // 只开 allowFileAccess，不开 allowFileAccessFromFileURLs（避免本地页跨域读文件）
+            allowFileAccess = true
             // 安全浏览（与系统 WebView 联动）
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                 safeBrowsingEnabled = true
@@ -122,6 +127,12 @@ class TabWebView @JvmOverloads constructor(
         fun onPageText(secret: String?, text: String?) {
             if (!com.example.simplebrowser.js.BridgeAuth.isValid(secret)) return
             post { callbacks.onPageText(this@TabWebView, text.orEmpty()) }
+        }
+
+        @JavascriptInterface
+        fun onElementPicked(secret: String?, selector: String?) {
+            if (!com.example.simplebrowser.js.BridgeAuth.isValid(secret)) return
+            post { callbacks.onElementPicked(this@TabWebView, selector.orEmpty()) }
         }
 
         @JavascriptInterface

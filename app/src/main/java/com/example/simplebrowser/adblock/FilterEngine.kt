@@ -68,6 +68,21 @@ class FilterEngine private constructor(
         return blocked
     }
 
+    /**
+     * 叠加一批全局元素隐藏选择器（「选择元素隐藏」产生的本地规则）。
+     *
+     * 只复制引用、不重新解析规则文本，所以可以在 UI 线程直接调用；
+     * 已存在的选择器不会重复叠加。
+     */
+    fun withExtraCosmetic(selectors: List<String>): FilterEngine {
+        if (selectors.isEmpty()) return this
+        val extra = selectors.map { it.trim() }
+            .filter { it.isNotEmpty() && it !in cosmeticGlobal }
+            .distinct()
+        if (extra.isEmpty()) return this
+        return FilterEngine(networkRules, cosmeticByHost, cosmeticGlobal + extra)
+    }
+
     /** 当前站点适用的隐藏选择器（全局 + 各级父域）。 */
     fun cosmeticSelectors(url: String): List<String> {
         val host = hostOf(url) ?: return cosmeticGlobal

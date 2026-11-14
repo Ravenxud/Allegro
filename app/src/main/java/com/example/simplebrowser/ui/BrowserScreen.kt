@@ -77,6 +77,7 @@ import com.example.simplebrowser.ui.screens.BookmarksScreen
 import com.example.simplebrowser.ui.screens.DownloadsScreen
 import com.example.simplebrowser.ui.screens.HistoryScreen
 import com.example.simplebrowser.ui.screens.OfflinePagesScreen
+import com.example.simplebrowser.ui.screens.PrivacyReportScreen
 import com.example.simplebrowser.ui.screens.ReaderScreen
 import com.example.simplebrowser.ui.screens.SettingsScreen
 import com.example.simplebrowser.ui.screens.UserScriptsScreen
@@ -500,6 +501,14 @@ fun BrowserScreen(
                         showAppMenu = false
                         screen = SecondaryScreen.USERSCRIPTS
                     },
+                    onPrivacyReport = {
+                        showAppMenu = false
+                        screen = SecondaryScreen.PRIVACY
+                    },
+                    onPickElement = {
+                        showAppMenu = false
+                        controller.startElementPicker()
+                    },
                     adBlockPaused = controller.isAdBlockPausedForCurrentSite(),
                     onToggleAdBlockSite = { controller.toggleAdBlockForCurrentSite() },
                 )
@@ -562,12 +571,20 @@ fun BrowserScreen(
                     )
                     SecondaryScreen.HISTORY -> HistoryScreen(history, openAndBack, back)
                     SecondaryScreen.DOWNLOADS -> DownloadsScreen(downloads, downloadCenter, back)
+                    SecondaryScreen.PRIVACY -> PrivacyReportScreen(
+                        adBlock = adBlock,
+                        onBack = back,
+                    )
                     SecondaryScreen.USERSCRIPTS -> UserScriptsScreen(
                         store = com.example.simplebrowser.di.ServiceLocator.userScriptStore,
                         onBack = back,
                     )
                     SecondaryScreen.OFFLINE -> OfflinePagesScreen(
                         load = { controller.offlineEntries() },
+                        onOpen = { name ->
+                            controller.openOfflinePage(name)
+                            back()
+                        },
                         onDelete = { controller.deleteOfflineEntry(it) },
                         onBack = back,
                     )

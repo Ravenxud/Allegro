@@ -96,6 +96,8 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         controller.persistNow()
+        // 隐私报告的域名计数是内存累加的，退到后台时落盘，避免被系统杀掉后丢统计
+        ServiceLocator.adBlockRepository.flushHosts()
     }
 
     override fun onDestroy() {

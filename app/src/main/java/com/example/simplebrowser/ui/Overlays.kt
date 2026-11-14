@@ -51,6 +51,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Blocklist
 import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.Hide
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Favorites
@@ -103,6 +104,8 @@ fun AppMenu(
     onSharePage: () -> Unit,
     onOfflinePages: () -> Unit,
     onUserScripts: () -> Unit,
+    onPrivacyReport: () -> Unit,
+    onPickElement: () -> Unit,
     adBlockPaused: Boolean,
     onToggleAdBlockSite: () -> Unit,
     onDismiss: () -> Unit,
@@ -115,6 +118,8 @@ fun AppMenu(
         SheetRow(MiuixIcons.Share, stringResource(R.string.menu_share_page), onClick = onSharePage)
         SheetRow(MiuixIcons.Folder, stringResource(R.string.menu_offline_pages), onClick = onOfflinePages)
         SheetRow(MiuixIcons.Settings, stringResource(R.string.userscript_title), onClick = onUserScripts)
+        SheetRow(MiuixIcons.Hide, stringResource(R.string.menu_pick_element), onClick = onPickElement)
+        SheetRow(MiuixIcons.Blocklist, stringResource(R.string.menu_privacy_report), onClick = onPrivacyReport)
 
         SheetSection(stringResource(R.string.sheet_section_common))
         SheetRow(MiuixIcons.Home, stringResource(R.string.menu_home), onClick = onHome)

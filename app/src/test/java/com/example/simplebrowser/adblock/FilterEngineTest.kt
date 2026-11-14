@@ -76,6 +76,15 @@ class FilterEngineTest {
     }
 
     @Test
+    fun `local cosmetic rules apply to every site without reparsing`() {
+        val custom = engine.withExtraCosmetic(listOf(".picked-ad", " ", ".global-ad"))
+        val selectors = custom.cosmeticSelectors("https://unknown.test/page")
+        assertEquals(listOf(".global-ad", ".picked-ad"), selectors)
+        // 原引擎不受影响
+        assertEquals(listOf(".global-ad"), engine.cosmeticSelectors("https://unknown.test/page"))
+    }
+
+    @Test
     fun `cosmetic script is idempotent and escaped`() {
         val script = CosmeticInjector.script(listOf(".ad", "#banner"))
         assertTrue(script.contains("__sb_adblock"))

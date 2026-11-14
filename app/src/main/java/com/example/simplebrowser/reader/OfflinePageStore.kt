@@ -24,6 +24,25 @@ class OfflinePageStore(context: Context) {
 
     fun fileFor(id: String): File = File(dir, "$id.mhtml")
 
+    /** 转换后的自包含 HTML（离线页真正打开的就是它）。 */
+    fun htmlFileFor(id: String): File = File(dir, "$id.html")
+
+    fun fileFor(entry: Entry): File = File(dir, entry.fileName)
+
+    /**
+     * 把某条记录的源文件从 MHTML 换成转换后的 HTML。
+     *
+     * 离线页在首次打开时惰性转换，转换完就地更新索引，避免重复转换。
+     */
+    @Synchronized
+    fun replaceFile(entry: Entry, newFileName: String, sizeBytes: Long) {
+        val list = load().map { e ->
+            if (e.id == entry.id) e.copy(fileName = newFileName, sizeBytes = sizeBytes) else e
+        }
+        write(list)
+    }
+
+    @Synchronized
     fun save(title: String, url: String, file: File) {
         val list = load().toMutableList()
         val id = file.nameWithoutExtension
@@ -42,6 +61,7 @@ class OfflinePageStore(context: Context) {
         write(list)
     }
 
+    @Synchronized
     fun load(): List<Entry> {
         if (!indexFile.exists()) return emptyList()
         return runCatching {
@@ -60,11 +80,15 @@ class OfflinePageStore(context: Context) {
         }.getOrDefault(emptyList())
     }
 
+    @Synchronized
     fun delete(entry: Entry) {
-        runCatching { File(dir, entry.fileName).delete() }
+        runCatching { fileFor(entry).delete() }
+        // 兼容：转换前的 .mhtml 与转换后的 .html 都清掉
+        runCatching { fileFor(entry.id).delete() }
         write(load().filterNot { it.id == entry.id })
     }
 
+    @Synchronized
     private fun write(list: List<Entry>) {
         val array = JSONArray()
         list.forEach { e ->

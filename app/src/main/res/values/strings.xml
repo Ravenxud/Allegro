@@ -168,4 +168,23 @@
     <string name="userscript_do_install">安装</string>
     <string name="userscript_installed">已安装：%1$s</string>
     <string name="userscript_install_failed">安装失败（缺少 @name 或 @match）</string>
+    <string name="privacy_report_title">隐私报告</string>
+    <string name="privacy_report_total">已拦截 %1$d 条</string>
+    <string name="privacy_report_hint">这些请求在本机被广告过滤规则阻止，未上传任何数据</string>
+    <string name="privacy_report_top">按域名统计</string>
+    <string name="picker_rules_title">本地隐藏规则</string>
+    <string name="picker_rules_empty">还没有自定义隐藏规则</string>
+    <string name="picker_rules_empty_hint">在页面上长按菜单选「选择元素隐藏」后点选广告块</string>
+    <string name="picker_saved">已添加隐藏规则</string>
+    <string name="menu_pick_element">选择元素隐藏</string>
+    <string name="menu_privacy_report">隐私报告</string>
+    <string name="offline_missing">离线文件不存在</string>
+    <string name="privacy_report_hosts">覆盖 %1$d 个域名</string>
+    <string name="privacy_clear_stats">清空统计</string>
+    <string name="picker_remove_rule">删除这条规则</string>
+    <string name="picker_clear_rules">全部清除</string>
+    <string name="picker_pick_hint">点选要隐藏的页面元素，返回键或 Esc 取消</string>
+    <string name="offline_saving">正在保存离线页…</string>
+    <string name="offline_opening">正在打开离线页…</string>
+    <string name="offline_open_failed">离线页已损坏，无法打开</string>
 </resources>

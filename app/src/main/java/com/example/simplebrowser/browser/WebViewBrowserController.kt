@@ -16,6 +16,7 @@ import com.example.simplebrowser.R
 import com.example.simplebrowser.data.entity.ClosedTabEntity
 import com.example.simplebrowser.adblock.AdBlockRepository
 import com.example.simplebrowser.adblock.CosmeticInjector
+import com.example.simplebrowser.reader.MhtmlArchive
 import com.example.simplebrowser.reader.OfflinePageStore
 import com.example.simplebrowser.reader.ReaderExtractor
 import com.example.simplebrowser.adblock.FilterEngine
@@ -380,14 +381,26 @@ class WebViewBrowserController(
     // --------------------------------------------------- WebView 回调
 
     override fun onPageStarted(view: TabWebView, url: String) {
-        updateTab(view.tabId) { it.copy(url = url, isLoading = true, progress = 0) }
+        updateTab(view.tabId) { it.copy(url = displayUrl(it, url), isLoading = true, progress = 0) }
         jsInjector.inject(view, InjectAt.DOC_START, JsContext(url, isDesktop(view.tabId)))
     }
+
+    /**
+     * 离线页实际加载的是 `file://…/offline/x.html`，但地址栏应继续显示原网址。
+     */
+    private fun displayUrl(tab: TabState, actual: String): String =
+        if (actual.startsWith("file://") && actual.contains("/offline/") &&
+            tab.url.isNotBlank() && !tab.url.startsWith("file://")
+        ) {
+            tab.url
+        } else {
+            actual
+        }
 
     override fun onPageFinished(view: TabWebView, url: String) {
         updateTab(view.tabId) {
             it.copy(
-                url = url,
+                url = displayUrl(it, url),
                 title = it.title.ifBlank { url },
                 isLoading = false,
                 progress = 100,
@@ -482,7 +495,7 @@ class WebViewBrowserController(
             url = url,
             includePathFragments = !sameSite,
         )
-        adBlock.onRequestChecked(blocked)
+        adBlock.onRequestChecked(blocked, url)
         return blocked
     }
 
@@ -545,22 +558,197 @@ class WebViewBrowserController(
     override fun saveOfflinePage() {
         val view = activeView() ?: return
         val tab = _state.value.activeTab ?: return
-        val id = java.util.UUID.randomUUID().toString()
-        val file = offlineStore.fileFor(id)
-        runCatching {
-            view.saveWebArchive(file.absolutePath)
-            offlineStore.save(tab.title, tab.url, file)
-            Toast.makeText(context, R.string.offline_saved, Toast.LENGTH_SHORT).show()
-        }.onFailure {
+        val id = UUID.randomUUID().toString()
+        val temp = File(context.cacheDir, "offline-$id.mhtml")
+        val archived = runCatching { view.saveWebArchive(temp.absolutePath) }.isSuccess &&
+            temp.exists() && temp.length() > 0
+        if (!archived) {
+            runCatching { temp.delete() }
             Toast.makeText(context, R.string.offline_save_failed, Toast.LENGTH_SHORT).show()
+            return
+        }
+        Toast.makeText(context, R.string.offline_saving, Toast.LENGTH_SHORT).show()
+        // WebView 存出来的是 MHTML，WebView 自己打不开，必须转成自包含 HTML
+        CoroutineScope(Dispatchers.IO).launch {
+            val html = runCatching { MhtmlArchive.toHtml(temp.readBytes()) }.getOrNull()
+            if (html == null) {
+                runCatching { temp.delete() }
+                scope.launch {
+                    Toast.makeText(context, R.string.offline_save_failed, Toast.LENGTH_SHORT).show()
+                }
+                return@launch
+            }
+            val target = offlineStore.htmlFileFor(id)
+            runCatching { target.writeText(html.html) }
+            runCatching { temp.delete() }
+            offlineStore.save(tab.title, tab.url, target)
+            scope.launch {
+                Toast.makeText(context, R.string.offline_saved, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
     override fun offlineEntries() = offlineStore.load()
 
+    override fun openOfflinePage(fileName: String) {
+        val entry = offlineStore.load().firstOrNull { it.fileName == fileName }
+        if (entry == null) {
+            Toast.makeText(context, R.string.offline_missing, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val html = offlineStore.htmlFileFor(entry.id)
+        if (html.exists() && html.length() > 0) {
+            openOfflineHtml(entry, html)
+            return
+        }
+        // 旧版本存的 .mhtml 在首次打开时惰性转换
+        val source = offlineStore.fileFor(entry)
+        if (!source.exists()) {
+            Toast.makeText(context, R.string.offline_missing, Toast.LENGTH_SHORT).show()
+            return
+        }
+        Toast.makeText(context, R.string.offline_opening, Toast.LENGTH_SHORT).show()
+        CoroutineScope(Dispatchers.IO).launch {
+            val converted = runCatching {
+                MhtmlArchive.toHtml(source.readBytes(), maxInlineBytes = 16 * 1024 * 1024)
+            }.getOrNull()
+            if (converted == null) {
+                scope.launch {
+                    Toast.makeText(context, R.string.offline_open_failed, Toast.LENGTH_SHORT).show()
+                }
+                return@launch
+            }
+            runCatching { html.writeText(converted.html) }
+            if (html.exists()) {
+                offlineStore.replaceFile(entry, html.name, html.length())
+                runCatching { source.delete() }
+                scope.launch { openOfflineHtml(entry, html) }
+            }
+        }
+    }
+
+    private fun openOfflineHtml(entry: OfflinePageStore.Entry, file: File) {
+        val tabId = openTab("file://${file.absolutePath}")
+        updateTab(tabId) { it.copy(title = entry.title.ifBlank { entry.url }, url = entry.url) }
+    }
+
     override fun deleteOfflineEntry(id: String) {
         offlineStore.load().firstOrNull { it.id == id }?.let { offlineStore.delete(it) }
     }
+
+    override fun startElementPicker() {
+        val view = activeView() ?: return
+        val secret = com.example.simplebrowser.js.BridgeAuth.current()
+        view.evaluateJavascript(pickerScript(secret), null)
+        Toast.makeText(context, R.string.picker_pick_hint, Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onElementPicked(view: TabWebView, selector: String) {
+        if (selector.isBlank()) return
+        adBlock.addLocalCosmeticRule(selector)
+        Toast.makeText(context, R.string.picker_saved, Toast.LENGTH_SHORT).show()
+        view.reload()
+    }
+
+    private fun pickerScript(secret: String): String = """
+        (function(){
+          var SECRET = '$secret';
+          if (window.__sbPicker) { window.__sbPicker.stop(); return; }
+          if (!window.__sbHandlePicked && window.SimpleBrowserBridge) {
+            window.__sbHandlePicked = function(sel){
+              try { SimpleBrowserBridge.onElementPicked(SECRET, sel); } catch (e) {}
+            };
+          }
+          var hover = null;
+          var unsafe = /[\s\x00-\x1f]/;
+
+          function esc(v){
+            return String(v).replace(/[^a-zA-Z0-9_-]/g, function(c){ return '\\' + c; });
+          }
+          function classesOf(el){
+            var raw = (el.className || '').toString().trim().split(/\s+/).filter(Boolean);
+            var out = [];
+            for (var i = 0; i < raw.length && out.length < 2; i++) {
+              var c = raw[i];
+              if (c.length > 36) continue;
+              if (/\d{3,}/.test(c)) continue;                       // 带哈希/序号，不稳
+              if (/^(active|hover|focus|show|shown|open|opened|selected|current|visible)$/i.test(c)) continue;
+              if (unsafe.test(c)) continue;
+              out.push(c);
+            }
+            return out;
+          }
+          function typeIndex(el){
+            var n = 0;
+            var p = el.parentElement;
+            if (!p) return 1;
+            for (var i = 0; i < p.children.length; i++) {
+              if (p.children[i].tagName === el.tagName) n++;
+              if (p.children[i] === el) return n;
+            }
+            return 1;
+          }
+          function build(el){
+            if (!el || el.nodeType !== 1) return '';
+            if (el.id && !/\d{4,}/.test(el.id) && !unsafe.test(el.id)) return '#' + esc(el.id);
+            var parts = [];
+            var cur = el;
+            for (var depth = 0; cur && cur.nodeType === 1 && depth < 4; depth++) {
+              var tag = cur.tagName.toLowerCase();
+              if (tag === 'body' || tag === 'html') break;
+              var cls = classesOf(cur);
+              var piece = tag + cls.map(function(c){ return '.' + esc(c); }).join('');
+              var parent = cur.parentElement;
+              if (parent && !cur.id && parent.children.length > 1) {
+                var same = 0;
+                for (var i = 0; i < parent.children.length; i++) {
+                  var sib = parent.children[i];
+                  if (sib.tagName === cur.tagName && classesOf(sib).join('|') === cls.join('|')) same++;
+                }
+                if (same > 1) piece += ':nth-of-type(' + typeIndex(cur) + ')';
+              }
+              parts.unshift(piece);
+              if (cls.length >= 1 && depth >= 1) break;             // 类名够特征就不再往上爬
+              cur = parent;
+            }
+            return parts.join(' > ');
+          }
+          function clearHover(){
+            if (hover && hover.style) hover.style.outline = '';
+          }
+          function onMove(e){
+            var el = e.target;
+            if (el === hover) return;
+            clearHover();
+            if (!el || el.nodeType !== 1) return;
+            hover = el;
+            el.style.outline = '2px solid #3D7EFF';
+          }
+          function onClick(e){
+            e.preventDefault();
+            e.stopPropagation();
+            var selector = build(e.target);
+            clearHover();
+            stop();
+            if (selector) window.__sbHandlePicked(selector);
+          }
+          function onKey(e){
+            if (e.key === 'Escape') { clearHover(); stop(); }
+          }
+          function stop(){
+            document.removeEventListener('mousemove', onMove, true);
+            document.removeEventListener('click', onClick, true);
+            document.removeEventListener('keydown', onKey, true);
+            clearHover();
+            hover = null;
+            window.__sbPicker = null;
+          }
+          window.__sbPicker = { stop: stop };
+          document.addEventListener('mousemove', onMove, true);
+          document.addEventListener('click', onClick, true);
+          document.addEventListener('keydown', onKey, true);
+        })();
+    """.trimIndent()
 
     override fun sharePage() {
         val tab = _state.value.activeTab ?: return

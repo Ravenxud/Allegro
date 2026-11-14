@@ -74,13 +74,19 @@ interface BrowserController {
     /** 读取当前页纯文本（用于朗读）。 */
     fun readPageText(onReady: (text: String) -> Unit)
 
-    /** 保存当前页为离线 MHTML。 */
+    /** 保存当前页为离线页（内部先存 MHTML，再转成自包含 HTML）。 */
+    fun saveOfflinePage()
+
     /** 离线页列表（阅读/离线页界面用）。 */
     fun offlineEntries(): List<com.example.simplebrowser.reader.OfflinePageStore.Entry>
 
+    /** 打开离线页（传入 [offlineEntries] 里的 fileName）。 */
+    fun openOfflinePage(fileName: String)
+
     fun deleteOfflineEntry(id: String)
 
-    fun saveOfflinePage()
+    /** 元素选择器：进入拾取模式，用户点选元素后生成隐藏规则。 */
+    fun startElementPicker()
 
     /** 分享当前页。 */
     fun sharePage()

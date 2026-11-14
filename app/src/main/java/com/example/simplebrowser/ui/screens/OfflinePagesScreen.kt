@@ -1,5 +1,6 @@
 package com.example.simplebrowser.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,6 +41,7 @@ import java.util.Locale
 @Composable
 fun OfflinePagesScreen(
     load: () -> List<OfflinePageStore.Entry>,
+    onOpen: (String) -> Unit,
     onDelete: (String) -> Unit,
     onBack: () -> Unit,
 ) {
@@ -60,7 +62,11 @@ fun OfflinePagesScreen(
                 verticalArrangement = Arrangement.spacedBy(Spacing.s),
             ) {
                 items(items, key = { it.id }) { entry ->
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onOpen(entry.fileName) },
+                    ) {
                         Row(
                             modifier = Modifier.padding(start = Spacing.l, end = Spacing.s, top = Spacing.m, bottom = Spacing.m),
                             verticalAlignment = Alignment.CenterVertically,

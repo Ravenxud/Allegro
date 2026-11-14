@@ -16,8 +16,8 @@ android {
         minSdk = 26
         targetSdk = 37
         // 编译测试阶段：版本号统一带 beta 后缀（见 README「版本约定」）
-        versionCode = 56
-        versionName = "0.24.0-beta"
+        versionCode = 57
+        versionName = "0.25.0-beta"
     }
 
     buildTypes {
