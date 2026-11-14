@@ -65,6 +65,7 @@ fun SettingsScreen(
     val blockedCount by adBlock.blocked.collectAsState()
     val showHomeBookmarks by settings.homeBookmarksEnabled.collectAsState()
     val alwaysDesktop by settings.alwaysDesktop.collectAsState()
+    val desktopUa by settings.desktopUa.collectAsState()
     val updateState by update.state.collectAsState()
     val repoInput = remember { androidx.compose.runtime.mutableStateOf(settings.updateRepo()) }
 
@@ -137,6 +138,15 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_always_desktop),
                     summary = stringResource(R.string.settings_always_desktop_summary),
                 )
+                ComponentDivider()
+                com.ravenxud.allegro.data.model.DesktopUa.entries.forEachIndexed { index, option ->
+                    if (index > 0) ComponentDivider()
+                    RadioButtonPreference(
+                        title = stringResource(R.string.settings_desktop_ua) + " · " + option.label,
+                        selected = desktopUa == option,
+                        onClick = { settings.setDesktopUa(option) },
+                    )
+                }
             }
 
             SectionTitle(stringResource(R.string.home_section_bookmarks))

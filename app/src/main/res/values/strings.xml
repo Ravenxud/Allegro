@@ -245,4 +245,7 @@
     <string name="settings_browsing">浏览</string>
     <string name="settings_always_desktop">始终请求桌面版</string>
     <string name="settings_always_desktop_summary">所有站点默认用桌面版打开；可在「本站设置」里单独覆盖</string>
+    <string name="desktop_fallback">桌面版加载失败，已用普通方式打开：%1$s</string>
+    <string name="menu_desktop_site">本站桌面版</string>
+    <string name="settings_desktop_ua">桌面版 UA</string>
 </resources>

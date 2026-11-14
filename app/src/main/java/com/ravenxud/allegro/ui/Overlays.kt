@@ -108,6 +108,8 @@ fun AppMenu(
     onPrivacyReport: () -> Unit,
     onPickElement: () -> Unit,
     onSiteSettings: () -> Unit,
+    desktopSite: Boolean,
+    onToggleDesktopSite: () -> Unit,
     adBlockPaused: Boolean,
     onToggleAdBlockSite: () -> Unit,
     onDismiss: () -> Unit,
@@ -138,6 +140,12 @@ fun AppMenu(
         }
 
         SheetSection(stringResource(R.string.sheet_section_appearance))
+        SheetRow(
+            icon = MiuixIcons.Theme,
+            title = stringResource(R.string.menu_desktop_site),
+            value = stringResource(if (desktopSite) R.string.sheet_on else R.string.sheet_off),
+            onClick = onToggleDesktopSite,
+        )
         SheetRow(
             icon = MiuixIcons.Blocklist,
             title = stringResource(R.string.menu_adblock_site),

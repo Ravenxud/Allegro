@@ -89,6 +89,12 @@ interface BrowserController {
     /** 用户显式配置过的站点（不含继承）。 */
     fun configuredSiteSettings(): List<com.ravenxud.allegro.data.site.SiteSettings>
 
+    /** 当前站点是否处于桌面版。 */
+    fun isDesktopForCurrentSite(): Boolean
+
+    /** 一键切换"本站桌面版"，返回切换后的状态。 */
+    fun toggleDesktopForCurrentSite(): Boolean
+
     /** 清除当前站点 Cookie 与 WebStorage。 */
     fun clearCurrentSiteData()
 

@@ -87,6 +87,28 @@ class WebViewBrowserController(
     private val pool = WebViewPool(context, this)
     private val jsInjector = JsInjector(JsRegistry.default())
     private val desktopProxy = com.ravenxud.allegro.desktop.DesktopProxy()
+
+    /** 当前设置下的桌面 UA。 */
+    private fun desktopUa(): String = when (settings.desktopUa.value) {
+        com.ravenxud.allegro.data.model.DesktopUa.WINDOWS -> com.ravenxud.allegro.desktop.DesktopHeaders.UA_WINDOWS
+        else -> com.ravenxud.allegro.desktop.DesktopHeaders.UA_MAC
+    }
+
+    /** 该标签当前是否应使用桌面版：站点显式设置 > 标签开关 > 全局开关。 */
+    private fun effectiveDesktop(tab: TabState): Boolean {
+        val explicit = siteSettings.explicitForHost(FilterEngine.hostOf(tab.url))
+        return com.ravenxud.allegro.desktop.DesktopMode.effective(
+            siteConfigured = explicit != null,
+            siteDesktopUa = explicit?.desktopUa == true,
+            tabDesktop = tab.desktopMode,
+            globalAlways = settings.alwaysDesktop.value,
+        )
+    }
+
+    private fun isDesktop(tabId: String): Boolean {
+        val tab = _state.value.tabs.firstOrNull { it.id == tabId } ?: return false
+        return effectiveDesktop(tab)
+    }
     private val menuActions = MenuActions(context)
     private val offlineStore = OfflinePageStore(context)
     private var readerCallback: ((String?) -> Unit)? = null
@@ -460,7 +482,10 @@ class WebViewBrowserController(
         runCatching {
             view.settings.javaScriptEnabled = site?.javaScript ?: true
             view.settings.blockNetworkImage = site?.images == false
-            view.settings.userAgentString = if (desktop) DESKTOP_UA else view.mobileUserAgent
+            view.settings.userAgentString = if (desktop) desktopUa() else view.mobileUserAgent
+            // 桌面页按 1280 宽渲染，需要宽视口才能整体缩放而不是横向溢出
+            view.settings.useWideViewPort = desktop
+            view.settings.loadWithOverviewMode = desktop
             view.settings.loadsImagesAutomatically = site?.images ?: true
         }
         return site
@@ -504,10 +529,20 @@ class WebViewBrowserController(
         val url = request.url?.toString().orEmpty()
         if (!url.startsWith("http://") && !url.startsWith("https://")) return null
         val tab = _state.value.tabs.firstOrNull { it.id == view.tabId } ?: return null
-        val site = siteSettings.forHost(com.ravenxud.allegro.adblock.FilterEngine.hostOf(tab.url))
-        val desktop = site?.desktopUa == true || tab.desktopMode || settings.alwaysDesktop.value
-        if (!desktop) return null
-        return desktopProxy.intercept(url, request.requestHeaders ?: emptyMap(), DESKTOP_UA)
+        if (!effectiveDesktop(tab)) return null
+        val outcome = desktopProxy.intercept(url, request.requestHeaders ?: emptyMap(), desktopUa())
+        if (outcome.response == null && outcome.reason != null) notifyDesktopFallback(outcome.reason)
+        return outcome.response
+    }
+
+    private var lastDesktopNoticeAt = 0L
+
+    private fun notifyDesktopFallback(reason: String) {
+        val now = System.currentTimeMillis()
+        if (now - lastDesktopNoticeAt < 8000) return
+        lastDesktopNoticeAt = now
+        val text = context.getString(R.string.desktop_fallback, reason)
+        scope.launch { Toast.makeText(context, text, Toast.LENGTH_SHORT).show() }
     }
 
     /** window.open / target=_blank：后台开新标签，不打断当前页。 */
@@ -803,6 +838,23 @@ class WebViewBrowserController(
 
     override fun configuredSiteSettings(): List<SiteSettings> = siteSettings.configured()
 
+    override fun isDesktopForCurrentSite(): Boolean {
+        val tab = _state.value.activeTab ?: return false
+        return effectiveDesktop(tab)
+    }
+
+    /** 菜单里一键切换"本站桌面版"（写入站点设置，立即重载）。 */
+    override fun toggleDesktopForCurrentSite(): Boolean {
+        val tab = _state.value.activeTab ?: return false
+        val host = FilterEngine.hostOf(tab.url) ?: return false
+        val current = effectiveDesktop(tab)
+        val site = siteSettings.forHost(host) ?: SiteSettings(host)
+        siteSettings.save(site.copy(desktopUa = !current))
+        applySiteSettings(activeView() ?: return !current, tab.url)
+        activeView()?.reload()
+        return !current
+    }
+
     override fun clearCurrentSiteData() {
         val host = currentHost() ?: return
         clearSiteData(host)
@@ -1025,8 +1077,7 @@ class WebViewBrowserController(
 
     // ------------------------------------------------------------- 内部
 
-    private fun isDesktop(tabId: String): Boolean =
-        _state.value.tabs.firstOrNull { it.id == tabId }?.desktopMode == true
+
 
     override fun captureStub(onCaptured: (Bitmap?) -> Unit) {
         val activity = context as? android.app.Activity ?: return onCaptured(null)

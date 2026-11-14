@@ -24,13 +24,15 @@ class DesktopProxy(
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, CacheEntry>?) = size > 12
     }
 
-    fun intercept(url: String, requestHeaders: Map<String, String>, userAgent: String): WebResourceResponse? {
+    data class Outcome(val response: WebResourceResponse?, val reason: String? = null)
+
+    fun intercept(url: String, requestHeaders: Map<String, String>, userAgent: String): Outcome {
         val cached = synchronized(cache) {
             cache[url]?.takeIf { System.currentTimeMillis() - it.at < cacheTtlMs }
         }
         if (cached != null) {
             DiagLog.log("desktop-cache", url)
-            return response(cached.html, cached.charset, url, cached.finalUrl)
+            return Outcome(response(cached.html, cached.charset, url, cached.finalUrl))
         }
 
         val cookies = runCatching { cookieManager()?.getCookie(url) }.getOrNull()
@@ -54,15 +56,15 @@ class DesktopProxy(
                     cache[url] = CacheEntry(System.currentTimeMillis(), html, result.finalUrl, result.charset)
                 }
                 DiagLog.log("desktop-ok", "${result.finalUrl} ${html.length}B")
-                response(html, result.charset, url, result.finalUrl)
+                Outcome(response(html, result.charset, url, result.finalUrl))
             }
             is DesktopDocumentFetcher.Result.Skipped -> {
                 DiagLog.log("desktop-skip", result.reason)
-                null
+                Outcome(null, result.reason)
             }
             is DesktopDocumentFetcher.Result.Failed -> {
                 DiagLog.log("desktop-fail", result.reason)
-                null
+                Outcome(null, result.reason)
             }
         }
     }

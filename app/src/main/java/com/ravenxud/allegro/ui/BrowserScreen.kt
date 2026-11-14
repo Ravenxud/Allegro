@@ -536,6 +536,8 @@ fun BrowserScreen(
                         showAppMenu = false
                         screen = SecondaryScreen.SITE
                     },
+                    desktopSite = controller.isDesktopForCurrentSite(),
+                    onToggleDesktopSite = { controller.toggleDesktopForCurrentSite() },
                     adBlockPaused = controller.isAdBlockPausedForCurrentSite(),
                     onToggleAdBlockSite = { controller.toggleAdBlockForCurrentSite() },
                 )

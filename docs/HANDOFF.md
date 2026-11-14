@@ -1,7 +1,7 @@
 # 交接说明（给下一个 AI / 开发者）
 
 > 读完这一份就能接手开发。项目：**Allegro**（代码内部名 SimpleBrowser）—— 极简 Android 浏览器。
-> 最后更新：0.30.0-beta（versionCode 69）
+> 最后更新：0.30.1-beta（versionCode 70）
 > 桌面版模式 v2 已落地：主文档代理（见 docs/DESKTOP_MODE.md）
 > 包名已改为 `com.ravenxud.allegro`（与旧包不兼容，需卸载重装）
 
@@ -180,7 +180,8 @@ app/src/test/java/.../DesktopHeadersTest  5 条  hint 三件套/透传/UA 映射
 app/src/test/java/.../DesktopRedirectPolicyTest 7 条  互换一次/循环/上限
 app/src/test/java/.../BaseHrefTest        5 条  base 注入
 app/src/test/java/.../DesktopFetcherIntegrationTest 6 条  真连 mock 站点（默认跳过）
-共 90 条，全绿（集成测试需 env）
+app/src/test/java/.../DesktopModeTest     4 条  桌面判定优先级 / UA key
+共 94 条，全绿（集成测试需 env）
 ```
 
 真机验证清单见 `docs/TESTING.md`。**没有 instrumentation 测试，也没有截图测试**。

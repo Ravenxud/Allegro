@@ -41,6 +41,17 @@ class SettingsRepository(context: Context) {
         _searchEngineId.value = id
     }
 
+    private val _desktopUa = MutableStateFlow(
+        com.ravenxud.allegro.data.model.DesktopUa.fromKey(prefs.getString(KEY_DESKTOP_UA, null)),
+    )
+    /** 桌面版使用的 UA 平台（macOS / Windows）。 */
+    val desktopUa: StateFlow<com.ravenxud.allegro.data.model.DesktopUa> = _desktopUa.asStateFlow()
+
+    fun setDesktopUa(value: com.ravenxud.allegro.data.model.DesktopUa) {
+        prefs.edit().putString(KEY_DESKTOP_UA, value.key).apply()
+        _desktopUa.value = value
+    }
+
     private val _alwaysDesktop = MutableStateFlow(prefs.getBoolean(KEY_ALWAYS_DESKTOP, false))
     /** 全局「始终请求桌面版」。站点设置可覆盖它。 */
     val alwaysDesktop: StateFlow<Boolean> = _alwaysDesktop.asStateFlow()
@@ -84,5 +95,6 @@ class SettingsRepository(context: Context) {
         const val KEY_UPDATE_REPO = "update_repo"
         const val DEFAULT_UPDATE_REPO = "Ravenxud/Allegro"
         const val KEY_ALWAYS_DESKTOP = "always_desktop"
+        const val KEY_DESKTOP_UA = "desktop_ua"
     }
 }

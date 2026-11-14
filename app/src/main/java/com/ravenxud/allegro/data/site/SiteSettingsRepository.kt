@@ -20,6 +20,10 @@ class SiteSettingsRepository(context: Context) {
     /** 该域名（含父域继承）生效的设置，没有配置过时返回 null。 */
     fun forHost(host: String?): SiteSettings? = SiteSettingsCodec.resolve(_sites.value, host)
 
+    /** 该域名**显式**配置过的设置（不含父域继承）；没有则 null。 */
+    fun explicitForHost(host: String?): SiteSettings? =
+        host?.trim()?.lowercase()?.let { _sites.value[it] }
+
     /** 显式配置过的站点（不含继承）。 */
     fun configured(): List<SiteSettings> = _sites.value.values.sortedBy { it.host }
 
