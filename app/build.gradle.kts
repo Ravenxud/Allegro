@@ -25,8 +25,8 @@ android {
         // 回落一版：Android 16 的行为变更有公开资料可回归；升 37 作为后续独立任务
         targetSdk = 36
         // 编译测试阶段：版本号统一带 beta 后缀（见 README「版本约定」）
-        versionCode = 93
-        versionName = "0.37.0-beta"
+        versionCode = 94
+        versionName = "0.37.1-beta"
     }
 
     signingConfigs {

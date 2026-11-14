@@ -649,7 +649,7 @@ fun BrowserScreen(
                     },
                     backdrop = if (isHome) homeBackdrop else null,
                     snapshot = if (isHome) null else sheetSnapshot,
-                    useDialogWindow = !isHome,
+                    useDialogWindow = false,
                     desktopSite = controller.isDesktopForCurrentSite(),
                     onToggleDesktopSite = { controller.toggleDesktopForCurrentSite() },
                     adBlockPaused = controller.isAdBlockPausedForCurrentSite(),

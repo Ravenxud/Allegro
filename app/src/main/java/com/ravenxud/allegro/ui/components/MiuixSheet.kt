@@ -116,7 +116,7 @@ fun MiuixSheet(
                 snapshot = snapshot,
                 showClose = showClose,
                 actions = actions,
-                glassAlpha = 0.88f,
+                glassAlpha = 0.72f,
                 scrollable = scrollable,
                 content = content,
             )
@@ -182,7 +182,7 @@ private fun SheetCard(
                     Modifier
                         .fillMaxWidth()
                         .height(1.dp)
-                        .background(Color.White.copy(alpha = 0.28f)),
+                        .background(Color.White.copy(alpha = 0.55f)),
                 )
                 Box(
                     modifier = Modifier
