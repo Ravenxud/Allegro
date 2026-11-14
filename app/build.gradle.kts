@@ -9,7 +9,6 @@ plugins {
 android {
     namespace = "com.example.simplebrowser"
     compileSdk = 37
-    compileSdkMinor = 2
 
     defaultConfig {
 

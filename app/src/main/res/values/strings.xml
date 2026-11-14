@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Simple Browser</string>
+    <string name="app_name">Allegro</string>
     <string name="address_hint">搜索或输入网址</string>
     <string name="cd_back">后退</string>
     <string name="cd_forward">前进</string>
