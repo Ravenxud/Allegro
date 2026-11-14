@@ -237,4 +237,7 @@
     <string name="settings_diag_log">导出诊断日志</string>
     <string name="settings_diag_log_summary">记录导航事件，用于排查"页面回到新标签页"这类问题</string>
     <string name="settings_diag_empty">还没有日志可导出</string>
+    <string name="rail_tabs">标签页</string>
+    <string name="rail_new_tab">新建标签页</string>
+    <string name="cd_close_tab">关闭标签页</string>
 </resources>

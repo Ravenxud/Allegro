@@ -134,6 +134,8 @@ fun BrowserScreen(
         (context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).isLowRamDevice
     }
     val scope = rememberCoroutineScope()
+    val layout = rememberLayoutWidth()
+    val railWidth = if (layout.isLarge) layout.panelWidthDp else 0
 
     var field by remember { mutableStateOf(TextFieldValue("")) }
     var focused by remember { mutableStateOf(false) }
@@ -247,8 +249,21 @@ fun BrowserScreen(
     }
 
     Box(Modifier.fillMaxSize()) {
+    // 大屏：常驻标签侧栏，取代手机上的标签面板
+    if (layout.isLarge) {
+        TabsRail(
+            state = state,
+            widthDp = railWidth,
+            onSelect = { controller.selectTab(it) },
+            onClose = { controller.closeTab(it) },
+            onNew = { controller.openTab("about:blank") },
+            onNavigate = { screen = it },
+        )
+    }
     Scaffold(
-        modifier = Modifier.graphicsLayer {
+        modifier = Modifier
+            .padding(start = railWidth.dp)
+            .graphicsLayer {
             val p = backProgress.coerceIn(0f, 1f)
             scaleX = 1f - 0.06f * p
             scaleY = 1f - 0.06f * p
@@ -365,7 +380,7 @@ fun BrowserScreen(
                             Toast.makeText(context, R.string.nav_no_forward, Toast.LENGTH_SHORT).show()
                         }
                     }
-                    TabCountButton(count = state.tabs.size) {
+                    if (!layout.isLarge) TabCountButton(count = state.tabs.size) {
                         controller.refreshPreview()
                         if (lowRam) {
                             // 低端机不做截图，直接用占位块 + 短动画

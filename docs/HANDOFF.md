@@ -1,7 +1,7 @@
 # 交接说明（给下一个 AI / 开发者）
 
 > 读完这一份就能接手开发。项目：**Allegro**（代码内部名 SimpleBrowser）—— 参考 Luna 的极简 Android 浏览器。
-> 最后更新：0.28.0-beta（versionCode 62）
+> 最后更新：0.29.0-beta（versionCode 66）
 > 包名已改为 `com.ravenxud.allegro`（与旧包不兼容，需卸载重装）
 
 ---
@@ -11,7 +11,7 @@
 浏览核心、标签页 2.0、下载器、广告过滤、书签、设置、JS 注入管线、手势、应用内更新、
 阅读模式/朗读/分享/用户脚本、离线页可打开（MHTML→HTML）、隐私报告 + 元素选择器、
 站点设置（JS/图片/桌面版 UA/广告过滤/清数据）、**WebDAV 同步（书签/文件夹/站点设置/主题偏好）**
-均已完成并可编译；阶段一还剩「大屏/标签组/HLS/无障碍」；动画与外观专项未开始。
+均已完成并可编译；**大屏/折叠屏（0.29）** 已完成；还剩「标签组 / HLS / 无障碍 / 动画 / 外观」。
 
 ## 2. 仓库与构建
 
@@ -110,6 +110,7 @@ di/          ServiceLocator(手写 DI，替代 Hilt)
 | 二级页面 | `SecondaryScreen` 加枚举 + `BrowserScreen` 加 `when` 分支 + `ScreenScaffold` 新页 |
 | 数据表 | Room 实体 + DAO + 版本号 +1 + `Migration`（**历史坑见下**） |
 | 站点级开关 | `SiteSettings` 加字段 → `SiteSettingsCodec` 编解码 → `applySiteSettings()` 落到 WebView → 页面加开关 |
+| 大屏布局 | `LayoutWidth` 加档位 → `rememberLayoutWidth()` → 侧栏/主内容按档位分栏（`TabsRail` 只做展示）|
 | 同步内容 | `SyncPayload` 加字段 + `SyncRepository` 两个方向各写一段 → 升 `SCHEMA`（不兼容旧备份时） |
 | 用户脚本 | 用户自带，无需改代码 |
 
@@ -169,7 +170,8 @@ app/src/test/java/.../SyncPayloadTest    4 条  备份编解码/坏数据容错
 app/src/test/java/.../WebDavConfigTest   6 条  URL 拼接/编码/Basic 认证
 app/src/test/java/.../WebDavClientIntegrationTest 3 条  真连 WebDAV（默认跳过，见下）
 app/src/test/java/.../MhtmlArchiveTest   12 条（含**真实 Chromium 快照** fixture）
-共 58 条，全绿（集成测试需 env）
+app/src/test/java/.../LayoutWidthTest     3 条  大屏断点与侧栏宽度
+共 67 条，全绿（集成测试需 env）
 ```
 
 真机验证清单见 `docs/TESTING.md`。**没有 instrumentation 测试，也没有截图测试**。
@@ -192,7 +194,7 @@ MHTML 解析用**真实 Chromium 产物**做回归：`scripts/capture_mhtml.py` 
 1. ~~离线页可打开~~ / ~~隐私报告 + 元素选择器~~（0.25.0 完成）
 2. ~~站点设置页~~（0.26.0 完成；Cookie 只做了「清本站数据」，未做逐站开关）
 3. ~~WebDAV 同步~~（0.27.0 完成；整包覆盖，无自动合并）
-4. 大屏 / 标签组 / HLS 下载 / 无障碍（1 个版本）
+4. ~~大屏/折叠屏~~（0.29 完成）；标签组 / HLS 下载 / 无障碍 拆成后续版本
 5. 动画专项 26 项（1 个版本，见 `ROADMAP.md`）
 6. 外观专项 → 稳定性与发布准备 → 1.0.0
 
