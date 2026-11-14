@@ -158,7 +158,7 @@ private fun SheetCard(
                 },
             ),
         shape = cardShape,
-        color = if (backdrop != null) Color.Transparent else surfaceColor.copy(alpha = glassAlpha),
+        color = if (backdrop != null || hasWebGlass) Color.Transparent else surfaceColor.copy(alpha = glassAlpha),
     ) {
         Box(
             Modifier
@@ -166,14 +166,33 @@ private fun SheetCard(
                 .clip(cardShape),
         ) {
             if (backdrop == null) {
-                // 关键：**不做快照、不做模糊**。
-                // 面板与 WebView 在同一窗口，半透明色合成时看到的就是"当前真实网页"
-                // —— 零抓取、零对齐、零过期。之前四版的所有错位/重影/旧图都源于"抓图"这一步。
-                Box(
-                    Modifier
-                        .matchParentSize()
-                        .background(surfaceColor.copy(alpha = glassAlpha)),
-                )
+                if (hasWebGlass) {
+                    // 真玻璃：整窗快照（此刻 WebView **是可见的**，0.37.2 前它被设为 GONE，
+                    // 所以以前抓到的是空白/工具栏，才怎么调都不对）。
+                    // 对齐不靠测量：图宽=屏宽→图高由 bitmap 比例推出，底边贴面板底。
+                    Image(
+                        bitmap = snapshot!!.asImageBitmap(),
+                        contentDescription = null,
+                        contentScale = ContentScale.FillBounds,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(snapshot.width.toFloat() / snapshot.height.toFloat())
+                            .align(Alignment.BottomCenter)
+                            .blur(24.dp),
+                    )
+                    Box(
+                        Modifier
+                            .matchParentSize()
+                            .background(surfaceColor.copy(alpha = 0.55f)),
+                    )
+                } else {
+                    // 没有快照（首页/抓取失败）：纯半透明，仍然能透出网页
+                    Box(
+                        Modifier
+                            .matchParentSize()
+                            .background(surfaceColor.copy(alpha = glassAlpha)),
+                    )
+                }
             }
 
             Column(Modifier.fillMaxWidth()) {
