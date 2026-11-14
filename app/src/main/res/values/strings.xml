@@ -266,7 +266,10 @@
     <string name="groups_title">标签分组</string>
     <string name="groups_intro">把标签按主题分组：工作、阅读、临时。删除分组不会关标签，成员会回到「未分组」。</string>
     <string name="groups_name_hint">新分组名称</string>
-    <string name="groups_create">创建</string>
+    <string name="groups_create">创建分组</string>
+    <string name="groups_create_summary">用上面输入的名称新建一个分组</string>
+    <string name="groups_name_required">请先输入分组名称</string>
+    <string name="groups_created">分组已创建</string>
     <string name="groups_existing">已有分组</string>
     <string name="groups_empty">还没有分组</string>
     <string name="groups_empty_hint">在上面输入名称创建第一个分组</string>

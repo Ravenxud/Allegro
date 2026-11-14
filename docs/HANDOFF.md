@@ -1,7 +1,7 @@
 # 交接说明（给下一个 AI / 开发者）
 
 > 读完这一份就能接手开发。项目：**Allegro**（代码内部名 SimpleBrowser）—— 极简 Android 浏览器。
-> 最后更新：0.32.0-beta（versionCode 72）
+> 最后更新：0.32.1-beta（versionCode 73）
 > 数据库版本：**v3**（tabs.groupId + tab_groups 表）
 > 桌面版模式 v2 已落地：主文档代理（见 docs/DESKTOP_MODE.md）
 > 包名已改为 `com.ravenxud.allegro`（与旧包不兼容，需卸载重装）
@@ -158,7 +158,10 @@ di/          ServiceLocator(手写 DI，替代 Hilt)
     服务端仍收到 `Sec-CH-UA-Mobile: ?1`。于是 m./www 两边判断不一致时会出现 302 死循环
     （B站必现）。现做法：注入脚本覆盖 `navigator.userAgentData` 等前端指纹；再加"6 秒内来回跳 ≥5 次"
     的熔断——桌面模式自动退回移动版，普通模式停止加载。**完整方案见 `docs/DESKTOP_MODE.md`（单文档代理），0.30 实施。**
-13. **WebView 的 settings 是全局的**：`javaScriptEnabled`/`blockNetworkImage`/`userAgentString` 属于 WebView 实例，
+13. **Miuix 偏好组件不能塞进 Row**：`ArrowPreference` / `SwitchPreference` 是整行组件，
+    与其它控件并排时宽度被压塌、点击区域消失（0.32.0 的「创建分组」就是这个原因，表现为"点了没反应"）。
+    要用就放在 `Card` 里独占一行。
+14. **WebView 的 settings 是全局的**：`javaScriptEnabled`/`blockNetworkImage`/`userAgentString` 属于 WebView 实例，
     而本项目一个 WebView 复用于多个标签页。所以站点设置必须在**每次导航（onPageStarted）重设一遍**，
     只改一次会被下一个站点的页面覆盖。
 

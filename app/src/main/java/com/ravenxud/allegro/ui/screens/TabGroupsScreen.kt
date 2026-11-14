@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -54,6 +55,7 @@ fun TabGroupsScreen(
     val groups = groupsState.groups
     val tabs = groupsState.tabs
     val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
     val input = remember { mutableStateOf("") }
 
     ScreenScaffold(title = stringResource(R.string.groups_title), onBack = onBack) { modifier ->
@@ -70,28 +72,33 @@ fun TabGroupsScreen(
                 modifier = Modifier.padding(start = Spacing.xs, bottom = Spacing.s),
             )
 
+            // 注意：ArrowPreference 是整行的偏好组件，放进 Row 里会被压成 0 宽 → 点了没反应。
+            // 这里改成"输入框 + 分隔线 + 整行按钮"的纵向结构。
             Card(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.padding(Spacing.m),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-                ) {
-                    TextField(
-                        value = input.value,
-                        onValueChange = { input.value = it },
-                        singleLine = true,
-                        label = stringResource(R.string.groups_name_hint),
-                        useLabelAsPlaceholder = true,
-                        modifier = Modifier.weight(1f),
-                    )
+                Column {
+                    androidx.compose.foundation.layout.Box(Modifier.padding(Spacing.m)) {
+                        TextField(
+                            value = input.value,
+                            onValueChange = { input.value = it },
+                            singleLine = true,
+                            label = stringResource(R.string.groups_name_hint),
+                            useLabelAsPlaceholder = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
                     ArrowPreference(
                         title = stringResource(R.string.groups_create),
+                        summary = stringResource(R.string.groups_create_summary),
                         onClick = {
                             val name = input.value.trim()
-                            if (name.isNotEmpty()) {
+                            if (name.isEmpty()) {
+                                Toast.makeText(context, R.string.groups_name_required, Toast.LENGTH_SHORT).show()
+                            } else {
                                 scope.launch {
                                     controller.createTabGroup(name)
                                     input.value = ""
+                                    Toast.makeText(context, R.string.groups_created, Toast.LENGTH_SHORT).show()
                                 }
                             }
                         },
