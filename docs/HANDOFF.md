@@ -1,7 +1,7 @@
 # 交接说明（给下一个 AI / 开发者）
 
 > 读完这一份就能接手开发。项目：**Allegro**（代码内部名 SimpleBrowser）—— 参考 Luna 的极简 Android 浏览器。
-> 最后更新：0.27.1-beta（versionCode 60）
+> 最后更新：0.27.1-beta（versionCode 60，已发布 Release v0.27.1-beta）
 
 ---
 
@@ -21,6 +21,17 @@
 | APK 目录 | `/workspace/apk`（只保留最近 3 个版本） |
 | 分支 | 只有 `main`，无 feature 分支 |
 | CI | `.github/workflows/build.yml`：push 触发，跑单测 + `assembleDebug`，上传 artifact |
+
+### 发布流程
+
+```bash
+# 1) 版本号：app/build.gradle.kts 的 versionCode +1、versionName 改；补 RELEASE_NOTES.md 小节
+# 2) 构建并归档 APK 到 /workspace/apk/Allegro-<version>-debug.apk
+# 3) 一键发布（打 tag + 建 Release + 上传 APK，并回读 /releases/latest 校验）
+GITHUB_TOKEN=xxx ./scripts/release.sh 0.27.1-beta /workspace/apk/Allegro-0.27.1-beta-debug.apk
+```
+
+> **prerelease 必须是 false**：App 端 `UpdateRepository` 调 `releases/latest`，GitHub 会跳过 prerelease。
 
 ### 构建环境（必须严格对齐，否则必挂）
 
@@ -105,6 +116,8 @@ di/          ServiceLocator(手写 DI，替代 Hilt)
 | 9 | **WebDAV 密码明文存在 SharedPreferences** | 手机被 root / 备份泄露时可见 | 允许用户改用"应用专用密码"；后续接 EncryptedSharedPreferences |
 | 10 | 同步是整包覆盖，无自动合并 | 两台设备先后同步会互相覆盖 | 界面已写明方向；要增量需加墓碑与冲突解决，暂不做 |
 | 11 | 离线页主路径依赖 `saveWebArchive` | 部分页面（跨域 iframe / 超大）返回 false | 已有 DOM 快照兜底（提示"简化版"）；日志 tag `OfflinePage` 可定位 |
+| 12 | **应用内更新读的是 `releases/latest`，而历史 Release 全标了 prerelease** | 简直到 0.27.1 才发现：`/releases/latest` 会跳过 prerelease，所以更新检查**从未真正生效** | 0.27.1 的 Release 以正式版发布（prerelease=false）绕开；下版改成读 `/releases` 列表 + 版本比较 |
+| 13 | 上传资产用 HTTP/2 会静默停在 `starter` | 资产不可下载、`/releases/latest` 里看不到 assets | 用 `curl --http1.1`，并断言 `state == uploaded`；见 `scripts/release.sh` |
 
 ## 7. 踩过的坑（写下来避免重复踩）
 
