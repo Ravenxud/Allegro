@@ -467,8 +467,8 @@ fun BrowserScreen(
                         if (tab == null || tab.url == "about:blank") {
                             showAppMenu = true
                         } else {
-                            controller.captureForSheet()
-                            showAppMenu = true
+                            // 等快照落地再打开，保证模糊底图是当前页面
+                            controller.captureForSheet { showAppMenu = true }
                         }
                     }
                 }

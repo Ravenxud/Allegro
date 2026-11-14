@@ -1100,20 +1100,20 @@ class WebViewBrowserController(
     }
 
     override fun onLongPress(view: TabWebView, hit: WebView.HitTestResult) {
-        // 长按菜单也要玻璃底：趁 WebView 还可见先抓一张
-        captureForSheet()
         val extra = hit.extra ?: return
         val kind = when (hit.type) {
             WebView.HitTestResult.IMAGE_TYPE,
             WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE -> MenuRequest.Kind.IMAGE
             else -> MenuRequest.Kind.LINK
         }
-        _menu.value = MenuRequest(
+        val request = MenuRequest(
             tabId = view.tabId,
             url = extra,
             kind = kind,
             pageUrl = view.url.orEmpty(),
         )
+        // 趁 WebView 还可见先抓快照，落地后再弹菜单
+        captureForSheet { _menu.value = request }
     }
 
     // ------------------------------------------------------------- 内部
@@ -1123,18 +1123,20 @@ class WebViewBrowserController(
     private val _sheetSnapshot = kotlinx.coroutines.flow.MutableStateFlow<Bitmap?>(null)
     override val sheetSnapshot: kotlinx.coroutines.flow.StateFlow<Bitmap?> = _sheetSnapshot
 
-    override fun captureForSheet() {
+    override fun captureForSheet(onReady: ((Bitmap?) -> Unit)?) {
         // 注意：必须先于“把 WebView 置 GONE”调用，否则只能抓到空
         val activity = context as? android.app.Activity ?: return
         val decor = activity.window?.decorView ?: return
         if (decor.width <= 0 || decor.height <= 0) return
         val rect = android.graphics.Rect(0, 0, decor.width, decor.height)
         requestCopy(activity.window, rect) { bitmap ->
-            _sheetSnapshot.value = bitmap?.let { scaleDown(it) }
+            val scaled = bitmap?.let { scaleDown(it) }
+            _sheetSnapshot.value = scaled
             com.ravenxud.allegro.util.DiagLog.log(
                 "sheet-capture",
-                if (bitmap == null) "null" else "${bitmap.width}x${bitmap.height}",
+                if (scaled == null) "null" else "${scaled.width}x${scaled.height}",
             )
+            onReady?.invoke(scaled)
         }
     }
 

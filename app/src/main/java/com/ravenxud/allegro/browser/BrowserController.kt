@@ -31,8 +31,11 @@ interface BrowserController {
     /** 抓一张当前页面的位图，作为切换器动画的 Stub（异步，主线程回调）。 */
     fun captureStub(onCaptured: (android.graphics.Bitmap?) -> Unit)
 
-    /** 面板玻璃底图：在打开面板**之前**调用（此时 WebView 仍可见）。 */
-    fun captureForSheet()
+    /**
+     * 面板玻璃底图：在打开面板**之前**调用（此时 WebView 仍可见）。
+     * 传入 [onReady] 时，等快照落地后再执行（保证底图是当前页面）。
+     */
+    fun captureForSheet(onReady: ((android.graphics.Bitmap?) -> Unit)? = null)
 
     /** 面板玻璃底图（未就绪为 null）。 */
     val sheetSnapshot: kotlinx.coroutines.flow.StateFlow<android.graphics.Bitmap?>

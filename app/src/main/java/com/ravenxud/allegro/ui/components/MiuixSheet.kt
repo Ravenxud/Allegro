@@ -115,12 +115,12 @@ fun MiuixSheet(
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                         modifier = Modifier
                             .matchParentSize()
-                            .blur(24.dp),
+                            .blur(20.dp),
                     )
                     androidx.compose.foundation.layout.Box(
                         Modifier
                             .matchParentSize()
-                            .background(MiuixTheme.colorScheme.surface.copy(alpha = 0.22f)),
+                            .background(MiuixTheme.colorScheme.background.copy(alpha = 0.18f)),
                     )
                 }
                 Column(
