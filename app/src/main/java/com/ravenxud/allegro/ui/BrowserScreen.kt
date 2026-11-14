@@ -157,7 +157,8 @@ fun BrowserScreen(
     var lastMenu by remember { mutableStateOf<MenuRequest?>(null) }
     var moveTabId by remember { mutableStateOf<String?>(null) }
     // 网页可见时，菜单的玻璃底来自一张 PixelCopy 快照（WebView 抓不到实时内容）
-    var sheetSnapshot by remember { mutableStateOf<Bitmap?>(null) }
+    // 注意：必须在面板打开前抓，否则 WebView 已 GONE，只能抓到空
+    val sheetSnapshot by controller.sheetSnapshot.collectAsState()
 
     // 首页是纯 Compose，可以被真正捕获并模糊；网页是 WebView，抓不到 → 只在首页给菜单玻璃
     val homeSurface = MiuixTheme.colorScheme.surface
@@ -173,16 +174,9 @@ fun BrowserScreen(
     LaunchedEffect(screen) { if (screen != SecondaryScreen.BROWSER) lastScreen = screen }
     LaunchedEffect(menu) { if (menu != null) lastMenu = menu }
 
-    // 菜单打开前抓一张快照；首页已有 backdrop 时不需要
+    // 关闭时清掉快照，避免下次误用旧画面
     LaunchedEffect(showAppMenu, menu) {
-        val opening = showAppMenu || menu != null
-        if (!opening) {
-            sheetSnapshot = null
-            return@LaunchedEffect
-        }
-        // 首页已有 Compose 捕获层，不需要快照
-        if (tab == null || tab.url == "about:blank") return@LaunchedEffect
-        controller.captureStub { bmp -> sheetSnapshot = bmp }
+        if (!showAppMenu && menu == null) controller.clearSheetSnapshot()
     }
 
     val exportLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
@@ -470,7 +464,12 @@ fun BrowserScreen(
                         }
                     }
                     ToolbarButton(MiuixIcons.More, stringResource(R.string.app_menu)) {
-                        showAppMenu = true
+                        if (tab == null || tab.url == "about:blank") {
+                            showAppMenu = true
+                        } else {
+                            controller.captureForSheet()
+                            showAppMenu = true
+                        }
                     }
                 }
                 }

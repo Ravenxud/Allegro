@@ -1,3 +1,32 @@
+# 0.35.1-beta
+
+找到 0.35.0 菜单玻璃无效的**确切原因**：代码里 `captureStub()` 有一道守卫 ——
+
+```kotlin
+if (activeView()?.visibility != VISIBLE) { log("stub skip"); return null }
+```
+
+而菜单一打开就把 WebView 置为 `GONE`。所以"菜单打开后再截图"永远拿到 `null`，
+面板只能回落到不透明。
+
+## 修复
+
+- 新增 `captureForSheet()` / `sheetSnapshot`：**在打开面板之前**抓图（此时 WebView 仍可见）
+- 菜单按钮：先 `captureForSheet()`，再 `showAppMenu = true`
+- 长按菜单：控制器在弹出前抓一张（趁 WebView 还在）
+- 面板关闭时清空快照，避免下次误用旧画面
+- tick 从 42% 降到 22%，模糊 22→24dp，让模糊真正看得见
+- 新增诊断事件 `[sheet-capture]`（记录 null 或尺寸），以后一眼能定位
+
+## 请验
+
+1. 网页 → 点右下角菜单：面板背后应是**网页被模糊的色块**
+2. 长按链接 → 菜单同样
+3. 首页菜单：仍是首页光斑模糊（更干净）
+4. 若还是纯色：导诊断日志，看有没有 `[sheet-capture] null`
+
+---
+
 # 0.35.0-beta（路线 B：网页菜单真玻璃）
 
 网页上的菜单第一次有了真正的玻璃底——用的是 **PixelCopy 快照 + 模糊**，因为 WebView 抓不到实时内容。
