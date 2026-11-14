@@ -36,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -160,41 +161,45 @@ private fun SheetCard(
         shape = cardShape,
         color = if (backdrop != null || hasWebGlass) Color.Transparent else surfaceColor.copy(alpha = glassAlpha),
     ) {
+        val glassImage = if (backdrop == null && snapshot != null) snapshot.asImageBitmap() else null
         Box(
             Modifier
                 .fillMaxWidth()
-                .clip(cardShape),
+                .clip(cardShape)
+                .then(
+                    if (glassImage != null) {
+                        Modifier.drawBehind {
+                            if (size.width > 1f && size.height > 1f) {
+                                // 底对齐 + 按宽度等比：与屏幕坐标严格重合，且不改变卡片尺寸
+                                val scale = size.width / glassImage.width
+                                val dstH = (glassImage.height * scale).toInt()
+                                drawImage(
+                                    image = glassImage,
+                                    srcOffset = androidx.compose.ui.unit.IntOffset.Zero,
+                                    srcSize = androidx.compose.ui.unit.IntSize(
+                                        glassImage.width,
+                                        glassImage.height,
+                                    ),
+                                    dstOffset = androidx.compose.ui.unit.IntOffset(
+                                        0,
+                                        size.height.toInt() - dstH,
+                                    ),
+                                    dstSize = androidx.compose.ui.unit.IntSize(
+                                        size.width.toInt(),
+                                        dstH,
+                                    ),
+                                    filterQuality = androidx.compose.ui.graphics.FilterQuality.Low,
+                                )
+                                drawRect(surfaceColor.copy(alpha = 0.55f))
+                            }
+                        }
+                    } else {
+                        Modifier
+                    },
+                ),
         ) {
-            if (backdrop == null) {
-                if (hasWebGlass) {
-                    // 真玻璃：整窗快照（此刻 WebView **是可见的**，0.37.2 前它被设为 GONE，
-                    // 所以以前抓到的是空白/工具栏，才怎么调都不对）。
-                    // 对齐不靠测量：图宽=屏宽→图高由 bitmap 比例推出，底边贴面板底。
-                    Image(
-                        bitmap = snapshot!!.asImageBitmap(),
-                        contentDescription = null,
-                        contentScale = ContentScale.FillBounds,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(snapshot.width.toFloat() / snapshot.height.toFloat())
-                            .align(Alignment.BottomCenter)
-                            .blur(24.dp),
-                    )
-                    Box(
-                        Modifier
-                            .matchParentSize()
-                            .background(surfaceColor.copy(alpha = 0.55f)),
-                    )
-                } else {
-                    // 没有快照（首页/抓取失败）：纯半透明，仍然能透出网页
-                    Box(
-                        Modifier
-                            .matchParentSize()
-                            .background(surfaceColor.copy(alpha = glassAlpha)),
-                    )
-                }
-            }
-
+            // 玻璃用 drawBehind 画：不参与布局，卡片高度 = 内容高度
+            // （之前用 Image 时它高=屏高，把卡片撑到 86% 屏，底部留一大片空白）
             Column(Modifier.fillMaxWidth()) {
                 // ---------------- 顶部 ----------------
                 Box(
@@ -410,9 +415,10 @@ fun SheetPagedGrid(
 private fun SheetGridCell(item: SheetItem, modifier: Modifier) {
     Column(
         modifier = modifier
+            .height(SHEET_CELL_HEIGHT)
             .clip(RoundedCornerShape(18.dp))
-            .clickable(onClick = item.onClick)
-            .padding(vertical = 10.dp),
+            .clickable(onClick = item.onClick),
+        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(

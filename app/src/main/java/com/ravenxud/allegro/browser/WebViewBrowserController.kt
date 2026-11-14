@@ -705,6 +705,7 @@ class WebViewBrowserController(
     }
 
     override fun onScrollState(view: TabWebView, atTop: Boolean, allowPull: Boolean, scrollY: Int) {
+        refreshSheetIfVisible()
         atTopMap[view.tabId] = atTop
         pullAllowedMap[view.tabId] = allowPull
         scrollReported.add(view.tabId)
@@ -1135,7 +1136,7 @@ class WebViewBrowserController(
         if (decor.width <= 0 || decor.height <= 0) return
         val rect = android.graphics.Rect(0, 0, decor.width, decor.height)
         requestCopy(activity.window, rect) { bitmap ->
-            val scaled = bitmap?.let { scaleDown(it) }
+            val scaled = bitmap?.let { blurForSheet(it) }
             _sheetSnapshot.value = scaled
             com.ravenxud.allegro.util.DiagLog.log(
                 "sheet-capture",
@@ -1202,6 +1203,83 @@ class WebViewBrowserController(
             bitmap.recycle()
             onResult(null)
         }
+    }
+
+    /** 面板可见标志（UI 设置）：滚动时据此决定要不要刷新玻璃底图。 */
+    private var sheetVisible = false
+    private var lastSheetRefresh = 0L
+
+    override fun setSheetVisible(visible: Boolean) {
+        sheetVisible = visible
+    }
+
+    /** 节流刷新：面板打开且网页滚动时，最多每 300ms 重抓一次。 */
+    private fun refreshSheetIfVisible() {
+        if (!sheetVisible) return
+        val now = System.currentTimeMillis()
+        if (now - lastSheetRefresh < 300L) return
+        lastSheetRefresh = now
+        captureForSheet(null)
+    }
+
+    /**
+     * 先降采样到宽 480，再做三次方框模糊。
+     * 这样面板只需 drawBitmap，运行时零模糊成本，也不会把卡片撑高。
+     */
+    private fun blurForSheet(source: Bitmap): Bitmap? {
+        val w = minOf(source.width, 480)
+        if (w <= 0) return null
+        val h = (source.height.toFloat() / source.width * w).toInt().coerceAtLeast(1)
+        val small = runCatching { Bitmap.createScaledBitmap(source, w, h, true) }.getOrNull()
+            ?: return null
+        if (small !== source) source.recycle()
+        val out = small.copy(Bitmap.Config.ARGB_8888, true) ?: return small
+        if (out !== small) small.recycle()
+        boxBlur(out, radius = 9, passes = 3)
+        return out
+    }
+
+    private fun boxBlur(bitmap: Bitmap, radius: Int, passes: Int) {
+        val w = bitmap.width
+        val h = bitmap.height
+        if (w <= 1 || h <= 1 || radius <= 0) return
+        val pixels = IntArray(w * h)
+        bitmap.getPixels(pixels, 0, w, 0, 0, w, h)
+        val temp = IntArray(w * h)
+        repeat(passes) {
+            blurPass(pixels, temp, w, h, radius, horizontal = true)
+            blurPass(pixels, temp, w, h, radius, horizontal = false)
+        }
+        bitmap.setPixels(pixels, 0, w, 0, 0, w, h)
+    }
+
+    private fun blurPass(src: IntArray, dst: IntArray, w: Int, h: Int, r: Int, horizontal: Boolean) {
+        val len = if (horizontal) w else h
+        val lines = if (horizontal) h else w
+        val window = r * 2 + 1
+        for (line in 0 until lines) {
+            var a = 0; var rr = 0; var gg = 0; var bb = 0
+            for (i in -r..r) {
+                val idx = i.coerceIn(0, len - 1)
+                val c = if (horizontal) src[line * w + idx] else src[idx * w + line]
+                a += (c ushr 24) and 0xFF; rr += (c ushr 16) and 0xFF
+                gg += (c ushr 8) and 0xFF; bb += c and 0xFF
+            }
+            for (i in 0 until len) {
+                val out = ((a / window) shl 24) or ((rr / window) shl 16) or
+                    ((gg / window) shl 8) or (bb / window)
+                if (horizontal) dst[line * w + i] = out else dst[i * w + line] = out
+                val add = (i + r + 1).coerceAtMost(len - 1)
+                val sub = (i - r).coerceAtLeast(0)
+                val cAdd = if (horizontal) src[line * w + add] else src[add * w + line]
+                val cSub = if (horizontal) src[line * w + sub] else src[sub * w + line]
+                a += ((cAdd ushr 24) and 0xFF) - ((cSub ushr 24) and 0xFF)
+                rr += ((cAdd ushr 16) and 0xFF) - ((cSub ushr 16) and 0xFF)
+                gg += ((cAdd ushr 8) and 0xFF) - ((cSub ushr 8) and 0xFF)
+                bb += (cAdd and 0xFF) - (cSub and 0xFF)
+            }
+        }
+        System.arraycopy(dst, 0, src, 0, w * h)
     }
 
     private fun scaleDown(source: Bitmap): Bitmap? {

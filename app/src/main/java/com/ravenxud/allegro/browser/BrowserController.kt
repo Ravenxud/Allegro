@@ -37,6 +37,9 @@ interface BrowserController {
      */
     fun captureForSheet(onReady: ((android.graphics.Bitmap?) -> Unit)? = null)
 
+    /** 面板是否可见：滚动时据此节流刷新玻璃底图。 */
+    fun setSheetVisible(visible: Boolean)
+
     /** 面板玻璃底图（未就绪为 null）。 */
     val sheetSnapshot: kotlinx.coroutines.flow.StateFlow<android.graphics.Bitmap?>
 

@@ -281,6 +281,11 @@ fun BrowserScreen(
     // 之前的 GONE 会让"透出网页 / 模糊网页"在物理上不可能成立。
     val overlayActive = isHome || screen != SecondaryScreen.BROWSER || tabsMounted
 
+    // 面板可见时，网页滚动会节流重抓玻璃底图（否则模糊不跟随滚动）
+    LaunchedEffect(showAppMenu, menu != null) {
+        controller.setSheetVisible(showAppMenu || menu != null)
+    }
+
     BackHandler(enabled = screen != SecondaryScreen.BROWSER) { screen = SecondaryScreen.BROWSER }
     BackHandler(enabled = menu != null) { controller.dismissMenu() }
     BackHandler(enabled = showTabs) { showTabs = false }
