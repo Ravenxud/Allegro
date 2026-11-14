@@ -71,7 +71,7 @@ fun MiuixSheet(
             Box(
                 Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.32f))
+                    .background(Color.Black.copy(alpha = 0.18f))
                     .clickable(onClick = onDismiss),
             )
         }
@@ -105,7 +105,7 @@ fun MiuixSheet(
             ) {
                 // 行数会随功能增加（页面动作 9 行 + 常用 3 行 + 外观 3 行 + 更多），
                 // 早期写死 Column 会被屏幕裁掉，导致最底部的「设置」看不见 —— 必须可滚动并限高
-                val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.72f).dp
+                val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.64f).dp
                 androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth()) {
                 if (snapshot != null) {
                     // 网页区域抓不到实时内容：用一张 PixelCopy 快照模糊后当玻璃底

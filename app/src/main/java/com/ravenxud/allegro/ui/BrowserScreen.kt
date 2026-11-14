@@ -466,8 +466,10 @@ fun BrowserScreen(
                     ToolbarButton(MiuixIcons.More, stringResource(R.string.app_menu)) {
                         if (tab == null || tab.url == "about:blank") {
                             showAppMenu = true
+                        } else if (controller.sheetSnapshot.value != null) {
+                            // 用页面加载/切标签时缓存的底图，避免"抓到面板自己"
+                            showAppMenu = true
                         } else {
-                            // 等快照落地再打开，保证模糊底图是当前页面
                             controller.captureForSheet { showAppMenu = true }
                         }
                     }

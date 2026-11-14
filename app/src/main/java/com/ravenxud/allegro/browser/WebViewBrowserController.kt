@@ -193,6 +193,7 @@ class WebViewBrowserController(
     }
 
     override fun selectTab(tabId: String) {
+        if (_menu.value == null) captureForSheet()
         val current = _state.value
         if (current.activeTabId == tabId) return
         val tab = current.tabs.firstOrNull { it.id == tabId } ?: return
@@ -576,6 +577,8 @@ class WebViewBrowserController(
 
     override fun onPageFinished(view: TabWebView, url: String) {
         com.ravenxud.allegro.util.DiagLog.log("page-finish", url)
+        // 页面加载完成时刷新面板底图（此刻 WebView 可见、面板未打开）→ 绝不抓到面板自身
+        if (_menu.value == null) captureForSheet()
         updateTab(view.tabId) {
             it.copy(
                 url = keepRealUrl(it, displayUrl(it, url)),
@@ -1112,8 +1115,12 @@ class WebViewBrowserController(
             kind = kind,
             pageUrl = view.url.orEmpty(),
         )
-        // 趁 WebView 还可见先抓快照，落地后再弹菜单
-        captureForSheet { _menu.value = request }
+        // 有缓存就直接弹（缓存来自页面加载完成时，绝不含面板）；没有才现场抓
+        if (_sheetSnapshot.value != null) {
+            _menu.value = request
+        } else {
+            captureForSheet { _menu.value = request }
+        }
     }
 
     // ------------------------------------------------------------- 内部
