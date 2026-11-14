@@ -38,7 +38,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Settings
-import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -88,13 +87,13 @@ fun SiteRulesScreen(
             )
 
             Card(modifier = Modifier.fillMaxWidth()) {
-                ArrowPreference(
+                com.ravenxud.allegro.ui.components.SettingRow(
                     title = stringResource(R.string.rules_export),
                     summary = stringResource(R.string.rules_export_summary),
                     onClick = onExport,
                 )
                 HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
-                ArrowPreference(
+                com.ravenxud.allegro.ui.components.SettingRow(
                     title = stringResource(R.string.rules_import),
                     summary = stringResource(R.string.rules_import_summary),
                     onClick = onImport,

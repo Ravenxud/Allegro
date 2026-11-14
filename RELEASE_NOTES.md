@@ -1,3 +1,20 @@
+# 0.44.2-beta
+
+清债（无新功能）：
+
+- 裸 `RoundedCornerShape` 全部收进令牌：新增 `Shapes.Tiny(8dp)` / `Shapes.Indicator(6dp)`；
+  着色器冒烟页 28/24 → `FloatingPanel`/`Card`；首页 `Radius.*` → `Shapes.Card`；TabsRail 8/10 → `Tiny`；进度条 6 → `Indicator`
+- 8 处 `ArrowPreference`（站点设置 / WebDAV / 站点规则 / 标签组 / 着色器冒烟）→ `SettingRow`，
+  这些页面同步去掉行首图标，与设置页一致
+- 静态自检：令牌外裸圆角 0 处、`ArrowPreference` 调用 0 处
+
+## 请验
+1. 站点设置 / WebDAV / 站点规则 / 标签组：行样式与设置页一致（纯文字 + 箭头）
+2. 这些页面的卡片圆角、行高与设置页一致
+3. 标签页侧栏（大屏）圆角无异常
+
+---
+
 # 0.44.1-beta
 
 ## 修回归：二级页透出一级页内容

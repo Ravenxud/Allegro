@@ -37,7 +37,6 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Folder
-import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -87,7 +86,7 @@ fun TabGroupsScreen(
                         )
                     }
                     HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
-                    ArrowPreference(
+                    com.ravenxud.allegro.ui.components.SettingRow(
                         title = stringResource(R.string.groups_create),
                         summary = stringResource(R.string.groups_create_summary),
                         onClick = {

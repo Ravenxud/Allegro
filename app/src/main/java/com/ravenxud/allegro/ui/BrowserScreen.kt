@@ -845,7 +845,7 @@ private fun androidx.compose.foundation.layout.RowScope.TabCountButton(
                     .border(
                         width = 1.5.dp,
                         color = MiuixTheme.colorScheme.onSurface,
-                        shape = RoundedCornerShape(6.dp),
+                        shape = com.ravenxud.allegro.ui.theme.Shapes.Indicator,
                     ),
                 contentAlignment = Alignment.Center,
             ) {

@@ -124,7 +124,7 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .appGlass(
                             backdrop = bgBackdrop,
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(Radius.field),
+                            shape = com.ravenxud.allegro.ui.theme.Shapes.Card,
                             spec = com.ravenxud.allegro.ui.glass.GlassSpec(blur = 28.dp, surfaceAlpha = 0.18f),
                         ),
                 ) {
@@ -196,7 +196,7 @@ private fun GlassCard(
             .fillMaxWidth()
             .appGlass(
                 backdrop = backdrop,
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(Radius.card),
+                shape = com.ravenxud.allegro.ui.theme.Shapes.Card,
                 spec = com.ravenxud.allegro.ui.glass.GlassSpec(blur = 24.dp),
             ),
         content = content,

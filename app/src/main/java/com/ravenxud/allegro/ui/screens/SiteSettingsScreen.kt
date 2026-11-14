@@ -34,7 +34,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Settings
-import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -148,7 +147,7 @@ fun SiteSettingsScreen(
 
                 Spacer(Modifier.height(Spacing.m))
                 Card(modifier = Modifier.fillMaxWidth()) {
-                    ArrowPreference(
+                    com.ravenxud.allegro.ui.components.SettingRow(
                         title = stringResource(R.string.site_clear_data),
                         summary = stringResource(R.string.site_clear_data_summary),
                         onClick = { controller.clearCurrentSiteData() },

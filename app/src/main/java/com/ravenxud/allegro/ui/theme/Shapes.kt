@@ -25,6 +25,12 @@ object Shapes {
     /** 列表项按压高亮。 */
     val RowHighlight = RoundedCornerShape(16.dp)
 
+    /** 小圆角：指示条、迷你标签。 */
+    val Tiny = RoundedCornerShape(8.dp)
+
+    /** 进度条/细指示器。 */
+    val Indicator = RoundedCornerShape(6.dp)
+
     /** 胶囊按钮。 */
     val Capsule = RoundedCornerShape(percent = 50)
 }

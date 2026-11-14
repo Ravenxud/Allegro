@@ -133,7 +133,7 @@ private fun GroupHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(com.ravenxud.allegro.ui.theme.Shapes.Tiny)
             .clickable(onClick = onClick)
             .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -161,7 +161,7 @@ private fun TabRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(com.ravenxud.allegro.ui.theme.Shapes.Tiny)
             .background(
                 if (active) MiuixTheme.colorScheme.primary.copy(alpha = 0.12f)
                 else MiuixTheme.colorScheme.surface,
@@ -202,7 +202,7 @@ private fun RailEntry(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(com.ravenxud.allegro.ui.theme.Shapes.Tiny)
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,

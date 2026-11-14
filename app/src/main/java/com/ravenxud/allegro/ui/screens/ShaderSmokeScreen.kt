@@ -44,7 +44,6 @@ import com.ravenxud.allegro.util.DiagLog
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -176,7 +175,7 @@ fun ShaderSmokeScreen(onBack: () -> Unit) {
                         Box(
                             Modifier
                                 .fillMaxSize()
-                                .clip(RoundedCornerShape(28.dp))
+                                .clip(com.ravenxud.allegro.ui.theme.Shapes.FloatingPanel)
                                 .drawBehind { checkerboard(Color(0xFF2F3640), Color(0xFFF5F6FA)) },
                         )
                         Text(
@@ -229,7 +228,7 @@ fun ShaderSmokeScreen(onBack: () -> Unit) {
                     summary = stringResource(R.string.shader_smoke_enable_summary),
                 )
                 HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
-                ArrowPreference(
+                com.ravenxud.allegro.ui.components.SettingRow(
                     title = stringResource(R.string.shader_smoke_uniform),
                     summary = stringResource(R.string.shader_smoke_uniform_rule),
                     onClick = { },
@@ -278,7 +277,7 @@ private fun BackdropDemo() {
                 .size(200.dp, 90.dp)
                 .drawBackdrop(
                     backdrop = backdrop,
-                    shape = { RoundedCornerShape(24.dp) },
+                    shape = { com.ravenxud.allegro.ui.theme.Shapes.Card },
                     effects = {
                         blur(20.dp.toPx())
                         vibrancy()
@@ -317,7 +316,7 @@ private fun ShaderOnBackdropDemo() {
                 .size(220.dp, 100.dp)
                 .drawBackdrop(
                     backdrop = backdrop,
-                    shape = { RoundedCornerShape(28.dp) },
+                    shape = { com.ravenxud.allegro.ui.theme.Shapes.FloatingPanel },
                     effects = {
                         runCatching {
                             val shader = RuntimeShader(GLASS_SMOKE_SHADER)

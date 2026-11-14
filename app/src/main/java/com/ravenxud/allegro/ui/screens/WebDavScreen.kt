@@ -27,7 +27,6 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -114,7 +113,7 @@ fun WebDavScreen(
 
             Spacer(Modifier.height(Spacing.m))
             Card(modifier = Modifier.fillMaxWidth()) {
-                ArrowPreference(
+                com.ravenxud.allegro.ui.components.SettingRow(
                     title = stringResource(R.string.sync_test),
                     summary = stringResource(R.string.sync_test_summary),
                     onClick = {
@@ -132,7 +131,7 @@ fun WebDavScreen(
                     },
                 )
                 HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
-                ArrowPreference(
+                com.ravenxud.allegro.ui.components.SettingRow(
                     title = stringResource(R.string.sync_upload),
                     summary = stringResource(R.string.sync_upload_summary),
                     onClick = {
@@ -150,7 +149,7 @@ fun WebDavScreen(
                     },
                 )
                 HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
-                ArrowPreference(
+                com.ravenxud.allegro.ui.components.SettingRow(
                     title = stringResource(R.string.sync_download),
                     summary = stringResource(R.string.sync_download_summary),
                     onClick = {
