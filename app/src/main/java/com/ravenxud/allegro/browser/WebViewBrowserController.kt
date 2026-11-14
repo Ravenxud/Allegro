@@ -528,7 +528,8 @@ class WebViewBrowserController(
         }
         val url = failingUrl ?: return
         updateTab(view.tabId) { it.copy(isLoading = false, progress = 100) }
-        view.loadDataWithBaseURL(null, ErrorPage.build(context, url, description), "text/html", "utf-8", null)
+        // base 用失败 URL：WebView 的 URL 才不会被改成 about:blank（否则界面会误判成"新标签页"）
+        view.loadDataWithBaseURL(url, ErrorPage.build(context, url, description), "text/html", "utf-8", url)
     }
 
     override fun onDownloadRequested(view: TabWebView, request: TabWebView.DownloadRequest) {

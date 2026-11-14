@@ -1,3 +1,37 @@
+# 0.28.3-beta
+
+**找到"飞书回新标签页"的真因了**，靠 0.28.2 加的诊断日志。
+
+## 根因
+
+日志里这几行说得非常清楚：
+
+```
+[page-start]      http://www.feishu.cn/
+[main-frame-error] -1 net::ERR_CLEARTEXT_NOT_PERMITTED http://www.feishu.cn/
+[page-start]      about:blank
+```
+
+百度搜"飞书"的落地页是 **`http://`**（不是 https），而 Android 从 targetSdk 28 起默认
+**禁止明文 HTTP**，WebView 直接拦掉；我们随后渲染错误页时又用了 `loadDataWithBaseURL(null, …)`，
+URL 变成 `about:blank` → 界面判定"这是首页" → 弹回新标签页。
+
+所以不是飞书特殊，而是**所有 http:// 站点都会这样**。作为浏览器，这必须支持。
+
+## 修复
+
+- `android:usesCleartextTraffic="true"`：浏览器必须能打开 http 站点（Chrome 也是这么做的）
+- 错误页改用失败 URL 作为 base，WebView 的 URL 不再被改成 `about:blank`，
+  错误页也不会被误判成"新标签页"
+- 保留 0.28.1/0.28.2 的保护：真实 URL 不被 `about:blank` 覆盖、`window.close()` 无效、
+  SPA 的瞬态错误不替换页面
+
+## 顺带
+
+- 诊断日志保留（设置 → 诊断 → 导出诊断日志），这类问题以后能一次定位
+
+---
+
 # 0.28.2-beta
 
 飞书"回新标签页"仍未解决，这一版不猜了：**把导航事件写成可导出的日志**，同时补三处兜底。
