@@ -90,6 +90,30 @@ class WebViewBrowserController(
     private var readerCallback: ((String?) -> Unit)? = null
     private var lastClosed: ClosedTabEntity? = null
 
+    /** 每个标签最近的主文档 URL 轨迹，用于识别"m./www 来回 302"这种死循环。 */
+    private val navTrail = HashMap<String, MutableList<Pair<Long, String>>>()
+
+    /**
+     * 重定向死循环检测：6 秒内两个（最多三个）URL 之间来回跳 ≥5 次就判定为循环。
+     *
+     * 现实来源：桌面模式只改 UA，改不了 Client Hints，服务端两边判断不一致
+     * （见 DesktopHintsModule 的注释）。检测到后直接停止加载，别让页面"疯狂刷新"到不可用。
+     */
+    private fun isRedirectLoop(tabId: String, url: String): Boolean {
+        val now = System.currentTimeMillis()
+        val trail = navTrail.getOrPut(tabId) { mutableListOf() }
+        trail += now to url
+        while (trail.isNotEmpty() && now - trail.first().first > 6000) trail.removeAt(0)
+        if (trail.size < 6) return false
+        val flips = trail.zipWithNext().count { (a, b) -> a.second != b.second }
+        val distinct = trail.map { it.second }.distinct().size
+        if (distinct in 2..3 && flips >= 5) {
+            trail.clear()
+            return true
+        }
+        return false
+    }
+
     /** 从数据库读出、尚未挂到 WebView 上的 saveState 字节。 */
     private val pendingStates = mutableMapOf<String, ByteArray>()
 
@@ -167,6 +191,7 @@ class WebViewBrowserController(
 
     override fun closeTab(tabId: String) {
         com.ravenxud.allegro.util.DiagLog.log("close-tab", tabId)
+        navTrail.remove(tabId)
         val current = _state.value
         val index = current.tabs.indexOfFirst { it.id == tabId }
         if (index < 0) return
@@ -278,14 +303,16 @@ class WebViewBrowserController(
 
     override fun setDesktopMode(enabled: Boolean) {
         val activeId = _state.value.activeTabId ?: return
+        applyDesktopMode(activeId, enabled, reload = true)
+    }
+
+    private fun applyDesktopMode(tabId: String, enabled: Boolean, reload: Boolean) {
         _state.update { s ->
-            s.copy(tabs = s.tabs.map {
-                if (it.id == activeId) it.copy(desktopMode = enabled) else it
-            })
+            s.copy(tabs = s.tabs.map { if (it.id == tabId) it.copy(desktopMode = enabled) else it })
         }
-        val view = activeView() ?: return
+        val view = pool.peek(tabId) ?: return
         view.settings.userAgentString = if (enabled) DESKTOP_UA else view.mobileUserAgent
-        view.reload()
+        if (reload) view.reload()
     }
 
     override fun togglePageDark() {
@@ -395,6 +422,22 @@ class WebViewBrowserController(
 
     override fun onPageStarted(view: TabWebView, url: String) {
         com.ravenxud.allegro.util.DiagLog.log("page-start", url)
+        if (isRedirectLoop(view.tabId, url)) {
+            val desktop = _state.value.tabs.firstOrNull { it.id == view.tabId }?.desktopMode == true
+            com.ravenxud.allegro.util.DiagLog.log("redirect-loop", "desktop=$desktop $url")
+            view.stopLoading()
+            if (desktop) {
+                // 桌面模式只改得了 UA，改不了 Client Hints，站点两边判断不一致就会死循环。
+                // 与其让用户看着页面疯狂刷新，不如自动退回移动版并说明原因。
+                applyDesktopMode(view.tabId, false, reload = false)
+                Toast.makeText(context, R.string.redirect_loop_mobile_fallback, Toast.LENGTH_LONG).show()
+                view.loadUrl(url)
+            } else {
+                Toast.makeText(context, R.string.redirect_loop_stopped, Toast.LENGTH_LONG).show()
+                updateTab(view.tabId) { it.copy(isLoading = false, progress = 100) }
+            }
+            return
+        }
         updateTab(view.tabId) {
             it.copy(url = keepRealUrl(it, displayUrl(it, url)), isLoading = true, progress = 0)
         }

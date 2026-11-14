@@ -1,7 +1,7 @@
 # 交接说明（给下一个 AI / 开发者）
 
 > 读完这一份就能接手开发。项目：**Allegro**（代码内部名 SimpleBrowser）—— 参考 Luna 的极简 Android 浏览器。
-> 最后更新：0.29.0-beta（versionCode 66）
+> 最后更新：0.29.1-beta（versionCode 67）
 > 包名已改为 `com.ravenxud.allegro`（与旧包不兼容，需卸载重装）
 
 ---
@@ -152,7 +152,11 @@ di/          ServiceLocator(手写 DI，替代 Hilt)
 11. **`saveWebArchive` 会失败**：页面含跨域 iframe 或体量过大时它直接返回 false（不是抛异常），
     因此不能只判断"有没有抛异常"。现在：false/空文件 → 抓 DOM `outerHTML` 存成简化版离线页，
     保证"保存"这个动作永远有结果，并在提示里说明"图片/样式可能缺失"。
-12. **WebView 的 settings 是全局的**：`javaScriptEnabled`/`blockNetworkImage`/`userAgentString` 属于 WebView 实例，
+12. **桌面模式改不了 Client Hints**：`setUserAgentString` 只影响 `User-Agent`，
+    服务端仍收到 `Sec-CH-UA-Mobile: ?1`。于是 m./www 两边判断不一致时会出现 302 死循环
+    （B站必现）。现做法：注入脚本覆盖 `navigator.userAgentData` 等前端指纹；再加"6 秒内来回跳 ≥5 次"
+    的熔断——桌面模式自动退回移动版，普通模式停止加载。**真要做完整桌面版只能自建抓取/回填代理，不在单版本范围内。**
+13. **WebView 的 settings 是全局的**：`javaScriptEnabled`/`blockNetworkImage`/`userAgentString` 属于 WebView 实例，
     而本项目一个 WebView 复用于多个标签页。所以站点设置必须在**每次导航（onPageStarted）重设一遍**，
     只改一次会被下一个站点的页面覆盖。
 
