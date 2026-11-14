@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 圆形为唯一外轮廓，所有色块被它裁切 -->
+    <group>
+        <clip-path android:pathData="M54,27 a27,27 0 1,0 0,54 a27,27 0 1,0 0,-54 z" />
+
+        <!-- 中间：暖白 -->
+        <path
+            android:fillColor="#F7F2E7"
+            android:pathData="M0,0 H108 V108 H0 Z" />
+
+        <!-- 左侧：钴蓝，边界为自上下落的液态曲线 -->
+        <path
+            android:fillColor="#1A4AD6"
+            android:pathData="M0,0 L50,24 C44,36 54,44 46,54 C39,63 49,71 43,84 L0,108 Z" />
+
+        <!-- 右侧：珊瑚红 -->
+        <path
+            android:fillColor="#F26855"
+            android:pathData="M108,0 L64,24 C59,35 69,45 62,56 C55,65 66,73 60,84 L108,108 Z" />
+    </group>
+</vector>

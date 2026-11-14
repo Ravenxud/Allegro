@@ -1,0 +1,95 @@
+! Simple Browser 内置精简规则（EasyList 子集，手工筛选中英文常见广告域）
+! 仅用于离线兜底，联网后会替换为完整列表
+[Adblock Plus 2.0]
+
+! ---------- 常见广告与追踪域名 ----------
+||doubleclick.net^
+||googlesyndication.com^
+||googleadservices.com^
+||google-analytics.com^
+||googletagmanager.com^
+||googletagservices.com^
+||adservice.google.com^
+||pagead2.googlesyndication.com^
+||adsystem.com^
+||amazon-adsystem.com^
+||adnxs.com^
+||adsrvr.org^
+||rubiconproject.com^
+||pubmatic.com^
+||openx.net^
+||criteo.com^
+||criteo.net^
+||taboola.com^
+||outbrain.com^
+||moatads.com^
+||scorecardresearch.com^
+||quantserve.com^
+||zedo.com^
+||adform.net^
+||smartadserver.com^
+||casalemedia.com^
+||yieldmo.com^
+||adroll.com^
+||bidswitch.net^
+||sharethrough.com^
+||teads.tv^
+||media.net^
+||mgid.com^
+||popads.net^
+||propellerads.com^
+||revcontent.com^
+||adcolony.com^
+||applovin.com^
+||unityads.unity3d.com^
+||umeng.com^
+||cnzz.com^
+||hm.baidu.com^
+||pos.baidu.com^
+||cpro.baidu.com^
+||mobads.baidu.com^
+||tanx.com^
+||alimama.com^
+||gdt.qq.com^
+||e.qq.com^
+||pingfore.qq.com^
+||adsmind.gdtimg.com^
+||iclick.qq.com^
+||miaozhen.com^
+||admaster.com.cn^
+||irs01.com^
+||irs01.net^
+||51.la^
+||mc.yandex.ru^
+||adservice.google.com.hk^
+
+! ---------- 路径特征（仅用于跨站请求，同站会被忽略） ----------
+/adserver/
+/popunder/
+/prebid
+
+! ---------- 全局元素隐藏 ----------
+##.ad-banner
+##.ad-container
+##.adsbygoogle
+##.advert
+##.advertisement
+##[id^="google_ads"]
+##[id^="div-gpt-ad"]
+##[class*="ad-slot"]
+##[data-ad-slot]
+##.sponsored
+##.promoted-content
+
+! ---------- 站点级隐藏 ----------
+baidu.com##.ec_tuiguang_pplink
+baidu.com###content_right .cr-content
+zhihu.com##.Question-sideColumn
+bilibili.com##.ad-report
+bilibili.com##.video-card-ad-small
+weibo.com##.WB_card_ad
+sohu.com##.advertise
+sina.com.cn##.ad-block
+163.com##.ad
+taobao.com##.tb-ad
+jd.com##.ad-banner

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 仅保留系统窗口/启动背景；组件配色由 MIUIX 主题（lightColorScheme/darkColorScheme）提供 -->
+    <color name="background">#FFFFFFFF</color>
+    <color name="ic_launcher_background">#FFFFFFFF</color>
+</resources>

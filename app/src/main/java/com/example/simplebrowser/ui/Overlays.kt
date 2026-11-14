@@ -1,0 +1,149 @@
+package com.example.simplebrowser.ui
+
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.simplebrowser.R
+import com.example.simplebrowser.action.ActionRegistry
+import com.example.simplebrowser.action.toActionContext
+import com.example.simplebrowser.action.toGroup
+import com.example.simplebrowser.browser.BrowserController
+import com.example.simplebrowser.browser.BrowserState
+import com.example.simplebrowser.browser.MenuRequest
+import com.example.simplebrowser.browser.TabState
+import com.example.simplebrowser.data.model.ThemeMode
+import com.example.simplebrowser.ui.components.MiuixSheet
+import com.example.simplebrowser.ui.components.SheetRow
+import com.example.simplebrowser.ui.components.SheetSection
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Blocklist
+import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.extended.Download
+import top.yukonga.miuix.kmp.icon.extended.Favorites
+import top.yukonga.miuix.kmp.icon.extended.Folder
+import top.yukonga.miuix.kmp.icon.extended.Home
+import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.icon.extended.Settings
+import top.yukonga.miuix.kmp.icon.extended.Theme
+
+/** 长按链接/图片的菜单（与主菜单同一套 Sheet）。 */
+@Composable
+fun ContextMenu(
+    visibleState: MutableTransitionState<Boolean>,
+    request: MenuRequest,
+    controller: BrowserController,
+    onDismiss: () -> Unit,
+) {
+    MiuixSheet(state = visibleState, onDismiss = onDismiss, title = request.url) {
+        val context = request.toActionContext(controller)
+        ActionRegistry.forGroup(request.toGroup(), context).forEach { action ->
+            SheetRow(
+                icon = action.icon,
+                title = stringResource(action.titleRes),
+                onClick = {
+                    action.execute(context)
+                    onDismiss()
+                },
+            )
+        }
+    }
+}
+
+/** 主菜单：分组 Sheet。 */
+@Composable
+fun AppMenu(
+    visibleState: MutableTransitionState<Boolean>,
+    themeMode: ThemeMode,
+    pageDark: Boolean,
+    onHome: () -> Unit,
+    onBookmark: () -> Unit,
+    onNavigate: (SecondaryScreen) -> Unit,
+    onCycleTheme: () -> Unit,
+    onTogglePageDark: () -> Unit,
+    adBlockPaused: Boolean,
+    onToggleAdBlockSite: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    MiuixSheet(state = visibleState, onDismiss = onDismiss) {
+        SheetSection(stringResource(R.string.sheet_section_common))
+        SheetRow(MiuixIcons.Home, stringResource(R.string.menu_home), onClick = onHome)
+        SheetRow(MiuixIcons.Favorites, stringResource(R.string.app_menu_bookmark), onClick = onBookmark)
+        SheetRow(MiuixIcons.Folder, stringResource(R.string.screen_bookmarks)) {
+            onNavigate(SecondaryScreen.BOOKMARKS)
+        }
+        SheetRow(MiuixIcons.Refresh, stringResource(R.string.screen_history)) {
+            onNavigate(SecondaryScreen.HISTORY)
+        }
+        SheetRow(MiuixIcons.Download, stringResource(R.string.screen_downloads)) {
+            onNavigate(SecondaryScreen.DOWNLOADS)
+        }
+
+        SheetSection(stringResource(R.string.sheet_section_appearance))
+        SheetRow(
+            icon = MiuixIcons.Blocklist,
+            title = stringResource(R.string.menu_adblock_site),
+            value = stringResource(if (adBlockPaused) R.string.sheet_on_short else R.string.sheet_off_short),
+            onClick = onToggleAdBlockSite,
+        )
+        SheetRow(
+            icon = MiuixIcons.Theme,
+            title = stringResource(R.string.settings_theme),
+            value = stringResource(themeLabelRes(themeMode)),
+            onClick = onCycleTheme,
+        )
+        SheetRow(
+            icon = MiuixIcons.Theme,
+            title = stringResource(R.string.menu_page_dark),
+            value = stringResource(
+                if (pageDark) R.string.sheet_on else R.string.sheet_off
+            ),
+            onClick = onTogglePageDark,
+        )
+
+        SheetSection(stringResource(R.string.sheet_section_more))
+        SheetRow(MiuixIcons.Settings, stringResource(R.string.screen_settings)) {
+            onNavigate(SecondaryScreen.SETTINGS)
+        }
+        Spacer(Modifier.size(8.dp))
+    }
+}
+
+private fun themeLabelRes(mode: ThemeMode): Int = when (mode) {
+    ThemeMode.LIGHT -> R.string.settings_theme_light
+    ThemeMode.DARK -> R.string.settings_theme_dark
+    ThemeMode.SYSTEM -> R.string.settings_theme_system
+}
