@@ -48,6 +48,8 @@ import com.ravenxud.allegro.ui.theme.Radius
 import com.ravenxud.allegro.ui.theme.Motion
 import com.ravenxud.allegro.ui.theme.Spacing
 import top.yukonga.miuix.kmp.basic.BasicComponent
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.ravenxud.allegro.ui.glass.appGlass
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
@@ -82,8 +84,18 @@ fun HomeScreen(
         appear = true
     }
 
+    // 背景是彩色光斑，玻璃卡能"吸"到颜色；捕获层只包背景，避免卡片自捕获
+    val surface = MiuixTheme.colorScheme.background
+    val bgLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val bgBackdrop = com.kyant.backdrop.backdrops.rememberLayerBackdrop(bgLayer) {
+        drawRect(surface)
+        drawContent()
+    }
+
     Box(Modifier.fillMaxSize()) {
-        Backdrop()
+        Box(Modifier.fillMaxSize().layerBackdrop(bgBackdrop)) {
+            Backdrop()
+        }
 
         AnimatedVisibility(
             visible = appear,
@@ -107,6 +119,15 @@ fun HomeScreen(
 
                 Spacer(Modifier.height(Spacing.xl))
 
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .appGlass(
+                            backdrop = bgBackdrop,
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(Radius.field),
+                            spec = com.ravenxud.allegro.ui.glass.GlassSpec(blur = 28.dp, surfaceAlpha = 0.18f),
+                        ),
+                ) {
                 TextField(
                     value = query,
                     onValueChange = { query = it },
@@ -117,7 +138,7 @@ fun HomeScreen(
                     cornerRadius = Radius.field,
                     leadingIcon = { Icon(MiuixIcons.Search, contentDescription = null) },
                     colors = TextFieldDefaults.textFieldColors(
-                        backgroundColor = MiuixTheme.colorScheme.surface.copy(alpha = 0.72f),
+                        backgroundColor = Color.Transparent,
                     ),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
                     keyboardActions = KeyboardActions(onGo = {
@@ -126,10 +147,11 @@ fun HomeScreen(
                         focusManager.clearFocus()
                     }),
                 )
+                }
 
                 if (recent.isNotEmpty()) {
                     SectionHeader(stringResource(R.string.home_section_recent))
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    GlassCard(backdrop = bgBackdrop) {
                         recent.forEachIndexed { index, item ->
                             if (index > 0) HorizontalDivider(Modifier.padding(start = 16.dp))
                             BasicComponent(
@@ -144,7 +166,7 @@ fun HomeScreen(
 
                 if (showBookmarks && bookmarkList.isNotEmpty()) {
                     SectionHeader(stringResource(R.string.home_section_bookmarks))
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    GlassCard(backdrop = bgBackdrop) {
                         bookmarkList.take(4).forEachIndexed { index, item ->
                             if (index > 0) HorizontalDivider(Modifier.padding(start = 16.dp))
                             BasicComponent(
@@ -161,6 +183,24 @@ fun HomeScreen(
             }
         }
     }
+}
+
+/** 首页的玻璃卡：模糊背后的彩色光斑，而不是"半透明色块"。 */
+@Composable
+private fun GlassCard(
+    backdrop: com.kyant.backdrop.Backdrop,
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
+) {
+    androidx.compose.foundation.layout.Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .appGlass(
+                backdrop = backdrop,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(Radius.card),
+                spec = com.ravenxud.allegro.ui.glass.GlassSpec(blur = 24.dp),
+            ),
+        content = content,
+    )
 }
 
 @Composable
