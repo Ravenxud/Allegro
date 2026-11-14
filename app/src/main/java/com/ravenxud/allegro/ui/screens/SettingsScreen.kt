@@ -56,6 +56,7 @@ fun SettingsScreen(
     onOpenSync: () -> Unit = {},
     onOpenSiteRules: () -> Unit = {},
     onOpenShaderSmoke: () -> Unit = {},
+    onOpenLicenses: () -> Unit = {},
 ) {
     val theme by settings.themeMode.collectAsState()
     val engineId by settings.searchEngineId.collectAsState()
@@ -320,6 +321,12 @@ fun SettingsScreen(
 
             SectionTitle(stringResource(R.string.settings_about))
             PreferenceCard {
+                SettingRow(
+                    title = "开源许可",
+                    summary = "第三方组件与致谢",
+                    onClick = onOpenLicenses,
+                )
+                ComponentDivider()
                 BasicComponent(
                     title = stringResource(R.string.settings_version, version),
                 )

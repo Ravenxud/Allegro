@@ -729,6 +729,7 @@ fun BrowserScreen(
                         onBack = back,
                     )
                     SecondaryScreen.SHADER_SMOKE -> ShaderSmokeScreen(onBack = back)
+                    SecondaryScreen.LICENSES -> com.ravenxud.allegro.ui.screens.LicensesScreen(onBack = back)
                     SecondaryScreen.GROUPS -> TabGroupsScreen(
                         controller = controller,
                         onBack = back,
@@ -798,6 +799,7 @@ fun BrowserScreen(
                         onOpenSync = { screen = SecondaryScreen.SYNC },
                         onOpenSiteRules = { screen = SecondaryScreen.SITE_RULES },
                         onOpenShaderSmoke = { screen = SecondaryScreen.SHADER_SMOKE },
+                    onOpenLicenses = { screen = SecondaryScreen.LICENSES },
                         onClearData = {
                             scope.launch {
                                 history.clear()
