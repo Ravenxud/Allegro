@@ -62,7 +62,8 @@ fun SiteSettingsScreen(
         val base = current ?: return
         controller.saveSiteSettings(block(base))
         version++
-        controller.reload()
+        // 从「站点规则」列表进来编辑别的站点时，不要重载当前页面
+        if (host == controller.currentHost()) controller.reload()
     }
 
     ScreenScaffold(
@@ -138,7 +139,7 @@ fun SiteSettingsScreen(
                         onCheckedChange = { value ->
                             adBlock.setSiteAllowed(host, !value)
                             version++
-                            controller.reload()
+                            if (host == controller.currentHost()) controller.reload()
                         },
                         title = stringResource(R.string.site_adblock),
                         summary = stringResource(R.string.site_adblock_summary),

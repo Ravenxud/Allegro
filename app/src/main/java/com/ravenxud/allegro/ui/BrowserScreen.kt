@@ -78,6 +78,8 @@ import com.ravenxud.allegro.ui.screens.DownloadsScreen
 import com.ravenxud.allegro.ui.screens.HistoryScreen
 import com.ravenxud.allegro.ui.screens.OfflinePagesScreen
 import com.ravenxud.allegro.ui.screens.PrivacyReportScreen
+import com.ravenxud.allegro.ui.screens.SiteRulesIo
+import com.ravenxud.allegro.ui.screens.SiteRulesScreen
 import com.ravenxud.allegro.ui.screens.SiteSettingsScreen
 import com.ravenxud.allegro.ui.screens.WebDavScreen
 import com.ravenxud.allegro.ui.screens.ReaderScreen
@@ -192,6 +194,31 @@ fun BrowserScreen(
                         Toast.LENGTH_SHORT,
                     ).show()
                 }
+            }
+        }
+    }
+
+    val rulesImportLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                val text = runCatching {
+                    context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                }.getOrNull()
+                val count = text?.let {
+                    SiteRulesIo.importText(
+                        it,
+                        com.ravenxud.allegro.di.ServiceLocator.siteSettingsRepository,
+                        adBlock,
+                    )
+                }
+                val message = if (count == null) {
+                    resources.getString(R.string.rules_import_failed)
+                } else {
+                    resources.getString(R.string.rules_import_done, count)
+                }
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -604,6 +631,39 @@ fun BrowserScreen(
                         sync = com.ravenxud.allegro.di.ServiceLocator.syncRepository,
                         onBack = back,
                     )
+                    SecondaryScreen.SITE_RULES -> SiteRulesScreen(
+                        controller = controller,
+                        siteSettings = com.ravenxud.allegro.di.ServiceLocator.siteSettingsRepository,
+                        adBlock = adBlock,
+                        onEdit = { screen = SecondaryScreen.SITE },
+                        onBack = back,
+                        onExport = {
+                            val text = SiteRulesIo.exportText(
+                                com.ravenxud.allegro.di.ServiceLocator.siteSettingsRepository,
+                                adBlock,
+                            )
+                            val file = java.io.File(context.cacheDir, "site-rules.json")
+                            runCatching { file.writeText(text) }
+                            runCatching {
+                                val uri = androidx.core.content.FileProvider.getUriForFile(
+                                    context,
+                                    "${context.packageName}.fileprovider",
+                                    file,
+                                )
+                                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "application/json"
+                                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(
+                                    android.content.Intent.createChooser(intent, resources.getString(R.string.rules_export)),
+                                )
+                            }.onFailure {
+                                Toast.makeText(context, R.string.bookmark_export_failed, Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        onImport = { rulesImportLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) },
+                    )
                     SecondaryScreen.SITE -> SiteSettingsScreen(
                         host = controller.currentHost(),
                         controller = controller,
@@ -634,6 +694,7 @@ fun BrowserScreen(
                         update = update,
                         onBack = back,
                         onOpenSync = { screen = SecondaryScreen.SYNC },
+                        onOpenSiteRules = { screen = SecondaryScreen.SITE_RULES },
                         onClearData = {
                             scope.launch {
                                 history.clear()

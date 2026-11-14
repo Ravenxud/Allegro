@@ -1,7 +1,7 @@
 # 交接说明（给下一个 AI / 开发者）
 
 > 读完这一份就能接手开发。项目：**Allegro**（代码内部名 SimpleBrowser）—— 极简 Android 浏览器。
-> 最后更新：0.30.1-beta（versionCode 70）
+> 最后更新：0.31.0-beta（versionCode 71）
 > 桌面版模式 v2 已落地：主文档代理（见 docs/DESKTOP_MODE.md）
 > 包名已改为 `com.ravenxud.allegro`（与旧包不兼容，需卸载重装）
 
@@ -181,7 +181,9 @@ app/src/test/java/.../DesktopRedirectPolicyTest 7 条  互换一次/循环/上�
 app/src/test/java/.../BaseHrefTest        5 条  base 注入
 app/src/test/java/.../DesktopFetcherIntegrationTest 6 条  真连 mock 站点（默认跳过）
 app/src/test/java/.../DesktopModeTest     4 条  桌面判定优先级 / UA key
-共 94 条，全绿（集成测试需 env）
+app/src/test/java/.../SiteRulesBundleTest 4 条  规则包往返/去重/容错
+（另含同步 v1/v2 兼容 2 条）
+共 100 条，全绿（集成测试需 env）
 ```
 
 真机验证清单见 `docs/TESTING.md`。**没有 instrumentation 测试，也没有截图测试**。
@@ -206,7 +208,7 @@ MHTML 解析用**真实 Chromium 产物**做回归：`scripts/capture_mhtml.py` 
 1. ~~0.30 桌面版模式 v2~~（已实现：`desktop/DesktopProxy` + `DesktopDocumentFetcher`；
    真机待验：B站/知乎/豆瓣/微博 + 登录流程）
 2. 0.30.1 桌面视口 / UA 选择 / 失败可视化
-3. 0.31 站点规则管理（桌面版、JS、图片、过滤、UA 一览 + 导入导出）
+3. ~~0.31 站点规则管理~~（已实现：SiteRulesScreen + JSON 导入导出 + 同步 schema v2）
 4. 0.32 标签组（新表 + 迁移 + 拖拽入组）
 5. 0.33 动画专项（26 项）
 6. 0.34 HLS/下载增强 → 0.35 无障碍 → 0.36 稳定性 → 1.0 发布

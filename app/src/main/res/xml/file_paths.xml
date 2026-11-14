@@ -3,4 +3,5 @@
     <files-path name="downloads" path="Download/" />
     <files-path name="update" path="update/" />
     <files-path name="diag" path="." />
+    <cache-path name="cache" path="." />
 </paths>

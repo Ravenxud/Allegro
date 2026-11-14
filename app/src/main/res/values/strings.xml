@@ -248,4 +248,19 @@
     <string name="desktop_fallback">桌面版加载失败，已用普通方式打开：%1$s</string>
     <string name="menu_desktop_site">本站桌面版</string>
     <string name="settings_desktop_ua">桌面版 UA</string>
+    <string name="rules_title">站点规则</string>
+    <string name="rules_intro">这里汇总所有按站点改过的设置；点一行可以继续调整。</string>
+    <string name="rules_settings_summary">查看/导出/导入所有按站点的设置</string>
+    <string name="rules_export">导出规则</string>
+    <string name="rules_export_summary">生成 JSON，可发送到其它设备导入</string>
+    <string name="rules_import">导入规则</string>
+    <string name="rules_import_summary">从 JSON 文件恢复站点设置与过滤白名单</string>
+    <string name="rules_import_done">已导入 %1$d 个站点规则</string>
+    <string name="rules_import_failed">导入失败：文件格式不正确</string>
+    <string name="rules_sites">已配置的站点</string>
+    <string name="rules_empty">还没有站点规则</string>
+    <string name="rules_empty_hint">在网页菜单里「本站设置」改过的项会出现在这里</string>
+    <string name="rules_whitelist">广告过滤白名单</string>
+    <string name="rules_adblock_off">过滤暂停</string>
+    <string name="rules_default">默认</string>
 </resources>

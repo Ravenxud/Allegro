@@ -32,6 +32,8 @@ data class SyncPayload(
     val folders: List<SyncedFolder> = emptyList(),
     val bookmarks: List<SyncedBookmark> = emptyList(),
     val siteSettings: Map<String, SiteSettings> = emptyMap(),
+    /** 广告过滤白名单（这些站点不拦广告）。 */
+    val adblockSites: List<String> = emptyList(),
     val prefs: Map<String, String> = emptyMap(),
 ) {
 
@@ -55,12 +57,14 @@ data class SyncPayload(
             "siteSettings" to siteSettings.mapValues { (host, s) ->
                 linkedMapOf("host" to host, "js" to s.javaScript, "img" to s.images, "ua" to s.desktopUa)
             },
+            "adblock" to adblockSites,
             "prefs" to prefs,
         ),
     )
 
     companion object {
-        const val SCHEMA = 1
+        /** v2 起加入广告白名单；解码仍兼容 v1。 */
+        const val SCHEMA = 2
 
         /** 解析失败或不是本应用的备份时返回 null。 */
         fun decode(text: String): SyncPayload? {
@@ -100,6 +104,10 @@ data class SyncPayload(
                     desktopUa = MiniJson.bool(o["ua"], false),
                 )
             }
+            val adblock = MiniJson.array(root["adblock"])
+                .map { MiniJson.str(it).trim().lowercase() }
+                .filter { it.isNotEmpty() }
+
             val prefs = LinkedHashMap<String, String>()
             MiniJson.obj(root["prefs"]).forEach { (key, value) ->
                 if (value is String) prefs[key] = value
@@ -111,6 +119,7 @@ data class SyncPayload(
                 folders = folders,
                 bookmarks = bookmarks,
                 siteSettings = sites,
+                adblockSites = adblock.distinct(),
                 prefs = prefs,
             )
         }

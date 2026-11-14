@@ -35,6 +35,7 @@ class SyncRepository(
     private val bookmarks: BookmarkRepository,
     private val siteSettings: SiteSettingsRepository,
     private val settings: SettingsRepository,
+    private val adBlock: com.ravenxud.allegro.adblock.AdBlockRepository,
 ) {
 
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -137,6 +138,7 @@ class SyncRepository(
             folders = folders,
             bookmarks = items,
             siteSettings = sites,
+            adblockSites = adBlock.allowedSites().sorted(),
             prefs = mapOf(
                 "theme" to settings.themeMode.value.name,
                 "engine" to settings.searchEngineId.value,
@@ -180,6 +182,7 @@ class SyncRepository(
         payload.siteSettings.values.forEach { site ->
             siteSettings.save(site.copy(host = site.host))
         }
+        payload.adblockSites.forEach { adBlock.setSiteAllowed(it, true) }
         payload.prefs["homeBookmarks"]?.toBooleanStrictOrNull()?.let(settings::setHomeBookmarksEnabled)
         payload.prefs["theme"]?.let { name ->
             com.ravenxud.allegro.data.model.ThemeMode.entries.firstOrNull { it.name == name }

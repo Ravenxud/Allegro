@@ -84,6 +84,7 @@ object ServiceLocator {
                 bookmarkRepository,
                 siteSettingsRepository,
                 settingsRepository,
+                adBlockRepository,
             )
             updateRepository = UpdateRepository(
                 appContext,

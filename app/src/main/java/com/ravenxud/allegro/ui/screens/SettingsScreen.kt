@@ -54,6 +54,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onClearData: () -> Unit,
     onOpenSync: () -> Unit = {},
+    onOpenSiteRules: () -> Unit = {},
 ) {
     val theme by settings.themeMode.collectAsState()
     val engineId by settings.searchEngineId.collectAsState()
@@ -164,6 +165,12 @@ fun SettingsScreen(
                     title = stringResource(R.string.sync_title),
                     summary = stringResource(R.string.sync_entry_summary),
                     onClick = onOpenSync,
+                )
+                ComponentDivider()
+                ArrowPreference(
+                    title = stringResource(R.string.rules_title),
+                    summary = stringResource(R.string.rules_settings_summary),
+                    onClick = onOpenSiteRules,
                 )
             }
 

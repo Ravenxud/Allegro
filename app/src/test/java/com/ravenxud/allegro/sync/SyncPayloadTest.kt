@@ -43,6 +43,22 @@ class SyncPayloadTest {
     }
 
     @Test
+    fun `v2 payload carries adblock whitelist`() {
+        val withAds = payload.copy(adblockSites = listOf("weibo.com", "zhihu.com"))
+        val decoded = SyncPayload.decode(withAds.encode())!!
+        assertEquals(listOf("weibo.com", "zhihu.com"), decoded.adblockSites)
+    }
+
+    @Test
+    fun `v1 backup still decodes`() {
+        // 0.27 时代的备份没有 adblock 字段，必须还能读
+        val v1 = """{"schema":1,"exportedAt":5,"bookmarks":[{"url":"https://a.test/","title":"A"}]}"""
+        val decoded = SyncPayload.decode(v1)!!
+        assertEquals(1, decoded.bookmarks.size)
+        assertTrue(decoded.adblockSites.isEmpty())
+    }
+
+    @Test
     fun `rejects unknown schema and garbage`() {
         assertNull(SyncPayload.decode("""{"schema":99}"""))
         assertNull(SyncPayload.decode("""{"schema":0}"""))
