@@ -234,11 +234,16 @@ fun TabSwitcherOverlay(
             )
         }
 
-        // 4) 页面缩略：截图 → 卡片矩形
+        // 4) 页面缩略：截图 → 卡片矩形（共享元素）
+        // 用平滑缓动而不是线性：线段位移线性会显得"匀速拖拽"，缓动才有"飞过去"的感觉
         if (p < 0.999f && screenWidth > 0f) {
-            val rect = lerpRect(start, target, p)
+            val e = if (simplify) p else smoothstep(p)
+            val rect = lerpRect(start, target, e)
             val scaleX = rect.width / start.width.coerceAtLeast(1f)
             val scaleY = rect.height / start.height.coerceAtLeast(1f)
+            // 圆角 0 → 20dp；末端 25% 淡出，避免"压住卡片"再消失
+            val corner = 20.dp * e
+            val fade = 1f - ((e - 0.72f) / 0.28f).coerceIn(0f, 1f)
             Box(
                 modifier = Modifier
                     .graphicsLayer {
@@ -247,7 +252,13 @@ fun TabSwitcherOverlay(
                         transformOrigin = TransformOrigin(0f, 0f)
                         this.scaleX = scaleX
                         this.scaleY = scaleY
+                        alpha = fade
+                        // 飞行中带一点投影，落位时收掉
+                        shadowElevation = (14f * (1f - e)).dp.toPx()
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(corner)
+                        clip = true
                     }
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(corner))
                     .size(
                         with(density) { start.width.toDp() },
                         with(density) { start.height.toDp() },
@@ -317,6 +328,11 @@ private fun gridCardRect(
     val left = pad + col * (cardWidth + spacing)
     val top = topInset + header + row * (cardHeight + spacing)
     return Rect(left, top, left + cardWidth, top + cardHeight)
+}
+
+private fun smoothstep(x: Float): Float {
+    val t = x.coerceIn(0f, 1f)
+    return t * t * (3f - 2f * t)
 }
 
 private fun lerpRect(start: Rect, end: Rect, t: Float): Rect = Rect(
