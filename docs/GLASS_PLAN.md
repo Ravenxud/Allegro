@@ -1,174 +1,254 @@
-# 玻璃材质 + 动效升级方案（效果优先版 v2）
+# 玻璃材质 + 动效 完整实施方案（v3）
 
-> 取代 v1（`docs/ANIMATION.md` 里的性能约束部分）。
-> **优先级反转**：视觉与手感 > 性能。性能只保留"不崩溃 / 不坏功能 / 不严重卡死"三条底线。
-> 允许引入第三方库，允许在中低端机上跑满效果。
-
----
-
-## 0. 相对 v1 改了什么
-
-| 维度 | v1（性能优先） | v2（效果优先） |
-|---|---|---|
-| 材质档位 | 8 条决策表逐场景降级 | **单一质量档** `High / Medium / Off`，默认 High |
-| 低端机 | 自动降级到 Translucent | **不自动降级**，用户自己选 |
-| 第三方库 | 只允许 backdrop | Haze + Backdrop 都上 |
-| 验收 | 帧率门槛（P90≥55fps） | 录屏/截图对照为主，性能只看主观"是否卡死" |
-| 动效范围 | 26 项 | **34 项**（新增液态专属 8 项） |
-
-唯一保留的硬约束是**功能性**的（会黑屏/坏输入法/坏视频），不是性能的 —— 见 §6。
+> 本文合并：`glass-integration-draft.md` v1.2（Luna 级观感）+ 对本工程的适配修正。
+> 取代 `GLASS_PLAN.md` v2（效果优先版）与 `ANIMATION.md` 的性能门槛部分。
+> 目标不是"加一点模糊"，而是把**材质、圆角、过滚、转场**四条线一次做成一套系统。
 
 ---
 
-## 1. 目标
+## 0. 决策锁定（不再讨论）
 
-1. 打开 App 第一眼就有"材质感"：顶栏/底栏/面板/侧栏/首页都是玻璃，不是半透明色块。
-2. 液态玻璃（折射 + 色散）用在**主角位置**：底栏、悬浮按钮、面板边缘、标签卡片落位。
-3. 动效有"物理感"：跟手、可打断、过冲收敛，不是线性淡入淡出。
-4. 效果开关可关（逃生阀），但默认拉满。
-
-## 2. 非目标
-
-- 不做"省电模式"式的细腻分档（只留三档）。
-- 不做动态取色引擎（跟随 MiuixTheme 即可）。
-- 不改 WebView 宿主结构。
-
----
-
-## 3. 依赖（坐标与版本已核对 Maven Central）
-
-| 库 | 坐标 | 最新版 | 依赖情况（实测 POM） | 用途 |
-|---|---|---|---|---|
-| **Haze** | `dev.chrisbanes.haze:haze` | **2.1.0** | 依赖 `org.jetbrains.compose.animation:animation-core:1.12.2` —— **与本工程 Compose 完全同版** | 大面积模糊/玻璃拟态：顶栏、面板、卡片、侧栏、首页背景 |
-| **Backdrop** | `io.github.kyant0:backdrop` | **2.0.1** | 依赖 `kotlin-stdlib:2.4.10`（本工程 2.4.21，向后兼容） | 液态玻璃折射 + 色散：底栏、悬浮元素、面板边缘 |
-| profileinstaller | `androidx.profileinstaller:profileinstaller` | 1.4.x | — | baseline profile，稳定首帧 |
-
-**分工原则**：Haze 负责"面"，Backdrop 负责"体"。
-- 纯模糊（不需要折射）→ Haze（成熟、参数简单、性能可控）
-- 需要折射/色散/透镜感 → Backdrop（AGSL，API 33+，31–32 自动退化为 Haze 模糊）
-
-> 两者都是 Apache-2.0；都基于 `RenderEffect`，**都不能放在 WebView 祖先链上**（见 §6）。
-
----
-
-## 4. 材质地图
-
-| 区域 | 材质 | 参数要点 | 备注 |
+| # | 决策 | 值 | 影响 |
 |---|---|---|---|
-| 顶栏（地址栏底板） | Haze blur 20dp + 渐变 scrim | 滚动时 scrim 加深；`TextField` 本身实底 | 输入框不进离屏层（IME 会坏） |
-| 底栏 56dp | **Backdrop Liquid**（折射 12dp / 量 24dp） | 静止开色散，按压时折射位移 | 全站最抢眼的一块 |
-| 应用菜单 / 长按菜单 | Backdrop Liquid（低强度） | 圆角 28dp，与 sheet 对齐 | 背景是静态遮罩，安全 |
-| 二级页面板 | Haze blur + 顶部渐变 | 进入时模糊半径 0→20dp 动画 | 覆盖全部二级页 |
-| 标签面板背景 | Haze blur 24dp + 暗化 12% | 缩略图在底层，模糊层在上层 | **不**给每张卡片加玻璃 |
-| 大屏侧栏 | Haze blur 16dp | 与内容区之间 0.5dp 高光描边 | 大屏收益最高 |
-| 首页（新标签页） | Haze blur（背景层）+ 玻璃搜索框 | 搜索框用 Backdrop 轻液态 | 首页是"第一眼" |
-| 下拉刷新指示器 | Backdrop Liquid 小面积 | 拖拽时折射随距离变化 | 手感来源 |
-| 阅读模式工具栏 | Haze blur | 与页面滚动联动 | |
-| 空态卡片 / 设置卡片 | 半透明 + 描边（不做模糊） | 避免一屏十几层 | 视觉噪音控制 |
-
-**层数上限（视觉考虑，不是性能）**：同屏玻璃层 ≤ 3。卡片不做玻璃，否则"处处是玻璃 = 没有玻璃"。
+| 1 | `minSdk` | **26 → 33** | 放弃 Android 12 及以下；AGSL/RenderEffect 无条件用 |
+| 2 | `targetSdk` | **37 → 36** | 预测性返回默认开启；升 37 作为后续独立任务 |
+| 3 | `compileSdk` | 37（不变） | 保留新常量与 lint |
+| 4 | 材质库 | **Backdrop 2.0.1**（唯一） | 不引 Haze、不引 Material3 |
+| 5 | 自研材质 | **三段 AGSL**（IOR 玻璃 / 超椭圆 / 镜像过滚）+ 噪声 | 编译失败退 `lens()` |
+| 6 | 导航 | **不引入 Navigation Compose** | 保留 `SecondaryScreen` 状态机；用 `AnimatedContent + sharedBounds` 做共享元素 |
+| 7 | 预测性返回 | **保留现有 `OnBackPressedCallback` 通道**，只收敛魔法数 | 该通道本身就是预测性返回 API，不是旧实现 |
+| 8 | 顶栏材质 | **静止快照模糊**（PixelCopy）+ 滚动 scrim | WebView 不进任何实时捕获层 |
+| 9 | 网页可见时的底栏 | scrim；**覆盖层出现后**才升级真玻璃 | 避免"玻璃后面是黑洞" |
+| 10 | 质量档 | `High / Medium / Off`，默认 High，**不按设备自动降级** | 低端机默认也全开 |
 
 ---
 
-## 5. 动效升级（34 项）
+## 1. 现状与差距
 
-### 5.1 令牌（沿用 v1 的 4 档时长 + 6 条曲线）
-
-```
-Duration: Micro 120 / Short 180 / Medium 280 / Long 400
-Easing:   Standard (0.25,0.1,0.25,1) / Decelerate (0,0,0.58,1) / Accelerate (0.42,0,1,1)
-          Emphasized (0.2,0,0,1) / OvershootSoft (0.61,1,0.88,1) / Overshoot (0.64,1.56,0.34,1)
-Springs:  Snappy (0.85/380) / Gentle (1.0/260) / Bouncy (0.7/420)
-```
-
-> 注意：v1 抄来的 `Emphasized (0.12,0,0.39,0)` 终点 y=0，语义是"只出不进"，已改成 `(0.2,0,0,1)`。
-
-### 5.2 原有 26 项（保留，参数换成令牌）
-
-转场 7、列表与状态 9、微交互 10 —— 详见 `docs/ANIMATION.md` §2，这里只列新增。
-
-### 5.3 新增 8 项液态专属
-
-| # | 动作 | 规格 |
+| 能力 | 现状 | 目标 |
 |---|---|---|
-| L1 | 底栏按压"凹陷" | 按下时折射量 24→32dp、高光内移，`Micro`；松手回弹 `Snappy` |
-| L2 | 滚动时光学位移 | 顶栏玻璃随 scrollY 做 0→4dp 视差，模糊半径 20→26dp（只在滚动时更新，节流 16ms） |
-| L3 | 面板边缘流光 | 面板进入时沿圆角跑一条高光，`Long`，只播一次 |
-| L4 | 色散呼吸 | 静止 > 500ms 后色散从 0→1 缓入，`Long`；任何交互立即归 0 |
-| L5 | 标签卡片落位 | 关闭标签时其余卡片用 `Bouncy` 补位，卡片边缘带 0.5dp 折射 |
-| L6 | 悬浮按钮液态拖尾 | 按下拖动时折射中心跟手偏移，松手 `Snappy` 复位 |
-| L7 | 页面转场融合 | 二级页进入时，目标页玻璃先"渗出"再推入（`Long` + 透明度分段） |
-| L8 | 主题切换液态过渡 | 深浅切换时玻璃 tint 与模糊半径交叉过渡 `Medium`，不做整屏闪白 |
-
-### 5.4 验收方式（不靠帧率数字）
-
-1. 录屏 30 秒：开合面板 ×5、切标签 ×5、滚动、下拉刷新 → 肉眼判断"有没有一跳一跳"。
-2. 截图对照：浅色/深色各一张，看玻璃透出的是背景而不是灰块。
-3. 只在极端情况判失败：**明显掉到个位数帧** 或 **输入法弹不出** 或 **视频黑块**。
+| 材质 | 不透明 `Surface(color=surface)` + 少量 `tween` | 玻璃（模糊 + 折射 + 色散 + 受光 + 内阴影） |
+| 圆角 | `RoundedCornerShape` / Miuix 默认 | 超椭圆 `SquircleShape(smoothing=0.8)` |
+| 动效令牌 | 16 处裸 `tween`，11 种时长 | 全部收敛到 `Motion.kt`（4 档时长 / 6 曲线 / 3 spring） |
+| 转场 | 自定义 `AnimatedVisibility` 滑入 | 保留骨架 + 两条链路 `sharedBounds` morph |
+| 过滚 | 自研 `PullRefreshLayout` 指示器 | 越界挂镜像折叠 + 弹簧回弹 + 触感 |
+| 顶栏模糊 | 无（只有一条进度条） | 快照模糊 + 滚动切 scrim |
+| 大屏 | `LayoutWidth` 600/840 + `TabsRail` | 保持，补玻璃与分屏策略 |
 
 ---
 
-## 6. 保留的硬约束（功能性，非性能）
+## 2. 设备基线与连带清理
 
-| # | 约束 | 原因（会坏什么） |
+`minSdk 33` 会让现有 3 处版本分支变成恒真，必须一并处理，否则 lint `ObsoleteSdkInt` 会让 CI 红：
+
+| 文件 | 现状 | 处理 |
 |---|---|---|
-| 1 | WebView 及其祖先链**禁止**任何 `renderEffect` / `blur` / 离屏层 | 离屏合成导致：视频/WebGL 黑洞、输入法热区错位、滚动输入延迟 |
-| 2 | 地址栏 `TextField` 保持实底，不进模糊层 | IME 焦点与文字重绘异常 |
-| 3 | 视频全屏时全站玻璃关闭（含 scrim） | 会遮挡或产生黑边 |
-| 4 | 标签面板**每张卡片**不做玻璃 | 视觉噪音 + 每卡一层离屏，滚动标签列表直接崩 |
-| 5 | 抓图/模糊**不在滚动回调里同步做** | 主线程卡死，表现为"滑动不动" |
+| `browser/TabWebView.kt:117` | `if (SDK_INT >= O) safeBrowsingEnabled = true` | 直接删条件，无条件启用 |
+| `browser/WebViewBrowserController.kt:916` | `if (SDK_INT >= Q) WebStorage.deleteOrigin(...)` | 直接删条件 |
+| `MainActivity.kt:158` | `if (SDK_INT < TIRAMISU) return`（通知权限） | TIRAMISU = 33 = minSdk，条件恒假 → 删除分支，直接请求 |
+
+其余不受影响：`usesCleartextTraffic`、edge-to-edge、FileProvider、Room v3。
 
 ---
 
-## 7. 质量档与逃生阀
+## 3. 依赖（坐标与版本均已核对 Maven）
 
 ```kotlin
-enum class GlassQuality { High, Medium, Off }
+// gradle/libs.versions.toml
+[versions]
+backdrop = "2.0.1"            // io.github.kyant0:backdrop（有 backdrop-android 变体）
+profileinstaller = "1.4.1"
+metrics = "1.0.0"
+
+[libraries]
+backdrop = { group = "io.github.kyant0", name = "backdrop", version.ref = "backdrop" }
+androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
+androidx-metrics = { group = "androidx.metrics", name = "metrics-performance", version.ref = "metrics" }
 ```
 
-| 档 | 行为 | 默认 |
+**不引入**：Haze（与 Backdrop 功能重叠且会打架）、Navigation Compose（本文 §0-6）、navigationevent（现有回调已够）、materialkolor（Maven 上未查到稳定坐标）、Material3。
+
+R8：`app/proguard-rules.pro` 追加
+```
+-keep class io.github.kyant0.backdrop.** { *; }
+-keepclassmembers class ** { @androidx.compose.runtime.Composable <methods>; }
+```
+（AGSL 是 `const-string`，R8 默认保留；仍需 release 包真机启动验一次。）
+
+---
+
+## 4. 架构与唯一入口
+
+```
+L3 细节：三段 AGSL（IOR / 超椭圆 / 镜像）+ 噪声      ui/glass/GlassShaders.kt
+L2 材质：Backdrop 层捕获 + blur + vibrancy + 自研效果  ui/glass/GlassModifier.kt
+L1 动效：Motion 令牌 / sharedBounds / 预测性返回        ui/theme/Motion.kt
+L0 基座：Tokens（Spacing/Radius/IconSize）+ SquircleShape
+```
+
+**唯一入口**：`Modifier.appGlass(spec, shape, backdrop)`、`Modifier.barGlass(...)`。
+call site 禁止 `import io.github.kyant0.backdrop.*`（唯一例外：`ui/glass/GlassTopBar.kt`）。
+
+### 4.1 WebView 排除规则（本方案最关键的一条）
+
+```
+Root
+├─ BackdropScope（只捕获下面这层）
+│   ├─ 背景（主题色 / 首页）
+│   ├─ 二级页面板 / 菜单 / 标签面板 / 侧栏 / 首页
+│   └─ 顶栏、底栏（覆盖层出现时才用真玻璃）
+└─ WebView 宿主（AndroidView → PullRefreshLayout → FrameLayout → TabWebView）
+        ↑ 永远不在 BackdropScope 内，永远不加 renderEffect
+```
+
+- 网页可见时：顶栏 = **快照模糊**（`captureRegion` 抓顶栏区域，≤720px，去抖 150ms，保鲜 1.5s）；底栏 = **scrim**。
+- 覆盖层/二级页出现时：WebView 已被置 `GONE`，玻璃可以整片覆盖，直接 `appGlass`。
+- 视频全屏（`onShowCustomView`）：全站玻璃置空，只留纯色。
+
+---
+
+## 5. 材质地图
+
+| 区域 | 网页可见时 | 覆盖层 / 二级页 | 参数 |
+|---|---|---|---|
+| 顶栏 | 快照模糊 + 顶部 scrim | 真玻璃（无折射） | blur 24dp |
+| 底栏 | scrim（85%→0 渐变） | **真玻璃 + IOR** | blur 24 / 折射 16/32 / IOR 1.35 / 色散 0.35 |
+| 应用菜单 / 长按菜单 | — | 真玻璃（低强度） | 折射 12/24，圆角 28 + smoothing 0.8 |
+| 二级页面板 | — | 真玻璃（无折射，避免大面扭曲） | blur 24 |
+| 标签面板背景 | — | 真玻璃 + 缩略图在底层 | 暗化 12%，模糊 24 |
+| 大屏侧栏 | 真玻璃（背后是内容区） | 真玻璃 | blur 16 |
+| 首页 | 真玻璃（背后是纯 Compose 背景） | — | 玻璃搜索框用 IOR 小面积 |
+| 下拉指示器 | 小面积 IOR | — | 折射随拖拽距离 |
+| 设置卡片 / 空态 | 半透明 + 描边（**不做模糊**） | 同左 | 控层数 |
+
+**层数上限 3**（视觉考虑）：顶 + 底 + 一层内容；列表卡片一律不做玻璃。
+
+---
+
+## 6. 三段 AGSL
+
+### 6.1 IOR 玻璃（核心）
+- 输入：`uniform shader content`；**必须**与 `runtimeShaderEffect(..., "content")` 的输入名完全一致（写错不报错，画面全黑）。
+- 参数：`size/cornerRadii/refractionHeight/refractionAmount/ior/dispersion/lightDir/tint/innerShadow`。
+- 硬约束：`refractionHeight ≤ minCornerRadius`（28dp 圆角 → 16dp 安全）、`refractionAmount ≤ min(w,h)`；越界夹紧并 `DiagLog.w`。
+- 色散：7 次采样，权重 r/g/b 各和为 1（已核算，不会整体偏色）。
+- 高光：`pow(dot(normalize(grad), normalize(lightDir)), 6) * (ior-1) * 0.6`。
+- 内阴影：底部 `smoothstep` 递减。
+
+### 6.2 超椭圆
+`smoothing=0.8` 的 SDF 混合（圆→超椭圆），实现 `SquircleShape : CornerBasedShape`，替换玻璃层的 `RoundedCornerShape(28.dp)`。
+
+### 6.3 镜像过滚
+`mirrorFold(u, size)` + `scale = 1 + overdrag*0.25`、`dim = 0.92`；只在 `PullRefreshLayout` 越界时挂载，回弹走 `Motion.Springs.Snappy`。
+
+### 6.4 噪声
+`noise=0.02` 三通道哈希抖动，叠在玻璃表面，消除"塑料感"渐变带。
+
+### 6.5 失败兜底
+`RuntimeShader` 编译异常 → 退回 Backdrop `lens()` → 再失败退回半透明 + 描边；每次只记一次 `DiagLog.e`，不弹 UI。
+
+---
+
+## 7. 动效
+
+### 7.1 令牌（唯一来源 `ui/theme/Motion.kt`）
+```
+Duration: Micro 120 / Short 180 / Medium 280 / Long 400
+Easing:   Standard (.25,.1,.25,1) / Decelerate (0,0,.58,1) / Accelerate (.42,0,1,1)
+          Emphasized (.2,0,0,1) / OvershootSoft (.61,1,.88,1) / Overshoot (.64,1.56,.34,1)
+Springs:  Snappy (.85/380) / Gentle (1/260) / Bouncy (.7/420)
+PredictiveBack: SCALE_DROP .06 / ALPHA_DROP .25 / CORNER_RADIUS_DP 28
+```
+验收：`grep -rn "tween(" app/src/main` 只命中 `Motion.kt`。
+
+### 7.2 34 项清单
+- 转场 7、列表与状态 9、微交互 10（见 `docs/ANIMATION.md` §2，参数换令牌）
+- 液态专属 8（L1–L8：按压凹陷、滚动物理视差、边缘流光、色散呼吸、卡片落位折射、悬浮拖尾、转场渗出、主题液体过渡）
+
+### 7.3 共享元素（不引 Navigation）
+```kotlin
+SharedTransitionLayout {
+  AnimatedContent(targetState = screen, transitionSpec = { … Motion … }) { target ->
+    …
+    Modifier.sharedBounds(rememberSharedContentState("tab-${id}"), this@AnimatedContent)
+  }
+}
+```
+链路两条：标签面板卡片 → 浏览页；书签项 → 打开动画。key 必须稳定（禁止 index）。顶栏/底栏不参与。
+
+### 7.4 预测性返回（保留现有通道）
+现有 `MainActivity.handleOnBackStarted/Progressed/Cancelled/Pressed` 不动，只把 `0.06f/0.25f/28dp` 换成 `Motion.PredictiveBack`，并给 `BrowserScreen` 的 `graphicsLayer` 补圆角。
+
+### 7.5 触感
+`Vibrator.hasAmplitudeControl`：标签切换、开关、拖拽越界三处，振幅 0.3/0.5，时长 8–12ms。
+
+---
+
+## 8. 关键实现细则
+
+1. **快照节流**：`onScroll` 只切状态；`delay(150ms)` 后抓图，`job.cancel()` 去抖；滚动中立即回 scrim。
+2. **不要第二份 PixelCopy**：从 `WebViewBrowserController.captureStub` 抽出 `captureRegion(rect, downscale)`，两处共用。
+3. **深色对比**：`surfaceAlpha` 深色 0.18 / 浅色 0.12，`tint` 白 8%，描边白 18%；深浅各截一张图核对文字对比度。
+4. **圆角一致性**：玻璃 28dp + smoothing 0.8；`Radius.sheet` 已是 28dp，直接复用。
+5. **层数控制**：`GlassBudget`（debug）统计单帧 `appGlass` 次数，>3 打 `DiagLog.w`（不崩）。
+6. **回滚**：`SettingsRepository` 隐藏 key `glass_enabled=false` → 全站 `Off`；外观页提供 High/Medium/Off。
+
+---
+
+## 9. 落地步骤（P0–P6）
+
+| 步 | 内容 | 关键文件 | DoD | 工量 |
+|---|---|---|---|---|
+| **P0** | SDK 基线（minSdk 33 / targetSdk 36）+ 加 3 个依赖 + 清 3 处恒真分支 + **AGSL 冒烟页** | `app/build.gradle.kts`、`libs.versions.toml`、`MainActivity.kt`、`browser/*`、`ui/debug/ShaderSmokeScreen.kt`（过渡用） | 编译过；冒烟页能出图/能显示"AGSL 编译失败"原因 | 0.5 天 |
+| **P1** | `Motion.kt` + 全量替换裸 `tween` + `PredictiveBack` 收敛 + `GlassSpec`/`appGlass` 骨架（先用 `lens()`） | `ui/theme/Motion.kt`、`ui/glass/*`、`ui/BrowserScreen.kt`、`MiuixSheet.kt`、`HomeScreen.kt`、`MainActivity.kt` | 视觉零变化；`grep tween` 只在 Motion.kt | 1 天 |
+| **P2** | Backdrop 接入：二级页 / 菜单 / 标签面板 / 侧栏 / 首页 / 底栏（覆盖层态） | `ui/screens/ScreenScaffold.kt`、`TabSwitcherOverlay.kt`、`Overlays.kt`、`TabsRail.kt`、`HomeScreen.kt` | 玻璃无空洞、深浅文字可读 | 2 天 |
+| **P3** | IOR 玻璃 + 噪声替换 `lens()` | `ui/glass/GlassShaders.kt`、`GlassModifier.kt` | 边缘有折射/色散/高光；快速滚动无撕裂 | 2–3 天 |
+| **P4** | 超椭圆 + 镜像过滚 + 触感 | `ui/glass/SquircleShape.kt`、`PullRefreshLayout.kt`、`Haptics.kt` | 圆角顺、下拉有弹性、触感三处生效 | 1.5 天 |
+| **P5** | 顶栏快照模糊 + 滚动 scrim + 视频全屏禁用 + 大屏策略补玻璃 | `browser/SnapshotBlurController.kt`、`ui/glass/GlassTopBar.kt`、`TabWebView.kt`、`BrowserScreen.kt` | 滚动 30s 无长帧堆积；视频全屏无黑块；平板正确 | 2 天 |
+| **P6** | 外观设置（High/Medium/Off、顶/底栏风格）+ baseline profile + JankStats + R8 校验 | `SettingsScreen.kt`、`app/proguard-rules.pro`、`baseline-prof.txt` | 三档即时生效；release 包能装能开 | 1 天 |
+
+总计约 **10 个工作日**。每步单独出 APK，你先验再进下一步。
+
+---
+
+## 10. 验收：谁验什么
+
+| 项 | 我在沙箱能做 | 只能你真机做 |
 |---|---|---|
-| High | Backdrop Liquid（折射+色散）+ Haze 20dp | ✅ |
-| Medium | 仅 Haze 模糊，无色散无折射 | 手动 |
-| Off | 实心 + 描边（当前外观） | 手动 |
+| 编译 / lint / 单测 / release 打包 | ✅ | — |
+| AGSL 是否编译通过、是否出图 | ❌（无 Android 13+ 设备） | ✅ 必须 |
+| 玻璃观感（折射强度、色散、圆角、深色对比） | ❌ | ✅ 截图/录屏 |
+| 性能（P90 / 长帧 / GPU 时间） | ❌ | ✅ JankStats 输出 |
+| 预测性返回 / 共享元素 / 触感 | ❌ | ✅ |
 
-- **不按设备自动降级**（按你的要求）；低端机默认也是 High。
-- 逃生阀：设置 → 外观 → 质量档；另有隐藏 key `glass_enabled=false` 供紧急回滚。
-- 切换即时生效，不需要重启。
-
----
-
-## 8. 交付拆分
-
-| PR | 内容 | 验收 |
-|---|---|---|
-| **0.33.0** 基座 | Motion 令牌 + 替换全部裸 `tween` + Haze/Backdrop 接入 spike（编译 + 一个 Demo 面板）+ `appGlass`/`barGlass` 单一入口 + 帧统计浮层（仅参考，不设门槛） | 编译过、Demo 能看出玻璃、`grep tween` 只在 Motion.kt |
-| **0.33.1** 主视觉 | 顶栏 + 底栏 + 二级页 + 菜单 + 标签面板背景 + 侧栏 + 首页（材质地图前 8 行） | 截图对照：玻璃透背景、深浅色都成立 |
-| **0.33.2** 液态细节 | L1–L8 八项 + 转场融合 | 录屏 30s 主观顺畅、按压有反馈 |
-| **0.33.3** 收口 | 外观设置页（质量档 / 顶栏风格 / 底栏风格）+ baseline profile + R8 规则 + APK 体积记录 | 三档切换即时生效、release 包能装能开 |
-
-每 PR 固定交付：变更清单、关键 diff（≤40 行）、截图或录屏、风险与回滚、下一步。
+真机验收矩阵（每次 P 结束跑一遍）：
+- 设备：Android 13、14、16 各一台（16 为主调参平台）
+- 主题：深 / 浅
+- 场景：冷启动 → 首页；滚动 30s；开合面板 ×10；切标签 ×5；下拉刷新；视频全屏进出；平板/分屏
 
 ---
 
-## 9. 代价（提前说清）
-
-| 项 | 预计 |
-|---|---|
-| APK 体积 | +250~400 KB（Haze + Backdrop，R8 后） |
-| 内存 | +6~12 MB（离屏层与快照） |
-| 发热/耗电 | 玻璃层常驻时 GPU 负载上升，长时间滚动会温热 |
-| 低端机 | **可能明显掉帧**（这是本方案接受的代价）；用户可切 Medium/Off |
-| 兼容 | API 31 以下无色散/折射（自动退化为 Haze 模糊或实心） |
-
----
-
-## 10. 风险
+## 11. 风险与回滚
 
 | 风险 | 缓解 |
 |---|---|
-| Backdrop 2.0.1 与 Compose 1.12.2 组合编译/运行异常 | 0.33.0 先做 spike：只落地一个 Demo 面板，不通就整库退回 Haze-only |
-| AGSL 在部分 ROM（定制 WebView/GPU 驱动）失效 | 运行时 try/catch + 检测失败自动退 Haze |
-| R8 裁剪 AGSL 字符串常量 | proguard 保留 Backdrop/Haze 包；release 包必须真机启动验一次 |
-| 玻璃层叠加导致视觉糊成一片 | 层数上限 3、卡片不做玻璃、对比度检查（深浅各一张截图） |
-| 依赖升级破坏 API | 版本锁定（2.1.0 / 2.0.1），升级走独立 PR |
+| AGSL 在某些 GPU/ROM 上编译失败 | 三级兜底（AGSL → lens → 半透明）；冒烟页先验证 |
+| `uniform shader content` 名字不匹配导致全黑 | 冒烟页固定用例 + 日志断言 |
+| 顶栏快照抓到旧画面（页面已变） | 保鲜 1.5s + `onPageFinished`/旋转/主题切换 `invalidate()` |
+| 玻璃层过多导致视觉糊成一团 | 层数 ≤3、卡片不做玻璃、深浅截图核对 |
+| minSdk 33 丢用户 | 已确认；旧版用户停留在 0.32.x |
+| targetSdk 36 行为变化（预测性返回/大屏/edge-to-edge） | P0 先落地并回归三项；升 37 单独 PR |
+| 依赖升级破坏 API | 版本锁定 2.0.1 / 1.4.1 / 1.0.0 |
+| 回滚 | `glass_enabled=false` 一键全站关闭；targetSdk 一行回退 |
+
+---
+
+## 12. 明确不做
+
+- 不做 Navigation Compose 重构（改用 `AnimatedContent + sharedBounds`）
+- 不做动态取色（materialkolor 坐标未确认）
+- 不做多 Activity / SharedViewKit
+- 不做 Lottie / 粒子 / 3D
+- 不做"低端机自动降级"（用户手动选质量档）
+- 不做 WebView 区域实时 backdrop（物理上抓不到 `<video>`）
+- 不在本次升 `targetSdk 37`（见 v1.2 §15 检查清单，后续独立 PR）
