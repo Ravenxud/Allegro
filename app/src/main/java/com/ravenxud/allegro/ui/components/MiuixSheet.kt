@@ -78,8 +78,9 @@ fun MiuixSheet(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                // 半透明：能透出被压暗的页面；配合顶部 1px 高光，比纯实色更有层次
-                color = MiuixTheme.colorScheme.surface.copy(alpha = 0.92f),
+                // 不用半透明：背后多半是 WebView（抓不到、无法模糊），透出来只有文字重影。
+                // 真玻璃要等「网页区域快照模糊」（P5）；在那之前保持不透明 + 高光更干净。
+                color = MiuixTheme.colorScheme.surface,
             ) {
                 // 行数会随功能增加（页面动作 9 行 + 常用 3 行 + 外观 3 行 + 更多），
                 // 早期写死 Column 会被屏幕裁掉，导致最底部的「设置」看不见 —— 必须可滚动并限高
