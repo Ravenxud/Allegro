@@ -74,12 +74,14 @@ fun ContextMenu(
     controller: BrowserController,
     onDismiss: () -> Unit,
     backdrop: com.kyant.backdrop.Backdrop? = null,
+    snapshot: android.graphics.Bitmap? = null,
 ) {
     MiuixSheet(
         state = visibleState,
         onDismiss = onDismiss,
         title = request.url,
         backdrop = backdrop,
+        snapshot = snapshot,
     ) {
         val context = request.toActionContext(controller)
         ActionRegistry.forGroup(request.toGroup(), context).forEach { action ->
@@ -117,13 +119,14 @@ fun AppMenu(
     onSiteSettings: () -> Unit,
     onTabGroups: () -> Unit,
     backdrop: com.kyant.backdrop.Backdrop? = null,
+    snapshot: android.graphics.Bitmap? = null,
     desktopSite: Boolean,
     onToggleDesktopSite: () -> Unit,
     adBlockPaused: Boolean,
     onToggleAdBlockSite: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    MiuixSheet(state = visibleState, onDismiss = onDismiss, backdrop = backdrop) {
+    MiuixSheet(state = visibleState, onDismiss = onDismiss, backdrop = backdrop, snapshot = snapshot) {
         SheetSection(stringResource(R.string.sheet_section_page))
         SheetRow(MiuixIcons.Search, stringResource(R.string.menu_reader), onClick = onReader)
         SheetRow(MiuixIcons.Play, stringResource(R.string.menu_read_aloud), onClick = onReadAloud)

@@ -30,7 +30,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
@@ -56,6 +58,8 @@ fun MiuixSheet(
     title: String? = null,
     /** 背景捕获层；为 null 时面板保持不透明（背后抓不到内容就别做假玻璃）。 */
     backdrop: com.kyant.backdrop.Backdrop? = null,
+    /** 背景快照（网页可见时用 PixelCopy 抓）：有它就画"模糊的快照"当玻璃底。 */
+    snapshot: android.graphics.Bitmap? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Box(modifier.fillMaxSize()) {
@@ -102,6 +106,23 @@ fun MiuixSheet(
                 // 行数会随功能增加（页面动作 9 行 + 常用 3 行 + 外观 3 行 + 更多），
                 // 早期写死 Column 会被屏幕裁掉，导致最底部的「设置」看不见 —— 必须可滚动并限高
                 val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.72f).dp
+                androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth()) {
+                if (snapshot != null) {
+                    // 网页区域抓不到实时内容：用一张 PixelCopy 快照模糊后当玻璃底
+                    androidx.compose.foundation.Image(
+                        bitmap = snapshot.asImageBitmap(),
+                        contentDescription = null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier
+                            .matchParentSize()
+                            .blur(22.dp),
+                    )
+                    androidx.compose.foundation.layout.Box(
+                        Modifier
+                            .matchParentSize()
+                            .background(MiuixTheme.colorScheme.surface.copy(alpha = 0.42f)),
+                    )
+                }
                 Column(
                     Modifier
                         .navigationBarsPadding()
@@ -138,6 +159,7 @@ fun MiuixSheet(
                     }
                     content()
                 }
+                }
             }
         }
     }
@@ -151,6 +173,7 @@ fun MiuixSheet(
     modifier: Modifier = Modifier,
     title: String? = null,
     backdrop: com.kyant.backdrop.Backdrop? = null,
+    snapshot: android.graphics.Bitmap? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val state = androidx.compose.runtime.remember {
@@ -163,6 +186,7 @@ fun MiuixSheet(
         modifier = modifier,
         title = title,
         backdrop = backdrop,
+        snapshot = snapshot,
         content = content,
     )
 }

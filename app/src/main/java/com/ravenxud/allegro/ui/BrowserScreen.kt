@@ -156,6 +156,8 @@ fun BrowserScreen(
     var screen by remember { mutableStateOf(SecondaryScreen.BROWSER) }
     var lastMenu by remember { mutableStateOf<MenuRequest?>(null) }
     var moveTabId by remember { mutableStateOf<String?>(null) }
+    // 网页可见时，菜单的玻璃底来自一张 PixelCopy 快照（WebView 抓不到实时内容）
+    var sheetSnapshot by remember { mutableStateOf<Bitmap?>(null) }
 
     // 首页是纯 Compose，可以被真正捕获并模糊；网页是 WebView，抓不到 → 只在首页给菜单玻璃
     val homeSurface = MiuixTheme.colorScheme.surface
@@ -170,6 +172,18 @@ fun BrowserScreen(
     var lastScreen by remember { mutableStateOf(SecondaryScreen.BROWSER) }
     LaunchedEffect(screen) { if (screen != SecondaryScreen.BROWSER) lastScreen = screen }
     LaunchedEffect(menu) { if (menu != null) lastMenu = menu }
+
+    // 菜单打开前抓一张快照；首页已有 backdrop 时不需要
+    LaunchedEffect(showAppMenu, menu) {
+        val opening = showAppMenu || menu != null
+        if (!opening) {
+            sheetSnapshot = null
+            return@LaunchedEffect
+        }
+        // 首页已有 Compose 捕获层，不需要快照
+        if (tab == null || tab.url == "about:blank") return@LaunchedEffect
+        controller.captureStub { bmp -> sheetSnapshot = bmp }
+    }
 
     val exportLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.CreateDocument("text/html"),
@@ -520,6 +534,7 @@ fun BrowserScreen(
                         request = request,
                         controller = controller,
                         backdrop = if (isHome) homeBackdrop else null,
+                        snapshot = if (isHome) null else sheetSnapshot,
                         onDismiss = { controller.dismissMenu() },
                     )
                 }
@@ -634,6 +649,7 @@ fun BrowserScreen(
                         screen = SecondaryScreen.GROUPS
                     },
                     backdrop = if (isHome) homeBackdrop else null,
+                    snapshot = if (isHome) null else sheetSnapshot,
                     desktopSite = controller.isDesktopForCurrentSite(),
                     onToggleDesktopSite = { controller.toggleDesktopForCurrentSite() },
                     adBlockPaused = controller.isAdBlockPausedForCurrentSite(),
