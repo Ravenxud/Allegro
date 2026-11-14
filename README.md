@@ -1,7 +1,7 @@
 # Allegro
 
-简约 Android 浏览器（代码内部名 Simple Browser），实现思路参考 Luna。
-参考 Luna 的简约版 Android 浏览器。当前进度：**里程碑 1（T1–T4）**。
+简约 Android 浏览器（代码内部名 Simple Browser）
+简约版 Android 浏览器。当前进度：**里程碑 1（T1–T4）**。
 
 ## 已实现
 
