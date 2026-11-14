@@ -1,3 +1,29 @@
+# 0.29.2-beta
+
+文档与方案版，功能与 0.29.1 相同。
+
+## 变更
+
+- **README 重写**：去掉历史版本堆叠与外部参考，收敛成「是什么 / 有什么 / 怎么装 / 怎么构建 / 文档索引」
+- **新增 `docs/ROADMAP.md`**：按当前状态重排 0.30 → 1.0（根目录旧路线文件已删除）
+- **新增 `docs/DESKTOP_MODE.md`**：桌面版模式的完整技术方案
+
+## 桌面版为什么不能只改 UA（结论摘要）
+
+| 判定依据 | 能否修改 |
+|---|---|
+| `User-Agent` | ✅ `setUserAgentString` |
+| `Sec-CH-UA-Mobile` / `Sec-CH-UA-Platform` | ❌ WebView 无 API |
+
+B 站就是两边判断不一致 → `m.` 与 `www.` 每 300ms 互跳。
+Chrome 的"请求桌面版"会同时改 UA 与 hints，WebView 没有这个能力。
+
+**方案（0.30 实施）**：主文档由 App 自己抓（OkHttp，显式伪造 hint 头 + 双向同步 Cookie），
+重定向由自己跟随并限制 m./www 互换次数，最终 HTML 注入 `<base>` 交给 WebView。
+POST / 非 HTML / 超大响应全部回退 WebView。详见 `docs/DESKTOP_MODE.md`。
+
+---
+
 # 0.29.1-beta
 
 修「开桌面模式后页面疯狂刷新」。这次诊断日志又直接给出了答案。

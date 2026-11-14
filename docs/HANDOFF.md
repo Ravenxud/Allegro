@@ -1,7 +1,8 @@
 # 交接说明（给下一个 AI / 开发者）
 
-> 读完这一份就能接手开发。项目：**Allegro**（代码内部名 SimpleBrowser）—— 参考 Luna 的极简 Android 浏览器。
+> 读完这一份就能接手开发。项目：**Allegro**（代码内部名 SimpleBrowser）—— 极简 Android 浏览器。
 > 最后更新：0.29.1-beta（versionCode 67）
+> 下一版：0.30 桌面版模式 v2（见 docs/DESKTOP_MODE.md）
 > 包名已改为 `com.ravenxud.allegro`（与旧包不兼容，需卸载重装）
 
 ---
@@ -155,7 +156,7 @@ di/          ServiceLocator(手写 DI，替代 Hilt)
 12. **桌面模式改不了 Client Hints**：`setUserAgentString` 只影响 `User-Agent`，
     服务端仍收到 `Sec-CH-UA-Mobile: ?1`。于是 m./www 两边判断不一致时会出现 302 死循环
     （B站必现）。现做法：注入脚本覆盖 `navigator.userAgentData` 等前端指纹；再加"6 秒内来回跳 ≥5 次"
-    的熔断——桌面模式自动退回移动版，普通模式停止加载。**真要做完整桌面版只能自建抓取/回填代理，不在单版本范围内。**
+    的熔断——桌面模式自动退回移动版，普通模式停止加载。**完整方案见 `docs/DESKTOP_MODE.md`（单文档代理），0.30 实施。**
 13. **WebView 的 settings 是全局的**：`javaScriptEnabled`/`blockNetworkImage`/`userAgentString` 属于 WebView 实例，
     而本项目一个 WebView 复用于多个标签页。所以站点设置必须在**每次导航（onPageStarted）重设一遍**，
     只改一次会被下一个站点的页面覆盖。
@@ -195,12 +196,15 @@ MHTML 解析用**真实 Chromium 产物**做回归：`scripts/capture_mhtml.py` 
 
 ## 9. 下一步任务（按优先级）
 
-1. ~~离线页可打开~~ / ~~隐私报告 + 元素选择器~~（0.25.0 完成）
-2. ~~站点设置页~~（0.26.0 完成；Cookie 只做了「清本站数据」，未做逐站开关）
-3. ~~WebDAV 同步~~（0.27.0 完成；整包覆盖，无自动合并）
-4. ~~大屏/折叠屏~~（0.29 完成）；标签组 / HLS 下载 / 无障碍 拆成后续版本
-5. 动画专项 26 项（1 个版本，见 `ROADMAP.md`）
-6. 外观专项 → 稳定性与发布准备 → 1.0.0
+完整路线见 `docs/ROADMAP.md`，当前重点：
+
+1. **0.30 桌面版模式 v2（P0，用户明确刚需）** —— 方案见 `docs/DESKTOP_MODE.md`：
+   主文档由 OkHttp 抓取并伪造 Client Hints，重定向自己跟随（永不循环），POST/非 HTML 回退 WebView
+2. 0.30.1 桌面视口 / UA 选择 / 失败可视化
+3. 0.31 站点规则管理（桌面版、JS、图片、过滤、UA 一览 + 导入导出）
+4. 0.32 标签组（新表 + 迁移 + 拖拽入组）
+5. 0.33 动画专项（26 项）
+6. 0.34 HLS/下载增强 → 0.35 无障碍 → 0.36 稳定性 → 1.0 发布
 
 ## 10. 与用户协作的偏好（重要）
 

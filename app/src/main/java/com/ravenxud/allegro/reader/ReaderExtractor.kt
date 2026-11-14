@@ -5,7 +5,7 @@ import com.ravenxud.allegro.js.BridgeAuth
 /**
  * 阅读模式提取（Readability + 后处理 + 智能拼页）。
  *
- * 与 Luna 的实现对齐的三层：
+ * 正文提取的三层处理：
  * 1. **提取**：Mozilla Readability（Apache-2.0，assets/readability）；
  * 2. **后处理**：等价 Chromium dom_distiller 的三步——
  *    - 链接净化（只保留 http/https，统一 target/rel，其余解包为纯文本）

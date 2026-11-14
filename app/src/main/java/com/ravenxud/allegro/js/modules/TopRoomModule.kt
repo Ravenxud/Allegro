@@ -5,7 +5,7 @@ import com.ravenxud.allegro.js.JsContext
 import com.ravenxud.allegro.js.JsModule
 
 /**
- * 让位页面的固定浮层（学自 Luna 的 TopRoom / BottomRoom）。
+ * 页面上下边缘有固定浮层时，为工具栏让出空间。
  *
  * 很多移动站点自带 `position: fixed` 顶栏/底栏，会与我们的地址栏、工具栏重叠。
  * 做法：找出贴边固定的元素，把它们整体「顶进去」一个安全间距，

@@ -3,7 +3,7 @@ package com.ravenxud.allegro.js
 import java.security.SecureRandom
 
 /**
- * JS 桥接令牌（学自 Luna 的 `__lunaBridgeSecret`）。
+ * JS 桥接令牌：每次主文档加载轮换，桥方法先校验。
  *
  * 页面脚本能调用 `@JavascriptInterface` 暴露的所有方法，
  * 但只要每次页面加载下发一个**随机令牌**、原生侧校验，

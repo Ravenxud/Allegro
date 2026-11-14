@@ -5,7 +5,7 @@ import com.ravenxud.allegro.js.JsContext
 import com.ravenxud.allegro.js.JsModule
 
 /**
- * 媒体地址嗅探（学自 Luna 的 MediaSniffer）。
+ * 媒体地址嗅探：捕获页面里的 mp4/m3u8 等直链。
  *
  * 关键差异：不只看 `<video src>`，而是扫页面里的**播放器状态对象**
  * （B 站 `__playinfo__`、Next.js `__NEXT_DATA__`、通用 `playerConfig` 等），

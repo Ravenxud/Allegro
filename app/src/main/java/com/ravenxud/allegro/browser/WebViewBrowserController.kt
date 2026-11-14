@@ -1017,7 +1017,7 @@ class WebViewBrowserController(
             return onCaptured(null)
         }
 
-        // 整窗截图：地址栏与底栏会一起进入 stub，缩进卡片时控件随之收缩（Luna 同款）
+        // 整窗截图：地址栏与底栏会一起进入 stub，缩进卡片时控件随之收缩
         val windowRect = android.graphics.Rect(0, 0, decor.width, decor.height)
         requestCopy(window, windowRect) { bitmap ->
             if (bitmap != null) {

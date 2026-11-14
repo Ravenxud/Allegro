@@ -5,7 +5,7 @@ import com.ravenxud.allegro.js.JsContext
 import com.ravenxud.allegro.js.JsModule
 
 /**
- * JS 桥接前置（学过 Luna 的 UserscriptPrelude）。
+ * JS 桥接前置：把原生桥映射成页面里的 window.__sb* 函数。
  *
  * 注入脚本里习惯写 `window.__sbReader(...)` 这类业务语义函数，
  * 但真正暴露给页面的只有 `SimpleBrowserBridge`（@JavascriptInterface）。
