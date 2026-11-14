@@ -2,59 +2,69 @@ package com.ravenxud.allegro.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ravenxud.allegro.ui.glass.appGlass
 import com.ravenxud.allegro.ui.theme.Motion
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
-import com.ravenxud.allegro.ui.glass.appGlass
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
- * 统一底部面板：无遮罩 + 顶部 28dp 圆角 + 拖拽条 + 分组行。
- * 面板外保持网页原始亮度，点击空白处仍可关闭；主菜单、长按菜单共用。
+ * 统一底部面板（Luna 观感）：
+ * - 32dp 大圆角卡片，**整块**玻璃（网页快照模糊 + 淡色 tint），能透出背后网页
+ * - 顶部：拖拽条 + 左侧关闭圆钮 + 右侧胶囊动作区
+ * - 内容默认走 4 列圆形图标网格（SheetGrid）
+ * - 进场用弹簧（可打断、带一点过冲），出场用加速曲线
+ *
+ * 快照几何：**不测量面板位置**（`positionInWindow()` 在本工程里不可信，
+ * 实测返回 top=2936 / win=4694，而屏幕只有 2672 高）。
+ * 改为「快照自身宽高比 + 底对齐」：图宽 = 面板宽 = 屏宽，
+ * 图高由 bitmap 比例推出，底边贴面板底（= 屏底）→ 与真实位置严格重合。
  */
 @Composable
 fun MiuixSheet(
@@ -62,177 +72,176 @@ fun MiuixSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     title: String? = null,
-    /** 背景捕获层；为 null 时面板保持不透明（背后抓不到内容就别做假玻璃）。 */
+    /** 背景捕获层；为 null 时走"网页快照"或纯色。 */
     backdrop: com.kyant.backdrop.Backdrop? = null,
-    /** 背景快照（网页可见时用 PixelCopy 抓）：有它就画"模糊的快照"当玻璃底。 */
+    /** 网页快照（PixelCopy 整窗抓取）：有它就做半透明玻璃。 */
     snapshot: android.graphics.Bitmap? = null,
+    /** 是否显示左上角关闭圆钮（Luna 主页菜单有）。 */
+    showClose: Boolean = false,
+    /** 右上角胶囊里的动作按钮。 */
+    actions: @Composable RowScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Box(modifier.fillMaxSize()) {
+        // 只负责接收"面板外点击"，不绘制任何颜色 —— 页面颜色/亮度完全不变
         AnimatedVisibility(
             visibleState = state,
-            enter = fadeIn(Motion.enter()),
-            exit = fadeOut(Motion.exit(Motion.Duration.Quick)),
+            enter = fadeIn(tween(Motion.Duration.Instant)),
+            exit = fadeOut(tween(Motion.Duration.Quick)),
         ) {
-            // 只负责接收面板外点击，不绘制任何颜色。
-            // 即使低透明度黑色遮罩也会改变网页观感，因此这里必须完全透明。
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .clickable(onClick = onDismiss),
-            )
+            Box(Modifier.fillMaxSize().clickable(onClick = onDismiss))
         }
 
         AnimatedVisibility(
             visibleState = state,
             modifier = Modifier.align(Alignment.BottomCenter),
-            enter = slideInVertically(Motion.slide(Motion.Duration.Emphasized)) { it },
-            exit = slideOutVertically(Motion.slide()) { it },
+            // 弹簧进场：Luna 的手感不是匀速缓动，而是 340 刚度、略欠阻尼的落位
+            enter = slideInVertically(
+                animationSpec = spring(
+                    dampingRatio = 0.82f,
+                    stiffness = 340f,
+                ),
+                initialOffsetY = { it },
+            ) + fadeIn(tween(Motion.Duration.Quick)),
+            exit = slideOutVertically(
+                animationSpec = tween(Motion.Duration.Standard, easing = Motion.Easing.Accelerate),
+            ) { it } + fadeOut(tween(Motion.Duration.Quick)),
         ) {
-            val panelShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
-            val density = androidx.compose.ui.platform.LocalDensity.current
-            val surfaceColor = MiuixTheme.colorScheme.surface
+            SheetCard(
+                onDismiss = onDismiss,
+                title = title,
+                backdrop = backdrop,
+                snapshot = snapshot,
+                showClose = showClose,
+                actions = actions,
+                content = content,
+            )
+        }
+    }
+}
 
-            // 顶栏挡板是唯一做玻璃的一条：把"整窗快照"按屏幕坐标 1:1 对齐后只露出这一条。
-            // 面板贴底且满宽 ⇒ 屏幕高 = 面板顶 y + 面板高，屏幕宽 = 面板宽，无需额外测量。
-            var geomLogged by androidx.compose.runtime.remember {
-                androidx.compose.runtime.mutableStateOf(false)
-            }
-            var panelTopPx by androidx.compose.runtime.remember {
-                androidx.compose.runtime.mutableIntStateOf(0)
-            }
-            var screenSizePx by androidx.compose.runtime.remember {
-                androidx.compose.runtime.mutableStateOf(androidx.compose.ui.unit.IntSize.Zero)
-            }
-            val bandHeight = if (title == null) 26.dp else 52.dp
-            // 行数会随功能增加（页面动作 9 行 + 常用 3 行 + 外观 3 行 + 更多），
-            // 早期写死 Column 会被屏幕裁掉，导致最底部的「设置」看不见 —— 必须可滚动并限高
-            val maxContentHeight =
-                (LocalConfiguration.current.screenHeightDp * 0.64f).dp - bandHeight
+@Composable
+private fun SheetCard(
+    onDismiss: () -> Unit,
+    title: String?,
+    backdrop: com.kyant.backdrop.Backdrop?,
+    snapshot: android.graphics.Bitmap?,
+    showClose: Boolean,
+    actions: @Composable RowScope.() -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val cardShape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+    val surfaceColor = MiuixTheme.colorScheme.surface
+    // 面板总高上限（Luna 约 0.66 屏），内容再多也自己滚
+    val maxContentHeight = (LocalConfiguration.current.screenHeightDp * 0.66f).dp
+    val hasWebGlass = backdrop == null && snapshot != null
 
-            // 玻璃参数：模糊够大才像"玻璃"，tint 够高才保证文字可读
-            val glassBlur = 22.dp
-            val glassTint = 0.55f
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (backdrop != null) {
+                    // 首页/列表：模糊背后的 Compose 内容
+                    Modifier.appGlass(
+                        backdrop = backdrop,
+                        shape = cardShape,
+                        spec = com.ravenxud.allegro.ui.glass.GlassSpec(blur = 26.dp),
+                    )
+                } else {
+                    Modifier
+                },
+            ),
+        shape = cardShape,
+        color = if (hasWebGlass || backdrop != null) Color.Transparent else surfaceColor,
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .clip(cardShape),
+        ) {
+            if (hasWebGlass) {
+                // 图宽 = 屏宽；高度按快照比例；底边贴面板底 → 与屏幕坐标 1:1 重合
+                Image(
+                    bitmap = snapshot!!.asImageBitmap(),
+                    contentDescription = null,
+                    contentScale = ContentScale.FillBounds,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(snapshot.width.toFloat() / snapshot.height.toFloat())
+                        .align(Alignment.BottomCenter)
+                        .blur(24.dp),
+                )
+                // 淡色覆盖：能看见网页，同时保证图标与文字可读（Luna 同样是浅色压一层）
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .background(surfaceColor.copy(alpha = 0.62f)),
+                )
+            }
 
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onGloballyPositioned { c ->
-                        panelTopPx = c.positionInWindow().y.toInt()
-                        screenSizePx = androidx.compose.ui.unit.IntSize(
-                            c.size.width,
-                            panelTopPx + c.size.height,
-                        )
-                        if (!geomLogged && panelTopPx > 0 && c.size.height > 0) {
-                            geomLogged = true
-                            com.ravenxud.allegro.util.DiagLog.log(
-                                "sheet-geom",
-                                "top=$panelTopPx win=${screenSizePx.width}x${screenSizePx.height} " +
-                                    "panelH=${c.size.height} snap=" +
-                                    (snapshot?.let { "${it.width}x${it.height}" } ?: "null") +
-                                    " backdrop=" + (backdrop != null),
-                            )
-                        }
-                    }
-                    .then(
-                        if (backdrop != null) {
-                            // 首页：真玻璃，直接模糊背后的 Compose 内容
-                            Modifier.appGlass(
-                                backdrop = backdrop,
-                                shape = panelShape,
-                                spec = com.ravenxud.allegro.ui.glass.GlassSpec(blur = 26.dp),
-                            )
-                        } else {
-                            Modifier
-                        },
-                    ),
-                shape = panelShape,
-                // 网页场景：面板自身透明，底色交给下面的"快照模糊层 + tint"
-                color = if (backdrop != null) surfaceColor else Color.Transparent,
-            ) {
+            Column(Modifier.fillMaxWidth()) {
+                // ---------------- 顶部 ----------------
                 Box(
                     Modifier
                         .fillMaxWidth()
-                        .clip(panelShape),
+                        .height(1.dp)
+                        .background(Color.White.copy(alpha = 0.28f)),
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 4.dp),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    if (backdrop == null) {
-                        if (snapshot != null && panelTopPx > 0 && screenSizePx.height > 0) {
-                            // 整窗快照按屏幕坐标 1:1 铺满：x=0、y=-面板顶 → 与真实位置重合。
-                            // 只靠 clip(panelShape) 显示面板范围内那部分，不会溢出、不会错位。
-                            androidx.compose.foundation.Image(
-                                bitmap = snapshot.asImageBitmap(),
-                                contentDescription = null,
-                                contentScale = androidx.compose.ui.layout.ContentScale.FillBounds,
-                                modifier = Modifier
-                                    .requiredSize(
-                                        with(density) { screenSizePx.width.toDp() },
-                                        with(density) { screenSizePx.height.toDp() },
-                                    )
-                                    .offset { androidx.compose.ui.unit.IntOffset(0, -panelTopPx) }
-                                    .blur(glassBlur),
-                            )
-                            // 半透明底色：能看见网页，同时保证文字可读
-                            Box(
-                                Modifier
-                                    .matchParentSize()
-                                    .background(surfaceColor.copy(alpha = glassTint)),
-                            )
-                        } else {
-                            // 无可用快照（首页 / 抓取失败 / 刚打开的第一帧）：退化为不透明。
-                            // 绝不显示旧图 —— 那正是之前"面板里有无关模糊"的来源。
-                            Box(Modifier.matchParentSize().background(surfaceColor))
+                    Box(
+                        Modifier
+                            .size(width = 36.dp, height = 4.dp)
+                            .clip(CircleShape)
+                            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.24f)),
+                    )
+                }
+                if (showClose || title != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        if (showClose) {
+                            SheetCircleButton(icon = MiuixIcons.Close, onClick = onDismiss)
                         }
-                    }
-
-                    Column(Modifier.fillMaxWidth()) {
-                        // --------------------------- 顶栏（拖拽条 + 标题） ---------------------------
-                        Column(Modifier.fillMaxWidth()) {
-                            Box(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .height(1.dp)
-                                    .background(Color.White.copy(alpha = 0.22f)),
+                        title?.let {
+                            Text(
+                                text = it,
+                                modifier = Modifier.weight(1f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                fontSize = 15.sp,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             )
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Box(
-                                    Modifier
-                                        .size(width = 36.dp, height = 4.dp)
-                                        .clip(CircleShape)
-                                        .background(
-                                            MiuixTheme.colorScheme.onSurface.copy(alpha = 0.22f),
-                                        ),
-                                )
-                            }
-                            title?.let {
-                                Text(
-                                    text = it,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(start = 20.dp, end = 20.dp, bottom = 6.dp),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    fontSize = 15.sp,
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                )
-                            }
-                        }
-                        // --------------------------- 内容区 ---------------------------
-                        Column(
-                            Modifier
-                                .navigationBarsPadding()
-                                .heightIn(max = maxContentHeight)
-                                .verticalScroll(rememberScrollState())
-                                .padding(bottom = 8.dp),
-                        ) {
-                            content()
-                        }
+                        } ?: Spacer(Modifier.weight(1f))
+                        Row(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(surfaceColor.copy(alpha = 0.75f))
+                                .padding(horizontal = 4.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            content = actions,
+                        )
                     }
                 }
+
+                // ---------------- 内容 ----------------
+                Column(
+                    Modifier
+                        .navigationBarsPadding()
+                        .heightIn(max = maxContentHeight)
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = 10.dp),
+                    content = content,
+                )
             }
         }
     }
@@ -247,10 +256,12 @@ fun MiuixSheet(
     title: String? = null,
     backdrop: com.kyant.backdrop.Backdrop? = null,
     snapshot: android.graphics.Bitmap? = null,
+    showClose: Boolean = false,
+    actions: @Composable RowScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val state = androidx.compose.runtime.remember {
-        androidx.compose.animation.core.MutableTransitionState(false)
+        MutableTransitionState(false)
     }
     state.targetState = visible
     MiuixSheet(
@@ -260,8 +271,99 @@ fun MiuixSheet(
         title = title,
         backdrop = backdrop,
         snapshot = snapshot,
+        showClose = showClose,
+        actions = actions,
         content = content,
     )
+}
+
+/** 顶部圆形按钮（关闭、单个动作）。 */
+@Composable
+fun SheetCircleButton(icon: ImageVector, onClick: () -> Unit) {
+    Box(
+        Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(MiuixTheme.colorScheme.surface.copy(alpha = 0.92f))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
+    }
+}
+
+/** 网格里的一项。 */
+data class SheetItem(
+    val icon: ImageVector,
+    val label: String,
+    val active: Boolean = false,
+    val onClick: () -> Unit,
+)
+
+/**
+ * 4 列圆形图标网格（Luna 主页菜单的形态）。
+ * 每格：56dp 白色圆 + 24dp 图标 + 12sp 标签。
+ */
+@Composable
+fun ColumnScope.SheetGrid(
+    items: List<SheetItem>,
+    columns: Int = 4,
+) {
+    items.chunked(columns).forEach { row ->
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.Start,
+        ) {
+            row.forEach { item ->
+                SheetGridCell(item, Modifier.weight(1f))
+            }
+            repeat(columns - row.size) {
+                Spacer(Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun SheetGridCell(item: SheetItem, modifier: Modifier) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
+            .clickable(onClick = item.onClick)
+            .padding(vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            Modifier
+                .size(56.dp)
+                .clip(CircleShape)
+                .background(MiuixTheme.colorScheme.surface.copy(alpha = 0.92f))
+                .then(
+                    if (item.active) {
+                        Modifier.border(
+                            1.5.dp,
+                            MiuixTheme.colorScheme.primary,
+                            CircleShape,
+                        )
+                    } else {
+                        Modifier
+                    },
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(item.icon, contentDescription = null, modifier = Modifier.size(24.dp))
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = item.label,
+            fontSize = 12.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            color = MiuixTheme.colorScheme.onSurface,
+        )
+    }
 }
 
 @Composable

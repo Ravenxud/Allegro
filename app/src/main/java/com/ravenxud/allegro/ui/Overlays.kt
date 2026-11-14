@@ -39,6 +39,9 @@ import com.ravenxud.allegro.browser.MenuRequest
 import com.ravenxud.allegro.browser.TabState
 import com.ravenxud.allegro.data.model.ThemeMode
 import com.ravenxud.allegro.ui.components.MiuixSheet
+import com.ravenxud.allegro.ui.components.SheetCircleButton
+import com.ravenxud.allegro.ui.components.SheetGrid
+import com.ravenxud.allegro.ui.components.SheetItem
 import com.ravenxud.allegro.ui.components.SheetRow
 import com.ravenxud.allegro.ui.components.SheetSection
 import top.yukonga.miuix.kmp.basic.Button
@@ -58,6 +61,9 @@ import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.Folder
 import top.yukonga.miuix.kmp.icon.extended.GridView
+import top.yukonga.miuix.kmp.icon.extended.Recent
+import top.yukonga.miuix.kmp.icon.extended.ListView
+import top.yukonga.miuix.kmp.icon.extended.Background
 import top.yukonga.miuix.kmp.icon.extended.Home
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Share
@@ -126,64 +132,66 @@ fun AppMenu(
     onToggleAdBlockSite: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    MiuixSheet(state = visibleState, onDismiss = onDismiss, backdrop = backdrop, snapshot = snapshot) {
-        SheetSection(stringResource(R.string.sheet_section_page))
-        SheetRow(MiuixIcons.Search, stringResource(R.string.menu_reader), onClick = onReader)
-        SheetRow(MiuixIcons.Play, stringResource(R.string.menu_read_aloud), onClick = onReadAloud)
-        SheetRow(MiuixIcons.Download, stringResource(R.string.menu_save_offline), onClick = onSaveOffline)
-        SheetRow(MiuixIcons.Share, stringResource(R.string.menu_share_page), onClick = onSharePage)
-        SheetRow(MiuixIcons.Folder, stringResource(R.string.menu_offline_pages), onClick = onOfflinePages)
-        SheetRow(MiuixIcons.Edit, stringResource(R.string.userscript_title), onClick = onUserScripts)
-        SheetRow(MiuixIcons.Settings, stringResource(R.string.menu_site_settings), onClick = onSiteSettings)
-        SheetRow(MiuixIcons.Hide, stringResource(R.string.menu_pick_element), onClick = onPickElement)
-        SheetRow(MiuixIcons.Blocklist, stringResource(R.string.menu_privacy_report), onClick = onPrivacyReport)
-
-        SheetSection(stringResource(R.string.sheet_section_common))
-        SheetRow(MiuixIcons.Home, stringResource(R.string.menu_home), onClick = onHome)
-        SheetRow(MiuixIcons.Favorites, stringResource(R.string.app_menu_bookmark), onClick = onBookmark)
-        SheetRow(MiuixIcons.Folder, stringResource(R.string.screen_bookmarks)) {
-            onNavigate(SecondaryScreen.BOOKMARKS)
-        }
-        SheetRow(MiuixIcons.GridView, stringResource(R.string.menu_tab_groups), onClick = onTabGroups)
-        SheetRow(MiuixIcons.Refresh, stringResource(R.string.screen_history)) {
-            onNavigate(SecondaryScreen.HISTORY)
-        }
-        SheetRow(MiuixIcons.Download, stringResource(R.string.screen_downloads)) {
-            onNavigate(SecondaryScreen.DOWNLOADS)
-        }
-
-        SheetSection(stringResource(R.string.sheet_section_appearance))
-        SheetRow(
-            icon = MiuixIcons.Theme,
-            title = stringResource(R.string.menu_desktop_site),
-            value = stringResource(if (desktopSite) R.string.sheet_on else R.string.sheet_off),
-            onClick = onToggleDesktopSite,
-        )
-        SheetRow(
-            icon = MiuixIcons.Blocklist,
-            title = stringResource(R.string.menu_adblock_site),
-            value = stringResource(if (adBlockPaused) R.string.sheet_on_short else R.string.sheet_off_short),
-            onClick = onToggleAdBlockSite,
-        )
-        SheetRow(
-            icon = MiuixIcons.Theme,
-            title = stringResource(R.string.settings_theme),
-            value = stringResource(themeLabelRes(themeMode)),
-            onClick = onCycleTheme,
-        )
-        SheetRow(
-            icon = MiuixIcons.Theme,
-            title = stringResource(R.string.menu_page_dark),
-            value = stringResource(
-                if (pageDark) R.string.sheet_on else R.string.sheet_off
+    // Luna 形态：大圆角玻璃卡片 + 4 列圆形图标网格；关闭在左，动作胶囊在右
+    MiuixSheet(
+        state = visibleState,
+        onDismiss = onDismiss,
+        backdrop = backdrop,
+        snapshot = snapshot,
+        showClose = true,
+        actions = {
+            SheetCircleButton(MiuixIcons.Settings) { onNavigate(SecondaryScreen.SETTINGS) }
+        },
+    ) {
+        SheetGrid(
+            listOf(
+                SheetItem(MiuixIcons.Search, stringResource(R.string.menu_reader), onClick = onReader),
+                SheetItem(MiuixIcons.Play, stringResource(R.string.menu_read_aloud), onClick = onReadAloud),
+                SheetItem(MiuixIcons.Download, stringResource(R.string.menu_save_offline), onClick = onSaveOffline),
+                SheetItem(MiuixIcons.Share, stringResource(R.string.menu_share_page), onClick = onSharePage),
+                SheetItem(MiuixIcons.Folder, stringResource(R.string.menu_offline_pages), onClick = onOfflinePages),
+                SheetItem(MiuixIcons.Edit, stringResource(R.string.userscript_title), onClick = onUserScripts),
+                SheetItem(MiuixIcons.Settings, stringResource(R.string.menu_site_settings), onClick = onSiteSettings),
+                SheetItem(MiuixIcons.Hide, stringResource(R.string.menu_pick_element), onClick = onPickElement),
+                SheetItem(MiuixIcons.Blocklist, stringResource(R.string.menu_privacy_report), onClick = onPrivacyReport),
+                SheetItem(MiuixIcons.Home, stringResource(R.string.menu_home), onClick = onHome),
+                SheetItem(MiuixIcons.Favorites, stringResource(R.string.app_menu_bookmark), onClick = onBookmark),
+                SheetItem(MiuixIcons.ListView, stringResource(R.string.screen_bookmarks)) {
+                    onNavigate(SecondaryScreen.BOOKMARKS)
+                },
+                SheetItem(MiuixIcons.GridView, stringResource(R.string.menu_tab_groups), onClick = onTabGroups),
+                SheetItem(MiuixIcons.Recent, stringResource(R.string.screen_history)) {
+                    onNavigate(SecondaryScreen.HISTORY)
+                },
+                SheetItem(MiuixIcons.Download, stringResource(R.string.screen_downloads)) {
+                    onNavigate(SecondaryScreen.DOWNLOADS)
+                },
+                SheetItem(
+                    MiuixIcons.Theme,
+                    stringResource(R.string.menu_desktop_site),
+                    active = desktopSite,
+                    onClick = onToggleDesktopSite,
+                ),
+                SheetItem(
+                    MiuixIcons.Blocklist,
+                    stringResource(R.string.menu_adblock_site),
+                    active = !adBlockPaused,
+                    onClick = onToggleAdBlockSite,
+                ),
+                SheetItem(
+                    MiuixIcons.Theme,
+                    stringResource(R.string.settings_theme),
+                    active = true,
+                    onClick = onCycleTheme,
+                ),
+                SheetItem(
+                    MiuixIcons.Background,
+                    stringResource(R.string.menu_page_dark),
+                    active = pageDark,
+                    onClick = onTogglePageDark,
+                ),
             ),
-            onClick = onTogglePageDark,
         )
-
-        SheetSection(stringResource(R.string.sheet_section_more))
-        SheetRow(MiuixIcons.Settings, stringResource(R.string.screen_settings)) {
-            onNavigate(SecondaryScreen.SETTINGS)
-        }
         Spacer(Modifier.size(8.dp))
     }
 }
