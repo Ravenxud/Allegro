@@ -1,7 +1,8 @@
 # 交接说明（给下一个 AI / 开发者）
 
 > 读完这一份就能接手开发。项目：**Allegro**（代码内部名 SimpleBrowser）—— 参考 Luna 的极简 Android 浏览器。
-> 最后更新：0.27.1-beta（versionCode 60，已发布 Release v0.27.1-beta）
+> 最后更新：0.28.0-beta（versionCode 62）
+> 包名已改为 `com.ravenxud.allegro`（与旧包不兼容，需卸载重装）
 
 ---
 
@@ -21,6 +22,17 @@
 | APK 目录 | `/workspace/apk`（只保留最近 3 个版本） |
 | 分支 | 只有 `main`，无 feature 分支 |
 | CI | `.github/workflows/build.yml`：push 触发，跑单测 + `assembleDebug`，上传 artifact |
+
+### 发布准备（0.28 起）
+
+| 项 | 状态 | 说明 |
+|---|---|---|
+| Lint 进 CI | ✅ | `lintDebug` 作为必过步骤；0 error 才能合并。首跑修掉 10 个 error（线程约束 2、Compose 资源 8） |
+| R8 混淆 | ✅ | `isMinifyEnabled=true`，debug 13MB → release **1.9MB**；规则见 `app/proguard-rules.pro` |
+| 签名 | ✅ | `keystore.properties`（**不提交**）存在时用 release 签名，否则退回 debug 签名（供 CI） |
+| 包名 | ✅ | `com.ravenxud.allegro` |
+| 商店素材 | ⬜ | 截图必须真机拍，见 `docs/STORE_LISTING.md` |
+| R8 真机验证 | ⬜ | release APK 还没在真机跑过，0.29 前必须验一轮 |
 
 ### 发布流程
 
@@ -112,7 +124,7 @@ di/          ServiceLocator(手写 DI，替代 Hilt)
 | 5 | 用户脚本不支持 `@require`/`GM_registerMenuCommand`/跨域 XHR | 兼容性有限 | 只承诺 GM 子集 |
 | 6 | Lint 从未成功跑通（环境缺 `lint-gradle` 下载） | 未知静态问题 | 在 GitHub Actions 里补 lint job |
 | 7 | release 构建 + 混淆未验证 | 发布阻塞 | 0.29 阶段处理 |
-| 8 | 包名仍是 `com.example.simplebrowser` | 与 Allegro 品牌不符 | 改包名会牵动 FileProvider authorities，建议 1.0 前一次改完 |
+| 8 | ~~包名仍是 `com.example.simplebrowser`~~ | 0.28.0 已改为 `com.ravenxud.allegro`；**旧包升级必须卸载重装**（applicationId 变了） | 迁移窗口就这一次，之后别再改 |
 | 9 | **WebDAV 密码明文存在 SharedPreferences** | 手机被 root / 备份泄露时可见 | 允许用户改用"应用专用密码"；后续接 EncryptedSharedPreferences |
 | 10 | 同步是整包覆盖，无自动合并 | 两台设备先后同步会互相覆盖 | 界面已写明方向；要增量需加墓碑与冲突解决，暂不做 |
 | 11 | 离线页主路径依赖 `saveWebArchive` | 部分页面（跨域 iframe / 超大）返回 false | 已有 DOM 快照兜底（提示"简化版"）；日志 tag `OfflinePage` 可定位 |

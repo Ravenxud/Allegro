@@ -53,6 +53,20 @@ gradle --no-daemon testDebugUnitTest
 | 13 | 系统切深色 | 全局跟随，无白闪 |
 | 14 | 杀进程重启 | 标签与顺序恢复（URL/标题，不含页面内状态） |
 
+## release（R8）包专项
+
+release 包 1.9MB（debug 13MB），混淆后以下路径最容易出事，**必须逐条过**：
+
+| # | 场景 | 期望 |
+|---|---|---|
+| R1 | 冷启动进首页 | 不闪退（R8 裁掉 Compose/MIUIX 类的最典型症状） |
+| R2 | 打开任意网页 → 长按链接 | 菜单能弹（走 Parcelable/Bundle） |
+| R3 | 阅读模式 / 朗读 | JS 桥仍可用（`@JavascriptInterface` 方法名未被改） |
+| R4 | 保存离线页 → 打开 | 跨进程文件与 WebView 正常 |
+| R5 | 设置 → 主题切换 / 搜索引擎 | 枚举 `valueOf` 未被裁 |
+| R6 | WebDAV 同步一次 | JSON 键名与网络层正常 |
+| R7 | 下载文件并安装 | FileProvider authority = `com.ravenxud.allegro.fileprovider` |
+
 ## 集成测试（WebDAV）
 
 仓库里带了一台最小 WebDAV 测试服务器的脚本（`scripts/dav_server.py`，仅本机验证用：

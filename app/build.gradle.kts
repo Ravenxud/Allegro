@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -6,37 +8,54 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+val keystoreFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties().apply {
+    if (keystoreFile.exists()) keystoreFile.inputStream().use { load(it) }
+}
+
 android {
-    namespace = "com.example.simplebrowser"
+    namespace = "com.ravenxud.allegro"
     compileSdk = 37
 
     defaultConfig {
 
-        applicationId = "com.example.simplebrowser"
+        applicationId = "com.ravenxud.allegro"
         minSdk = 26
         targetSdk = 37
         // 编译测试阶段：版本号统一带 beta 后缀（见 README「版本约定」）
-        versionCode = 61
-        versionName = "0.27.2-beta"
+        versionCode = 62
+        versionName = "0.28.0-beta"
+    }
+
+    signingConfigs {
+        if (keystoreFile.exists()) {
+            create("release") {
+                storeFile = file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // 发布包必须开 R8：debug 包 13MB，release 实测见 RELEASE_NOTES
+            isMinifyEnabled = true
+            isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // 没有签名配置时退回 debug 签名，保证 CI 也能跑通 assembleRelease
+            signingConfig = if (keystoreFile.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    packaging {
-        jniLibs {
-            // GeckoView 需要解压原生库才能按路径加载
-            useLegacyPackaging = true
-        }
     }
 
     buildFeatures {

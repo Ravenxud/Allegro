@@ -1,3 +1,45 @@
+# 0.28.0-beta
+
+阶段 A 第二步：**发布工程化**。这一版几乎没有新功能，但让"能不能正式发出去"从"不知道"变成"可以"。
+
+## 变更
+
+- **包名改为 `com.ravenxud.allegro`**（原 `com.example.simplebrowser`）。
+  ⚠️ applicationId 变了，**必须卸载旧版再安装**，旧版的本地数据不会自动迁移。
+- **R8 混淆 + 资源收缩**：release 包从 13 MB 降到 **1.9 MB**，规则见 `app/proguard-rules.pro`。
+- **release 签名**：本机 `keystore.properties` 存在时用正式签名，否则退回 debug 签名（供 CI 验证 R8）。
+- **Lint 进 CI**：`lintDebug` 成为必过步骤。首跑暴露 10 个 error，全部修掉：
+  - 2 个线程约束：其中一个是**真 bug** —— 后台线程创建 WebView 必然抛异常，被 `runCatching` 静默吞掉，
+    也就是说"启动预热"从来没生效过，已删除；
+  - 8 个 Compose 资源误用 `LocalContext`，改用 `LocalResources.current`。
+- CI 增加 `assembleRelease` 产物，R8 一旦收缩出错会在 CI 暴露。
+
+## 踩坑记录（AGP 9）
+
+release 第一次构建出来的 APK **没有 AndroidManifest.xml 和 res**，Gradle 却报 BUILD SUCCESSFUL，
+`aapt2 dump packagename` 直接说 "could not identify format of APK"。原因是 AGP 9 在
+`android.newDsl=false` 下的资源优化步骤产出了空资源包；关闭 `android.enableResourceOptimizations`
+后恢复正常。这条已写进 HANDOFF，**以后每次升 AGP 都要复验 release APK 能否被 aapt2 解析**。
+
+## 请验
+
+**先装 release 包（1.9MB）**——`Allegro-0.28.0-beta-release.apk`，专治 R8 裁剪：
+
+| # | 场景 | 期望 |
+|---|---|---|
+| R1 | 冷启动进首页 | 不闪退 |
+| R2 | 打开网页 → 长按链接 | 菜单能弹 |
+| R3 | 阅读模式 / 朗读 | 可用（JS 桥方法名未被混淆） |
+| R4 | 保存离线页 → 打开 | 正常 |
+| R5 | 切换主题 / 搜索引擎 | 生效（枚举 valueOf 未被裁） |
+| R6 | WebDAV 同步一次 | 正常 |
+| R7 | 下载文件并安装 | 调起安装器（authority = `com.ravenxud.allegro.fileprovider`） |
+
+R1–R7 全过 → 下个版本起 Release 就只发 release 包（1.9MB）。
+若 release 包有异常，先用下面的 debug 包（13MB）对比，把崩溃栈发我。
+
+---
+
 # 0.27.2-beta
 
 阶段 A 第一小步：把**应用内更新**这条链路修对。之前它其实从未生效。

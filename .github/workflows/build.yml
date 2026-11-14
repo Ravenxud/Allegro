@@ -40,13 +40,26 @@ jobs:
       - name: Unit tests
         run: gradle --no-daemon testDebugUnitTest
 
+      - name: Lint（0 error 才算通过）
+        run: gradle --no-daemon lintDebug
+
       - name: Assemble debug APK
         run: gradle --no-daemon assembleDebug
+
+      # 没有 keystore.properties 时 release 自动退回 debug 签名，CI 也能验证 R8 是否真的能收缩
+      - name: Assemble release APK (R8)
+        run: gradle --no-daemon assembleRelease
 
       - uses: actions/upload-artifact@v4
         with:
           name: allegro-debug-apk
           path: app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: allegro-release-apk
+          path: app/build/outputs/apk/release/*.apk
           retention-days: 14
 
       - uses: actions/upload-artifact@v4

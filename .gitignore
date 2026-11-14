@@ -9,3 +9,8 @@ captures/
 .externalNativeBuild/
 .cxx/
 app/libs/*.aar
+
+# release 签名
+keystore.properties
+*.jks
+*.keystore

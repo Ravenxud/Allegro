@@ -67,7 +67,7 @@ gradle wrapper --gradle-version 8.7
 | 项目 | 结果 |
 |---|---|
 | `assembleDebug` | ✅ BUILD SUCCESSFUL，APK 3.47 MB |
-| 合并后 Manifest | ✅ package `com.example.simplebrowser`，minSdk 26 / target 34，launcher 为 `MainActivity` |
+| 合并后 Manifest | ✅ package `com.ravenxud.allegro`，minSdk 26 / target 37，launcher 为 `MainActivity` |
 | 资源编译（aapt2） | ✅ 通过（本机构建需 `-Pandroid.aapt2FromMavenOverride` 指向本地 aapt2，仅环境问题） |
 | Lint | ✅ 0 error；21 warning 全部是"依赖有新版本"提示 |
 | 单元测试 | ✅ 5/5 通过（UrlParser） |
