@@ -13,6 +13,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -57,6 +58,7 @@ fun SettingsScreen(
     onOpenSiteRules: () -> Unit = {},
     onOpenShaderSmoke: () -> Unit = {},
     onOpenLicenses: () -> Unit = {},
+    onTextZoomChange: (Int) -> Unit = {},
 ) {
     val theme by settings.themeMode.collectAsState()
     val engineId by settings.searchEngineId.collectAsState()
@@ -67,6 +69,8 @@ fun SettingsScreen(
     val blockEnabled by adBlock.enabled.collectAsState()
     val blockedCount by adBlock.blocked.collectAsState()
     val showHomeBookmarks by settings.homeBookmarksEnabled.collectAsState()
+    val textZoom by settings.textZoom.collectAsState()
+    var showZoomDialog by remember { androidx.compose.runtime.mutableStateOf(false) }
     val alwaysDesktop by settings.alwaysDesktop.collectAsState()
     val desktopUa by settings.desktopUa.collectAsState()
     val updateState by update.state.collectAsState()
@@ -126,6 +130,12 @@ fun SettingsScreen(
 
             SectionTitle(stringResource(R.string.settings_browsing))
             PreferenceCard {
+                SettingRow(
+                    title = "页面缩放",
+                    summary = "$textZoom%",
+                    onClick = { showZoomDialog = true },
+                )
+                ComponentDivider()
                 SwitchPreference(
                     checked = alwaysDesktop,
                     onCheckedChange = { settings.setAlwaysDesktop(it) },
@@ -331,6 +341,15 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_version, version),
                 )
             }
+            com.ravenxud.allegro.ui.components.vendor.PercentInputDialog(
+                show = showZoomDialog,
+                title = "页面缩放",
+                onDismissRequest = { showZoomDialog = false },
+                value = { textZoom / 100f },
+                onValueChange = { onTextZoomChange((it * 100).toInt()) },
+                range = 80..140,
+            )
+
             Column(Modifier.padding(bottom = 24.dp)) {}
         }
     }

@@ -152,6 +152,7 @@ class WebViewBrowserController(
     /** 取 WebView；若是首次创建且有存档，则跨进程还原页面。 */
     private fun ensureView(tabId: String): TabWebView {
         val view = pool.get(tabId)
+        view.settings.textZoom = textZoomPercent
         pendingStates.remove(tabId)?.let { bytes ->
             unmarshall(bytes)?.let { bundle -> runCatching { view.restoreState(bundle) } }
         }
@@ -1221,6 +1222,17 @@ class WebViewBrowserController(
 
     override fun setSheetVisible(visible: Boolean) {
         sheetVisible = visible
+    }
+
+    /** 当前页面缩放（百分比），新建 WebView 时套用。 */
+    private var textZoomPercent = 100
+
+    override fun applyTextZoom(percent: Int) {
+        val pct = percent.coerceIn(80, 140)
+        textZoomPercent = pct
+        _state.value.tabs.forEach { tab ->
+            pool.peek(tab.id)?.settings?.textZoom = pct
+        }
     }
 
     override fun onContentScrolled(view: TabWebView, scrollY: Int) {

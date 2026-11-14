@@ -284,6 +284,11 @@ fun BrowserScreen(
     val overlayActive = isHome || screen != SecondaryScreen.BROWSER
 
     // 面板可见时，网页滚动会节流重抓玻璃底图（否则模糊不跟随滚动）
+    // 启动时把已保存的缩放套到所有 WebView
+    LaunchedEffect(Unit) {
+        controller.applyTextZoom(settings.textZoom.value)
+    }
+
     LaunchedEffect(showAppMenu, menu != null) {
         controller.setSheetVisible(showAppMenu || menu != null)
     }
@@ -800,6 +805,10 @@ fun BrowserScreen(
                         onOpenSiteRules = { screen = SecondaryScreen.SITE_RULES },
                         onOpenShaderSmoke = { screen = SecondaryScreen.SHADER_SMOKE },
                     onOpenLicenses = { screen = SecondaryScreen.LICENSES },
+                    onTextZoomChange = { pct ->
+                        settings.setTextZoom(pct)
+                        controller.applyTextZoom(pct)
+                    },
                         onClearData = {
                             scope.launch {
                                 history.clear()

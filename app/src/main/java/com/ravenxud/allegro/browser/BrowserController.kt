@@ -40,6 +40,9 @@ interface BrowserController {
     /** 面板是否可见：滚动时据此节流刷新玻璃底图。 */
     fun setSheetVisible(visible: Boolean)
 
+    /** 页面缩放（百分比）：立即应用到所有已存在的 WebView。 */
+    fun applyTextZoom(percent: Int)
+
     /** 相对"最近一次抓图"的滚动位移（px）：面板据此平移玻璃，做到零延迟跟手。 */
     val sheetScrollDelta: kotlinx.coroutines.flow.StateFlow<Int>
 

@@ -1,3 +1,37 @@
+# 0.54.0-beta
+
+两件事：**页面缩放**（第一个真正落地的 vendored 组件）+ 删掉上一版引入的重复文件。
+
+## 1. 页面缩放（80%–140%）
+
+- 设置 →「网页浏览设置」新增一行「页面缩放」，显示当前百分比
+- 点击打开百分比输入对话框（`PercentInputDialog`，源自 KernelSU Style UI Kit 的 `ScaleDialog`）
+- 改动立即应用到**所有已存在的 WebView**，新建的 WebView 也自动套用
+- 值存 `SharedPreferences`（`text_zoom`），重启后保留
+
+## 2. 删除重复引入
+
+核对 Miuix 0.9.4 的 AAR 时发现：**它本来就内置 `top.yukonga.miuix.kmp.basic.ListPopupDefaults`**
+（`contextMenuPositionProvider` / `dropdownPositionProvider`）。
+上一版我引入的 `ui/components/vendor/ListPopupDefaults.kt` 与它重复，已删除。
+以后需要弹出层定位，直接用 Miuix 自带实现。
+
+## 3. 顺带修复
+
+工作区里有一份未完成的「标签排序 TabSort」改动，处于**编译不通过**状态
+（枚举被插到了 `@Composable` 注释后面）。本版把它退回，保住已完成的锚定菜单版本；
+标签排序留到后续单独做（需要同时处理拖拽与排序的互斥）。
+
+## 请验
+
+1. 设置 → 网页浏览设置 → **页面缩放**：显示 100%
+2. 点开改成 120% → 网页文字明显放大；返回网页生效
+3. 杀掉 App 重开：缩放保持 120%
+4. 新建标签页：也是 120%
+5. 其他功能与上一版一致
+
+---
+
 # 0.53.0-beta
 
 把上一版引入的定位逻辑**真正接上**：标签长按菜单从「贴底 sheet」改为**锚定在卡片旁的浮动菜单**。

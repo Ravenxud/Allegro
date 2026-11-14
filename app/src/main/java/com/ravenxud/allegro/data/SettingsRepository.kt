@@ -61,6 +61,16 @@ class SettingsRepository(context: Context) {
         _alwaysDesktop.value = value
     }
 
+    private val _textZoom = MutableStateFlow(prefs.getInt(KEY_TEXT_ZOOM, 100))
+    /** 页面缩放（百分比，80–140）。 */
+    val textZoom: StateFlow<Int> = _textZoom.asStateFlow()
+
+    fun setTextZoom(percent: Int) {
+        val clamped = percent.coerceIn(80, 140)
+        prefs.edit().putInt(KEY_TEXT_ZOOM, clamped).apply()
+        _textZoom.value = clamped
+    }
+
     private val _homeBookmarks = MutableStateFlow(prefs.getBoolean(KEY_HOME_BOOKMARKS, true))
     val homeBookmarksEnabled: StateFlow<Boolean> = _homeBookmarks.asStateFlow()
 
@@ -92,6 +102,7 @@ class SettingsRepository(context: Context) {
         const val KEY_THEME = "theme_mode"
         const val KEY_ENGINE = "search_engine"
         const val KEY_HOME_BOOKMARKS = "home_bookmarks"
+        const val KEY_TEXT_ZOOM = "text_zoom"
         const val KEY_UPDATE_REPO = "update_repo"
         const val DEFAULT_UPDATE_REPO = "Ravenxud/Allegro"
         const val KEY_ALWAYS_DESKTOP = "always_desktop"
