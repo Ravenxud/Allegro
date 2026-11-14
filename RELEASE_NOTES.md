@@ -1,3 +1,38 @@
+# 0.41.0-beta
+
+按 Luna 截图对齐的第一步：**设计令牌 + 基础组件 + 设置页改造（方案 A：行内不带图标）**。
+
+## 新增令牌
+
+| 文件 | 内容 |
+|---|---|
+| `ui/theme/Shapes.kt` | `Card 24dp` / `Tile 20dp` / `Panel 28dp` / `FloatingPanel 28dp` / `RowHighlight 16dp` / `Capsule` |
+| `ui/theme/Dimens.kt` | 边距 12 / 组间距 12 / 行高 60 / 圆钮 44 / 胶囊 40 / 图标 24 / 触摸 48；字号 20·16·13·12 |
+
+规矩：界面里不再写裸 `RoundedCornerShape(…dp)`，只引用令牌。
+
+## 新增组件（`ui/components/GroupedCard.kt`）
+
+- `GroupedCard`：24dp 圆角分组卡（不随 Miuix 默认值漂移）
+- `SettingRow`：**纯文字 + 右侧 chevron，无行首图标**（Luna 形态），主 16sp / 副 13sp / 行高 ≥60dp
+- `SectionLabel`、`GroupDivider`、`CircleIconButton`（44dp）、`PillButton`（胶囊）
+
+## 设置页改造
+
+- `PreferenceCard` → `GroupedCard`
+- 全部 `ArrowPreference`（带图标）→ `SettingRow`（无图标）
+- `SectionTitle` → `SectionLabel`，组间距 8 → 12
+- 开关类（`SwitchPreference` / `RadioButtonPreference`）保持原组件，只换容器
+
+## 请验
+
+1. 设置页：每行**只有文字 + 右侧箭头**，没有行首图标
+2. 卡片圆角明显更大（24dp），组与组之间 12dp 间距
+3. 行高更松散（约 60dp），点击区域正常
+4. 开关/单选行仍可正常切换
+
+---
+
 # 0.40.0-beta
 
 ## 跟手：滚动时不再重抓图，改为**平移已有的模糊底图**

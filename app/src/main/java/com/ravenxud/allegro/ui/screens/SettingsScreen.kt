@@ -28,7 +28,6 @@ import com.ravenxud.allegro.update.UpdateState
 import com.ravenxud.allegro.data.model.SearchEngines
 import com.ravenxud.allegro.data.model.ThemeMode
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -37,10 +36,11 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.RadioButtonPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
-import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.ravenxud.allegro.ui.components.GroupedCard
+import com.ravenxud.allegro.ui.components.SectionLabel
+import com.ravenxud.allegro.ui.components.SettingRow
 
 /**
  * 设置页：SmallTopAppBar + Card(BasicComponent) 组件组，
@@ -104,7 +104,7 @@ fun SettingsScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             SectionTitle(stringResource(R.string.settings_theme))
             PreferenceCard {
@@ -162,13 +162,13 @@ fun SettingsScreen(
 
             SectionTitle(stringResource(R.string.sync_section))
             PreferenceCard {
-                ArrowPreference(
+                SettingRow(
                     title = stringResource(R.string.sync_title),
                     summary = stringResource(R.string.sync_entry_summary),
                     onClick = onOpenSync,
                 )
                 ComponentDivider()
-                ArrowPreference(
+                SettingRow(
                     title = stringResource(R.string.rules_title),
                     summary = stringResource(R.string.rules_settings_summary),
                     onClick = onOpenSiteRules,
@@ -184,7 +184,7 @@ fun SettingsScreen(
                     summary = stringResource(R.string.adblock_summary, blockedCount),
                 )
                 ComponentDivider()
-                ArrowPreference(
+                SettingRow(
                     title = stringResource(R.string.adblock_update),
                     summary = when {
                         updating -> stringResource(R.string.adblock_updating)
@@ -192,7 +192,7 @@ fun SettingsScreen(
                         else -> stringResource(R.string.adblock_never_updated)
                     },
                     onClick = {
-                        if (updating) return@ArrowPreference
+                        if (updating) return@SettingRow
                         scope.launch {
                             val count = adBlock.updateAll()
                             updateMessage.value = resources.getString(
@@ -204,7 +204,7 @@ fun SettingsScreen(
                     },
                 )
                 ComponentDivider()
-                ArrowPreference(
+                SettingRow(
                     title = stringResource(R.string.adblock_reset_stats),
                     onClick = { adBlock.resetStats() },
                 )
@@ -224,7 +224,7 @@ fun SettingsScreen(
 
             SectionTitle(stringResource(R.string.settings_data))
             PreferenceCard {
-                ArrowPreference(
+                SettingRow(
                     title = stringResource(R.string.settings_clear),
                     summary = stringResource(R.string.settings_clear_summary),
                     onClick = onClearData,
@@ -263,7 +263,7 @@ fun SettingsScreen(
                 )
             }
             PreferenceCard {
-                ArrowPreference(
+                SettingRow(
                     title = stringResource(R.string.settings_update_check),
                     summary = when (val s2 = updateState) {
                         is UpdateState.Checking -> stringResource(R.string.update_checking)
@@ -290,13 +290,13 @@ fun SettingsScreen(
 
             SectionTitle(stringResource(R.string.settings_diag_section))
             PreferenceCard {
-                ArrowPreference(
+                SettingRow(
                     title = stringResource(R.string.shader_smoke_title),
                     summary = stringResource(R.string.shader_smoke_entry),
                     onClick = onOpenShaderSmoke,
                 )
                 ComponentDivider()
-                ArrowPreference(
+                SettingRow(
                     title = stringResource(R.string.settings_diag_log),
                     summary = stringResource(R.string.settings_diag_log_summary),
                     onClick = {
@@ -340,9 +340,7 @@ fun SettingsScreen(
 
 @Composable
 private fun PreferenceCard(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        content()
-    }
+    GroupedCard { content() }
 }
 
 @Composable
@@ -352,12 +350,7 @@ private fun ComponentDivider() {
 
 @Composable
 private fun SectionTitle(text: String) {
-    Text(
-        text = text,
-        modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 2.dp, start = 4.dp),
-        fontSize = 13.sp,
-        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-    )
+    SectionLabel(text)
 }
 
 private fun ThemeMode.labelRes(): Int = when (this) {
