@@ -80,6 +80,8 @@ fun MiuixSheet(
     showClose: Boolean = false,
     /** 右上角胶囊里的动作按钮。 */
     actions: @Composable RowScope.() -> Unit = {},
+    /** 内容是否可纵向滚动（网格分页面板传 false）。 */
+    scrollable: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Box(modifier.fillMaxSize()) {
@@ -114,6 +116,7 @@ fun MiuixSheet(
                 snapshot = snapshot,
                 showClose = showClose,
                 actions = actions,
+                scrollable = scrollable,
                 content = content,
             )
         }
@@ -128,6 +131,7 @@ private fun SheetCard(
     snapshot: android.graphics.Bitmap?,
     showClose: Boolean,
     actions: @Composable RowScope.() -> Unit,
+    scrollable: Boolean,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val cardShape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
@@ -152,30 +156,21 @@ private fun SheetCard(
                 },
             ),
         shape = cardShape,
-        color = if (hasWebGlass || backdrop != null) Color.Transparent else surfaceColor,
+        color = if (backdrop != null) Color.Transparent else surfaceColor.copy(alpha = 0.88f),
     ) {
         Box(
             Modifier
                 .fillMaxWidth()
                 .clip(cardShape),
         ) {
-            if (hasWebGlass) {
-                // 图宽 = 屏宽；高度按快照比例；底边贴面板底 → 与屏幕坐标 1:1 重合
-                Image(
-                    bitmap = snapshot!!.asImageBitmap(),
-                    contentDescription = null,
-                    contentScale = ContentScale.FillBounds,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(snapshot.width.toFloat() / snapshot.height.toFloat())
-                        .align(Alignment.BottomCenter)
-                        .blur(24.dp),
-                )
-                // 淡色覆盖：能看见网页，同时保证图标与文字可读（Luna 同样是浅色压一层）
+            if (backdrop == null) {
+                // 关键：**不做快照、不做模糊**。
+                // 面板与 WebView 在同一窗口，半透明色合成时看到的就是"当前真实网页"
+                // —— 零抓取、零对齐、零过期。之前四版的所有错位/重影/旧图都源于"抓图"这一步。
                 Box(
                     Modifier
                         .matchParentSize()
-                        .background(surfaceColor.copy(alpha = 0.62f)),
+                        .background(surfaceColor.copy(alpha = 0.88f)),
                 )
             }
 
@@ -237,8 +232,15 @@ private fun SheetCard(
                 Column(
                     Modifier
                         .navigationBarsPadding()
-                        .heightIn(max = maxContentHeight)
-                        .verticalScroll(rememberScrollState())
+                        .then(
+                            if (scrollable) {
+                                Modifier
+                                    .heightIn(max = maxContentHeight)
+                                    .verticalScroll(rememberScrollState())
+                            } else {
+                                Modifier
+                            },
+                        )
                         .padding(bottom = 10.dp),
                     content = content,
                 )

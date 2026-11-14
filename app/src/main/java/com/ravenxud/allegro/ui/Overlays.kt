@@ -139,6 +139,7 @@ fun AppMenu(
         backdrop = backdrop,
         snapshot = snapshot,
         showClose = true,
+        scrollable = false,
         actions = {
             SheetCircleButton(MiuixIcons.Settings) { onNavigate(SecondaryScreen.SETTINGS) }
         },
