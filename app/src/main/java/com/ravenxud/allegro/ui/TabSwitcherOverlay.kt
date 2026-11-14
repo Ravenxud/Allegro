@@ -33,6 +33,7 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -76,6 +77,8 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Add
+import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Delete
@@ -390,15 +393,44 @@ private fun TabGrid(
                 }
             }
 
+            // Luna 形态：左「+」圆钮 / 中间胶囊 / 右「✓」圆钮
             Row(
-                modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(vertical = 12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Button(onClick = onNew, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.tabs_new))
-                }
-                Button(onClick = onReopen, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.tabs_reopen))
+                com.ravenxud.allegro.ui.components.CircleIconButton(
+                    icon = MiuixIcons.Add,
+                    onClick = onNew,
+                    contentDescription = stringResource(R.string.tabs_new),
+                    size = 52.dp,
+                )
+                com.ravenxud.allegro.ui.components.PillButton(
+                    label = stringResource(R.string.tabs_reopen),
+                    onClick = onReopen,
+                )
+                com.ravenxud.allegro.ui.components.PillButton(
+                    label = stringResource(R.string.tabs_count, state.tabs.size),
+                    onClick = onDismiss,
+                )
+                androidx.compose.foundation.layout.Spacer(Modifier.weight(1f))
+                Box(
+                    Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .background(MiuixTheme.colorScheme.primary)
+                        .clickable(onClick = onDismiss),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        MiuixIcons.Ok,
+                        contentDescription = stringResource(R.string.action_done),
+                        tint = MiuixTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(24.dp),
+                    )
                 }
             }
         }
@@ -418,7 +450,7 @@ private fun TabCard(
     onDrag: (Offset) -> Unit,
     onDragEnd: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(16.dp)
+    val shape = com.ravenxud.allegro.ui.theme.Shapes.Tile
     var appeared by remember { mutableStateOf(false) }
     var offsetX by remember { mutableFloatStateOf(0f) }
     val scope = rememberCoroutineScope()

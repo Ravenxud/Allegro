@@ -86,22 +86,13 @@ fun SettingsScreen(
         }.getOrNull().orEmpty()
     }
 
-    Scaffold(
-        topBar = {
-            SmallTopAppBar(
-                title = stringResource(R.string.screen_settings),
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(MiuixIcons.Back, stringResource(R.string.cd_back))
-                    }
-                },
-            )
-        },
-    ) { padding ->
+    ScreenScaffold(
+        title = stringResource(R.string.screen_settings),
+        onBack = onBack,
+    ) { inner ->
         Column(
-            modifier = Modifier
+            modifier = inner
                 .fillMaxSize()
-                .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),

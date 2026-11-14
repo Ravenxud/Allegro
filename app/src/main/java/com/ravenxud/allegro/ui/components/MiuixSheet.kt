@@ -141,7 +141,7 @@ private fun SheetCard(
     scrollOffsetPx: Int,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val cardShape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+    val cardShape = com.ravenxud.allegro.ui.theme.Shapes.Panel
     val surfaceColor = MiuixTheme.colorScheme.surface
     // 面板总高上限（Luna 约 0.66 屏），内容再多也自己滚
     val maxContentHeight = (LocalConfiguration.current.screenHeightDp * 0.58f).dp

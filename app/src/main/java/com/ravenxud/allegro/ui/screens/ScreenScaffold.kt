@@ -3,6 +3,10 @@ package com.ravenxud.allegro.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -18,11 +22,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.ravenxud.allegro.R
 import com.ravenxud.allegro.ui.glass.GlassSpec
+import com.ravenxud.allegro.ui.components.CircleIconButton
+import com.ravenxud.allegro.ui.theme.Dimens
+import com.ravenxud.allegro.ui.theme.TypeScale
 import com.ravenxud.allegro.ui.glass.appGlass
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -44,23 +54,65 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun ScreenScaffold(
     title: String,
     onBack: () -> Unit,
+    /** false 时退回旧 SmallTopAppBar（出问题可一处回退）。 */
+    floating: Boolean = true,
     actions: @Composable RowScope.() -> Unit = {},
     content: @Composable (Modifier) -> Unit,
 ) {
-    Scaffold(
-        topBar = {
-            SmallTopAppBar(
-                title = title,
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(MiuixIcons.Back, stringResource(R.string.cd_back))
-                    }
-                },
-                actions = actions,
+    if (!floating) {
+        Scaffold(
+            topBar = {
+                SmallTopAppBar(
+                    title = title,
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(MiuixIcons.Back, stringResource(R.string.cd_back))
+                        }
+                    },
+                    actions = actions,
+                )
+            },
+        ) { padding ->
+            content(Modifier.padding(padding))
+        }
+        return
+    }
+
+    // Luna 形态：内容从屏幕顶部开始（穿透到栏下），顶部只浮一条 56dp 的栏
+    Box(Modifier.fillMaxSize()) {
+        content(
+            Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(top = Dimens.TopBar),
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .height(Dimens.TopBar)
+                .padding(horizontal = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CircleIconButton(
+                icon = MiuixIcons.Back,
+                onClick = onBack,
+                contentDescription = stringResource(R.string.cd_back),
             )
-        },
-    ) { padding ->
-        content(Modifier.padding(padding))
+            Text(
+                text = title,
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center,
+                fontSize = TypeScale.Title,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MiuixTheme.colorScheme.onSurface,
+            )
+            // 右侧 actions（在 RowScope 内调用；无 action 时不占位）
+            Row(verticalAlignment = Alignment.CenterVertically, content = actions)
+        }
     }
 }
 

@@ -34,6 +34,9 @@ object Dimens {
     /** 图标标准尺寸。 */
     val Icon = 24.dp
 
+    /** 悬浮顶栏高度。 */
+    val TopBar = 56.dp
+
     /** 触摸目标下限。 */
     val TouchMin = 48.dp
 }
