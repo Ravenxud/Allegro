@@ -89,6 +89,20 @@ interface BrowserController {
     /** 用户显式配置过的站点（不含继承）。 */
     fun configuredSiteSettings(): List<com.ravenxud.allegro.data.site.SiteSettings>
 
+    // 标签分组
+
+    suspend fun createTabGroup(name: String): String
+
+    suspend fun renameTabGroup(id: String, name: String)
+
+    /** 删除分组，成员回到「未分组」。 */
+    suspend fun deleteTabGroup(id: String)
+
+    suspend fun setTabGroupCollapsed(id: String, collapsed: Boolean)
+
+    /** groupId 为 null 表示移出分组。 */
+    suspend fun moveTabToGroup(tabId: String, groupId: String?)
+
     /** 当前站点是否处于桌面版。 */
     fun isDesktopForCurrentSite(): Boolean
 

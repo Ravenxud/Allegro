@@ -57,6 +57,7 @@ import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.Folder
+import top.yukonga.miuix.kmp.icon.extended.GridView
 import top.yukonga.miuix.kmp.icon.extended.Home
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Share
@@ -108,6 +109,7 @@ fun AppMenu(
     onPrivacyReport: () -> Unit,
     onPickElement: () -> Unit,
     onSiteSettings: () -> Unit,
+    onTabGroups: () -> Unit,
     desktopSite: Boolean,
     onToggleDesktopSite: () -> Unit,
     adBlockPaused: Boolean,
@@ -132,6 +134,7 @@ fun AppMenu(
         SheetRow(MiuixIcons.Folder, stringResource(R.string.screen_bookmarks)) {
             onNavigate(SecondaryScreen.BOOKMARKS)
         }
+        SheetRow(MiuixIcons.GridView, stringResource(R.string.menu_tab_groups), onClick = onTabGroups)
         SheetRow(MiuixIcons.Refresh, stringResource(R.string.screen_history)) {
             onNavigate(SecondaryScreen.HISTORY)
         }

@@ -59,6 +59,7 @@ class WebViewBrowserController(
     private val adBlock: AdBlockRepository,
     private val siteSettings: SiteSettingsRepository,
     private val settings: com.ravenxud.allegro.data.SettingsRepository,
+    private val tabGroups: com.ravenxud.allegro.data.repo.TabGroupRepository,
 ) : BrowserController, TabWebView.Callbacks {
 
     companion object {
@@ -394,6 +395,7 @@ class WebViewBrowserController(
                 favicon = tab.favicon?.toPngBytes(),
                 position = index,
                 pinned = false,
+                groupId = tab.groupId,
                 state = pool.peek(tab.id)?.let { view ->
                     val bundle = Bundle()
                     runCatching { view.saveState(bundle) }
@@ -411,7 +413,8 @@ class WebViewBrowserController(
         scope.launch {
             _state.update { it.copy(isRestoring = true) }
             val saved = runCatching { tabsRepository.loadTabs() }.getOrDefault(emptyList())
-            _state.update { it.copy(isRestoring = false) }
+            val groups = runCatching { tabGroups.load() }.getOrDefault(emptyList())
+            _state.update { it.copy(isRestoring = false, groups = groups) }
 
             // 用户在恢复完成前已经开了标签（点了快捷方式/深链），放弃恢复，避免把新标签顶掉
             if (_state.value.tabs.isNotEmpty()) return@launch
@@ -427,6 +430,7 @@ class WebViewBrowserController(
                     url = it.url,
                     title = it.title.ifBlank { it.url },
                     lastAccessedAt = it.lastAccessedAt,
+                    groupId = it.groupId,
                 )
             }
             // 冷启动一律停在首页：恢复出来的标签放在列表里，但不激活、不加载
@@ -818,6 +822,43 @@ class WebViewBrowserController(
         android.util.Log.i(TAG_OFFLINE, "离线页已保存 ${target.name} ${target.length()}B simple=$simple")
         val message = if (simple) R.string.offline_saved_simple else R.string.offline_saved
         scope.launch { Toast.makeText(context, message, Toast.LENGTH_SHORT).show() }
+    }
+
+    // ------------------------------------------------------------ 标签分组
+
+    private fun refreshGroups(groups: List<com.ravenxud.allegro.data.model.TabGroup>) {
+        _state.update { it.copy(groups = groups) }
+    }
+
+    override suspend fun createTabGroup(name: String): String {
+        val group = tabGroups.create(name)
+        refreshGroups(tabGroups.groups.value)
+        return group.id
+    }
+
+    override suspend fun renameTabGroup(id: String, name: String) {
+        tabGroups.rename(id, name)
+        refreshGroups(tabGroups.groups.value)
+    }
+
+    override suspend fun deleteTabGroup(id: String) {
+        tabGroups.delete(id)
+        refreshGroups(tabGroups.groups.value)
+        // 成员回到未分组
+        _state.update { state -> state.copy(tabs = state.tabs.map { if (it.groupId == id) it.copy(groupId = null) else it }) }
+    }
+
+    override suspend fun setTabGroupCollapsed(id: String, collapsed: Boolean) {
+        tabGroups.setCollapsed(id, collapsed)
+        refreshGroups(tabGroups.groups.value)
+    }
+
+    override suspend fun moveTabToGroup(tabId: String, groupId: String?) {
+        _state.update { state ->
+            state.copy(tabs = state.tabs.map { if (it.id == tabId) it.copy(groupId = groupId) else it })
+        }
+        runCatching { tabsRepository.setGroup(tabId, groupId) }
+
     }
 
     // ------------------------------------------------------------ 站点设置

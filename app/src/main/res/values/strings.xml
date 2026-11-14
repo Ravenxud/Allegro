@@ -263,4 +263,19 @@
     <string name="rules_whitelist">广告过滤白名单</string>
     <string name="rules_adblock_off">过滤暂停</string>
     <string name="rules_default">默认</string>
+    <string name="groups_title">标签分组</string>
+    <string name="groups_intro">把标签按主题分组：工作、阅读、临时。删除分组不会关标签，成员会回到「未分组」。</string>
+    <string name="groups_name_hint">新分组名称</string>
+    <string name="groups_create">创建</string>
+    <string name="groups_existing">已有分组</string>
+    <string name="groups_empty">还没有分组</string>
+    <string name="groups_empty_hint">在上面输入名称创建第一个分组</string>
+    <string name="groups_count">%1$d 个标签</string>
+    <string name="groups_delete">删除分组</string>
+    <string name="groups_expand">展开</string>
+    <string name="groups_collapse">收起</string>
+    <string name="groups_ungrouped">未分组</string>
+    <string name="menu_tab_groups">标签分组</string>
+    <string name="move_to_group">移动到分组</string>
+    <string name="move_to_group_none">移出分组</string>
 </resources>

@@ -12,6 +12,7 @@ import com.ravenxud.allegro.download.DownloadCenter
 import com.ravenxud.allegro.sync.SyncRepository
 import com.ravenxud.allegro.update.UpdateRepository
 import com.ravenxud.allegro.data.repo.HistoryRepository
+import com.ravenxud.allegro.data.repo.TabGroupRepository
 import com.ravenxud.allegro.data.repo.TabsRepository
 
 /** 手写单例容器，替代 Hilt；进程内只初始化一次。 */
@@ -56,6 +57,9 @@ object ServiceLocator {
     lateinit var siteSettingsRepository: SiteSettingsRepository
         private set
 
+    lateinit var tabGroupRepository: TabGroupRepository
+        private set
+
     lateinit var syncRepository: SyncRepository
         private set
 
@@ -71,6 +75,7 @@ object ServiceLocator {
             appContext = context.applicationContext
             database = AppDatabase.get(appContext)
             tabsRepository = TabsRepository(database.tabDao(), database.closedTabDao())
+            tabGroupRepository = TabGroupRepository(database.tabGroupDao())
             historyRepository = HistoryRepository(database.historyDao())
             bookmarkRepository = BookmarkRepository(database.bookmarkDao())
             downloadRepository = DownloadRepository(database.downloadDao())

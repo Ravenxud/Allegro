@@ -17,6 +17,8 @@ import com.ravenxud.allegro.data.entity.ClosedTabEntity
 import com.ravenxud.allegro.data.entity.DownloadEntity
 import com.ravenxud.allegro.data.entity.HistoryEntity
 import com.ravenxud.allegro.data.entity.TabEntity
+import com.ravenxud.allegro.data.entity.TabGroupEntity
+import com.ravenxud.allegro.data.dao.TabGroupDao
 
 /** 单库：tabs / closed_tabs / history / bookmarks / downloads。 */
 @Database(
@@ -27,8 +29,9 @@ import com.ravenxud.allegro.data.entity.TabEntity
         BookmarkEntity::class,
         BookmarkFolderEntity::class,
         DownloadEntity::class,
+        TabGroupEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -38,6 +41,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun historyDao(): HistoryDao
     abstract fun bookmarkDao(): BookmarkDao
     abstract fun downloadDao(): DownloadDao
+    abstract fun tabGroupDao(): TabGroupDao
 
     companion object {
         @Volatile
@@ -57,12 +61,26 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 
+    /** v2 -> v3：标签分组（新表 + tabs.groupId）。 */
+    private val MIGRATION_2_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE tabs ADD COLUMN groupId TEXT")
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `tab_groups` (" +
+                    "`id` TEXT NOT NULL, `name` TEXT NOT NULL, `color` INTEGER NOT NULL DEFAULT 0, " +
+                    "`position` INTEGER NOT NULL DEFAULT 0, `collapsed` INTEGER NOT NULL DEFAULT 0, " +
+                    "`createdAt` INTEGER NOT NULL DEFAULT 0, `updatedAt` INTEGER NOT NULL DEFAULT 0, " +
+                    "PRIMARY KEY(`id`))",
+            )
+        }
+    }
+
         fun get(context: Context): AppDatabase = instance ?: synchronized(this) {
             instance ?: Room.databaseBuilder(
                 context.applicationContext,
                 AppDatabase::class.java,
                 "simple_browser.db",
-            ).addMigrations(MIGRATION_1_2).build().also { instance = it }
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build().also { instance = it }
         }
     }
 }

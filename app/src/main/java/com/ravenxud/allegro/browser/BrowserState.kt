@@ -9,6 +9,8 @@ data class BrowserState(
     val tabs: List<TabState> = emptyList(),
     val activeTabId: String? = null,
     val isRestoring: Boolean = false,
+    /** 标签分组（按 position 排序）。 */
+    val groups: List<com.ravenxud.allegro.data.model.TabGroup> = emptyList(),
 ) {
 
     val activeTab: TabState?
@@ -29,4 +31,6 @@ data class TabState(
     /** 标签缩略图（内存态，不落盘）。 */
     val preview: Bitmap? = null,
     val lastAccessedAt: Long = 0L,
+    /** 所属分组；null 表示未分组。 */
+    val groupId: String? = null,
 )

@@ -16,6 +16,9 @@ interface TabDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(tabs: List<TabEntity>)
 
+    @Query("UPDATE tabs SET groupId = :groupId WHERE id = :tabId")
+    suspend fun setGroup(tabId: String, groupId: String?)
+
     @Query("DELETE FROM tabs")
     suspend fun deleteAll()
 

@@ -21,4 +21,6 @@ data class TabEntity(
     val lastAccessedAt: Long,
     val updatedAt: Long = System.currentTimeMillis(),
     val deleted: Boolean = false,
+    /** 所属标签分组；null 表示未分组。 */
+    val groupId: String? = null,
 )

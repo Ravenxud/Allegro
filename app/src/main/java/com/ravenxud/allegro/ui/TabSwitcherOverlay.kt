@@ -79,6 +79,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Delete
+import top.yukonga.miuix.kmp.icon.extended.Folder
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -100,6 +101,7 @@ fun TabSwitcherOverlay(
     onDismiss: () -> Unit,
     onDismissed: () -> Unit,
     onCloseOthers: (String) -> Unit,
+    onMoveToGroup: (String) -> Unit,
     onCopyLink: (String) -> Unit,
     onMove: (Int, Int) -> Unit,
     simplify: Boolean = false,
@@ -265,6 +267,10 @@ fun TabSwitcherOverlay(
             if (tab != null) {
                 SheetRow(MiuixIcons.Close, stringResource(R.string.tabs_close_others)) {
                     onCloseOthers(tab.id); menuTab = null
+                }
+                SheetRow(MiuixIcons.Folder, stringResource(R.string.move_to_group)) {
+                    menuTab = null
+                    onMoveToGroup(tab.id)
                 }
                 SheetRow(MiuixIcons.Copy, stringResource(R.string.tabs_copy_link)) {
                     onCopyLink(tab.url); menuTab = null

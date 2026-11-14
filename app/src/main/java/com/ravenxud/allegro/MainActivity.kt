@@ -62,6 +62,7 @@ class MainActivity : ComponentActivity() {
             adBlock = ServiceLocator.adBlockRepository,
             siteSettings = ServiceLocator.siteSettingsRepository,
             settings = ServiceLocator.settingsRepository,
+            tabGroups = ServiceLocator.tabGroupRepository,
         )
 
         setContent {

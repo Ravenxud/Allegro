@@ -79,6 +79,7 @@ import com.ravenxud.allegro.ui.screens.HistoryScreen
 import com.ravenxud.allegro.ui.screens.OfflinePagesScreen
 import com.ravenxud.allegro.ui.screens.PrivacyReportScreen
 import com.ravenxud.allegro.ui.screens.SiteRulesIo
+import com.ravenxud.allegro.ui.screens.TabGroupsScreen
 import com.ravenxud.allegro.ui.screens.SiteRulesScreen
 import com.ravenxud.allegro.ui.screens.SiteSettingsScreen
 import com.ravenxud.allegro.ui.screens.WebDavScreen
@@ -91,6 +92,7 @@ import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.Folder
 import top.yukonga.miuix.kmp.icon.extended.Forward
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Paste
@@ -147,6 +149,7 @@ fun BrowserScreen(
     var showAppMenu by remember { mutableStateOf(false) }
     var screen by remember { mutableStateOf(SecondaryScreen.BROWSER) }
     var lastMenu by remember { mutableStateOf<MenuRequest?>(null) }
+    var moveTabId by remember { mutableStateOf<String?>(null) }
     var readerHtml by remember { mutableStateOf<String?>(null) }
     var readerTitle by remember { mutableStateOf("") }
     val readAloud = remember { com.ravenxud.allegro.reader.ReadAloudController(context) }
@@ -285,6 +288,9 @@ fun BrowserScreen(
             onClose = { controller.closeTab(it) },
             onNew = { controller.openTab("about:blank") },
             onNavigate = { screen = it },
+            onToggleGroup = { id, collapsed ->
+                scope.launch { controller.setTabGroupCollapsed(id, collapsed) }
+            },
         )
     }
     Scaffold(
@@ -485,6 +491,32 @@ fun BrowserScreen(
                 }
             }
 
+            com.ravenxud.allegro.ui.components.MiuixSheet(
+                visible = moveTabId != null,
+                onDismiss = { moveTabId = null },
+                title = resources.getString(R.string.move_to_group),
+            ) {
+                val target = moveTabId
+                if (target != null) {
+                    state.groups.forEach { group ->
+                        com.ravenxud.allegro.ui.components.SheetRow(
+                            icon = MiuixIcons.Folder,
+                            title = group.name,
+                        ) {
+                            scope.launch { controller.moveTabToGroup(target, group.id) }
+                            moveTabId = null
+                        }
+                    }
+                    com.ravenxud.allegro.ui.components.SheetRow(
+                        icon = MiuixIcons.Close,
+                        title = resources.getString(R.string.move_to_group_none),
+                    ) {
+                        scope.launch { controller.moveTabToGroup(target, null) }
+                        moveTabId = null
+                    }
+                }
+            }
+
             AnimatedVisibility(
                 visibleState = appMenuState,
                 enter = fadeIn(tween(150)) + slideInVertically(tween(220)) { it / 4 },
@@ -563,6 +595,10 @@ fun BrowserScreen(
                         showAppMenu = false
                         screen = SecondaryScreen.SITE
                     },
+                    onTabGroups = {
+                        showAppMenu = false
+                        screen = SecondaryScreen.GROUPS
+                    },
                     desktopSite = controller.isDesktopForCurrentSite(),
                     onToggleDesktopSite = { controller.toggleDesktopForCurrentSite() },
                     adBlockPaused = controller.isAdBlockPausedForCurrentSite(),
@@ -602,6 +638,7 @@ fun BrowserScreen(
             tabsStub = null
         },
         onCloseOthers = { controller.closeOtherTabs(it) },
+        onMoveToGroup = { moveTabId = it },
         onMove = { from, to -> controller.moveTab(from, to) },
         onCopyLink = { controller.copyToClipboard(it) },
         simplify = lowRam,
@@ -629,6 +666,10 @@ fun BrowserScreen(
                     SecondaryScreen.DOWNLOADS -> DownloadsScreen(downloads, downloadCenter, back)
                     SecondaryScreen.SYNC -> WebDavScreen(
                         sync = com.ravenxud.allegro.di.ServiceLocator.syncRepository,
+                        onBack = back,
+                    )
+                    SecondaryScreen.GROUPS -> TabGroupsScreen(
+                        controller = controller,
                         onBack = back,
                     )
                     SecondaryScreen.SITE_RULES -> SiteRulesScreen(

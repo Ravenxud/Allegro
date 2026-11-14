@@ -67,6 +67,17 @@ release 包 1.9MB（debug 13MB），混淆后以下路径最容易出事，**必
 | R6 | WebDAV 同步一次 | JSON 键名与网络层正常 |
 | R7 | 下载文件并安装 | FileProvider authority = `com.ravenxud.allegro.fileprovider` |
 
+## 数据库迁移（0.32 起每次改表都要过）
+
+| # | 场景 | 期望 |
+|---|---|---|
+| D1 | 从上一版**覆盖安装**（不卸载） | 标签、书签、历史、下载记录都在 |
+| D2 | 启动后看 logcat `grep -i room` | 无 `IllegalStateException` / `Migration` 相关报错 |
+| D3 | 升级后开一个新标签、重启 App | 新标签与旧标签共存 |
+| D4 | 分组增删后重启 | 分组与折叠状态保持 |
+
+> 禁止使用 `fallbackToDestructiveMigration`：迁移写错时应该报错暴露，而不是静默清库。
+
 ## 集成测试（WebDAV）
 
 仓库里带了一台最小 WebDAV 测试服务器的脚本（`scripts/dav_server.py`，仅本机验证用：

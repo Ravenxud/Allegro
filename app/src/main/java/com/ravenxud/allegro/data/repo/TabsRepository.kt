@@ -11,6 +11,8 @@ class TabsRepository(
     private val closedTabDao: ClosedTabDao,
 ) {
 
+    suspend fun setGroup(tabId: String, groupId: String?) = tabDao.setGroup(tabId, groupId)
+
     suspend fun loadTabs(): List<TabEntity> = tabDao.getAll()
 
     suspend fun saveTabs(tabs: List<TabEntity>) = tabDao.replaceAll(tabs)

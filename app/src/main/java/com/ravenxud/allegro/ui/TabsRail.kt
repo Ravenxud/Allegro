@@ -53,6 +53,7 @@ fun TabsRail(
     onClose: (String) -> Unit,
     onNew: () -> Unit,
     onNavigate: (SecondaryScreen) -> Unit,
+    onToggleGroup: (String, Boolean) -> Unit = { _, _ -> },
 ) {
     Surface(color = MiuixTheme.colorScheme.surfaceVariant) {
         Column(
@@ -76,17 +77,32 @@ fun TabsRail(
                 }
             }
 
+            val sections = TabGrouping.sections(state.groups, state.tabs)
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                items(state.tabs, key = { it.id }) { tab ->
-                    TabRow(
-                        tab = tab,
-                        active = tab.id == state.activeTabId,
-                        onClick = { onSelect(tab.id) },
-                        onClose = { onClose(tab.id) },
-                    )
+                sections.forEach { section ->
+                    if (section.group != null) {
+                        item(key = "header-${section.group.id}") {
+                            GroupHeader(
+                                name = section.title,
+                                count = section.tabs.size,
+                                collapsed = section.collapsed,
+                                onClick = { onToggleGroup(section.group.id, !section.collapsed) },
+                            )
+                        }
+                    }
+                    if (!section.collapsed) {
+                        items(section.tabs, key = { it.id }) { tab ->
+                            TabRow(
+                                tab = tab,
+                                active = tab.id == state.activeTabId,
+                                onClick = { onSelect(tab.id) },
+                                onClose = { onClose(tab.id) },
+                            )
+                        }
+                    }
                 }
             }
 
@@ -104,6 +120,33 @@ fun TabsRail(
                 onNavigate(SecondaryScreen.SETTINGS)
             }
         }
+    }
+}
+
+@Composable
+private fun GroupHeader(
+    name: String,
+    count: Int,
+    collapsed: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = (if (collapsed) "▸ " else "▾ ") + name,
+            modifier = Modifier.weight(1f),
+            fontSize = 12.sp,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text("$count", fontSize = 11.sp, color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
     }
 }
 
