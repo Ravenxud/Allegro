@@ -53,6 +53,7 @@ fun SettingsScreen(
     update: UpdateRepository,
     onBack: () -> Unit,
     onClearData: () -> Unit,
+    onOpenSync: () -> Unit = {},
 ) {
     val theme by settings.themeMode.collectAsState()
     val engineId by settings.searchEngineId.collectAsState()
@@ -118,6 +119,15 @@ fun SettingsScreen(
                     checked = showHomeBookmarks,
                     onCheckedChange = { settings.setHomeBookmarksEnabled(it) },
                     title = stringResource(R.string.settings_home_bookmarks),
+                )
+            }
+
+            SectionTitle(stringResource(R.string.sync_section))
+            PreferenceCard {
+                ArrowPreference(
+                    title = stringResource(R.string.sync_title),
+                    summary = stringResource(R.string.sync_entry_summary),
+                    onClick = onOpenSync,
                 )
             }
 

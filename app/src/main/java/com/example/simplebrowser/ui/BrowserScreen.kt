@@ -79,6 +79,7 @@ import com.example.simplebrowser.ui.screens.HistoryScreen
 import com.example.simplebrowser.ui.screens.OfflinePagesScreen
 import com.example.simplebrowser.ui.screens.PrivacyReportScreen
 import com.example.simplebrowser.ui.screens.SiteSettingsScreen
+import com.example.simplebrowser.ui.screens.WebDavScreen
 import com.example.simplebrowser.ui.screens.ReaderScreen
 import com.example.simplebrowser.ui.screens.SettingsScreen
 import com.example.simplebrowser.ui.screens.UserScriptsScreen
@@ -576,6 +577,10 @@ fun BrowserScreen(
                     )
                     SecondaryScreen.HISTORY -> HistoryScreen(history, openAndBack, back)
                     SecondaryScreen.DOWNLOADS -> DownloadsScreen(downloads, downloadCenter, back)
+                    SecondaryScreen.SYNC -> WebDavScreen(
+                        sync = com.example.simplebrowser.di.ServiceLocator.syncRepository,
+                        onBack = back,
+                    )
                     SecondaryScreen.SITE -> SiteSettingsScreen(
                         host = controller.currentHost(),
                         controller = controller,
@@ -605,6 +610,7 @@ fun BrowserScreen(
                         adBlock = adBlock,
                         update = update,
                         onBack = back,
+                        onOpenSync = { screen = SecondaryScreen.SYNC },
                         onClearData = {
                             scope.launch {
                                 history.clear()

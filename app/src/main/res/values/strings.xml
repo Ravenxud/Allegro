@@ -206,4 +206,25 @@
     <string name="site_configured_title">已配置的站点</string>
     <string name="site_configured_empty">还没有配置过站点</string>
     <string name="site_configured_empty_hint">在网页菜单里点「本站设置」就能按域名调整</string>
+    <string name="sync_section">同步</string>
+    <string name="sync_entry_summary">用 WebDAV 在设备间同步书签与站点设置</string>
+    <string name="sync_title">WebDAV 同步</string>
+    <string name="sync_intro">整包覆盖：上传会用本机数据覆盖远端，下载会用远端数据覆盖本机书签与站点设置。</string>
+    <string name="sync_url">服务器地址</string>
+    <string name="sync_user">用户名（可留空）</string>
+    <string name="sync_user_hint">坚果云填邮箱，Nextcloud 填账号</string>
+    <string name="sync_password">密码 / 应用密码</string>
+    <string name="sync_password_hint">建议使用应用专用密码</string>
+    <string name="sync_dir">远端目录</string>
+    <string name="sync_test">测试连接</string>
+    <string name="sync_test_summary">先验证地址与账号，再传数据</string>
+    <string name="sync_upload">上传本机数据</string>
+    <string name="sync_upload_summary">书签、文件夹、站点设置与主题偏好</string>
+    <string name="sync_download">从远端恢复</string>
+    <string name="sync_download_summary">覆盖本机同名书签与站点设置，建议先上传一次</string>
+    <string name="sync_status">状态</string>
+    <string name="sync_working">正在处理…</string>
+    <string name="sync_last">上次同步：%1$s</string>
+    <string name="sync_never">尚未同步过</string>
+    <string name="sync_note">账号密码保存在本机（未加密），请使用应用专用密码；不包含标签页、历史与下载记录。</string>
 </resources>

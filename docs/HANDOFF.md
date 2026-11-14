@@ -1,7 +1,7 @@
 # 交接说明（给下一个 AI / 开发者）
 
 > 读完这一份就能接手开发。项目：**Allegro**（代码内部名 SimpleBrowser）—— 参考 Luna 的极简 Android 浏览器。
-> 最后更新：0.26.0-beta（versionCode 58）
+> 最后更新：0.27.0-beta（versionCode 59）
 
 ---
 
@@ -9,8 +9,8 @@
 
 浏览核心、标签页 2.0、下载器、广告过滤、书签、设置、JS 注入管线、手势、应用内更新、
 阅读模式/朗读/分享/用户脚本、离线页可打开（MHTML→HTML）、隐私报告 + 元素选择器、
-**站点设置（JS/图片/桌面版 UA/广告过滤/清数据）** 均已完成并可编译；
-阶段一还剩「WebDAV 同步」「大屏/标签组/HLS/无障碍」；动画与外观专项未开始。
+站点设置（JS/图片/桌面版 UA/广告过滤/清数据）、**WebDAV 同步（书签/文件夹/站点设置/主题偏好）**
+均已完成并可编译；阶段一还剩「大屏/标签组/HLS/无障碍」；动画与外观专项未开始。
 
 ## 2. 仓库与构建
 
@@ -87,6 +87,7 @@ di/          ServiceLocator(手写 DI，替代 Hilt)
 | 二级页面 | `SecondaryScreen` 加枚举 + `BrowserScreen` 加 `when` 分支 + `ScreenScaffold` 新页 |
 | 数据表 | Room 实体 + DAO + 版本号 +1 + `Migration`（**历史坑见下**） |
 | 站点级开关 | `SiteSettings` 加字段 → `SiteSettingsCodec` 编解码 → `applySiteSettings()` 落到 WebView → 页面加开关 |
+| 同步内容 | `SyncPayload` 加字段 + `SyncRepository` 两个方向各写一段 → 升 `SCHEMA`（不兼容旧备份时） |
 | 用户脚本 | 用户自带，无需改代码 |
 
 ## 6. 已知问题与技术债（接手先看这段）
@@ -101,6 +102,8 @@ di/          ServiceLocator(手写 DI，替代 Hilt)
 | 6 | Lint 从未成功跑通（环境缺 `lint-gradle` 下载） | 未知静态问题 | 在 GitHub Actions 里补 lint job |
 | 7 | release 构建 + 混淆未验证 | 发布阻塞 | 0.29 阶段处理 |
 | 8 | 包名仍是 `com.example.simplebrowser` | 与 Allegro 品牌不符 | 改包名会牵动 FileProvider authorities，建议 1.0 前一次改完 |
+| 9 | **WebDAV 密码明文存在 SharedPreferences** | 手机被 root / 备份泄露时可见 | 允许用户改用"应用专用密码"；后续接 EncryptedSharedPreferences |
+| 10 | 同步是整包覆盖，无自动合并 | 两台设备先后同步会互相覆盖 | 界面已写明方向；要增量需加墓碑与冲突解决，暂不做 |
 
 ## 7. 踩过的坑（写下来避免重复踩）
 
@@ -129,16 +132,29 @@ app/src/test/java/.../BookmarksHtmlTest  4 条  书签 HTML 往返
 app/src/test/java/.../HomeDateTest       2 条  日期/问候
 app/src/test/java/.../MhtmlArchiveTest   9 条  MHTML 解析/相对引用/CSS 内联/QP 解码
 app/src/test/java/.../SiteSettingsTest   6 条  编解码/域名继承链/摘要
-共 35 条，全绿
+app/src/test/java/.../MiniJsonTest       6 条  极简 JSON 读写
+app/src/test/java/.../SyncPayloadTest    4 条  备份编解码/坏数据容错
+app/src/test/java/.../WebDavConfigTest   6 条  URL 拼接/编码/Basic 认证
+app/src/test/java/.../WebDavClientIntegrationTest 3 条  真连 WebDAV（默认跳过，见下）
+共 54 条，全绿（集成测试需 env）
 ```
 
 真机验证清单见 `docs/TESTING.md`。**没有 instrumentation 测试，也没有截图测试**。
+
+集成测试跑法（本机起一台最小 WebDAV）：
+
+```bash
+python3 scripts/dav_server.py /tmp/davroot 8081 &     # 见 TESTING.md 附带的脚本说明
+ALLEGRO_DAV_URL=http://127.0.0.1:8081/ gradle --no-daemon :app:testDebugUnitTest
+```
+
+没有 `ALLEGRO_DAV_URL` 时该测试自动 `assumeTrue` 跳过，CI 不受影响。
 
 ## 9. 下一步任务（按优先级）
 
 1. ~~离线页可打开~~ / ~~隐私报告 + 元素选择器~~（0.25.0 完成）
 2. ~~站点设置页~~（0.26.0 完成；Cookie 只做了「清本站数据」，未做逐站开关）
-3. WebDAV 同步（1 个版本）
+3. ~~WebDAV 同步~~（0.27.0 完成；整包覆盖，无自动合并）
 4. 大屏 / 标签组 / HLS 下载 / 无障碍（1 个版本）
 5. 动画专项 26 项（1 个版本，见 `ROADMAP.md`）
 6. 外观专项 → 稳定性与发布准备 → 1.0.0

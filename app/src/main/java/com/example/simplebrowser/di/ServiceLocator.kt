@@ -9,6 +9,7 @@ import com.example.simplebrowser.data.UserScriptStore
 import com.example.simplebrowser.data.repo.BookmarkRepository
 import com.example.simplebrowser.data.repo.DownloadRepository
 import com.example.simplebrowser.download.DownloadCenter
+import com.example.simplebrowser.sync.SyncRepository
 import com.example.simplebrowser.update.UpdateRepository
 import com.example.simplebrowser.data.repo.HistoryRepository
 import com.example.simplebrowser.data.repo.TabsRepository
@@ -55,6 +56,9 @@ object ServiceLocator {
     lateinit var siteSettingsRepository: SiteSettingsRepository
         private set
 
+    lateinit var syncRepository: SyncRepository
+        private set
+
     /** 更新源变更后重建仓库实例。 */
     fun rebindUpdateRepo(repo: String) {
         updateRepository = UpdateRepository(appContext, repo)
@@ -75,6 +79,12 @@ object ServiceLocator {
             adBlockRepository = AdBlockRepository(appContext)
             userScriptStore = UserScriptStore(appContext)
             siteSettingsRepository = SiteSettingsRepository(appContext)
+            syncRepository = SyncRepository(
+                appContext,
+                bookmarkRepository,
+                siteSettingsRepository,
+                settingsRepository,
+            )
             updateRepository = UpdateRepository(
                 appContext,
                 settingsRepository.updateRepo(),

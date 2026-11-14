@@ -76,3 +76,16 @@
 - 局限：Cookie 只能"清除本站数据"（`CookieManager` 无逐站开关）；`WebStorage.deleteOrigin` 需要 API 29+，
   更低版本只能清 Cookie。
 
+## ADR-10 同步用「整包覆盖 + 自写 MiniJson」
+- 背景：要在多个设备间同步书签/站点设置，需要一个远端存储；同时备份文件必须能被单测覆盖。
+- 决策：
+  1. **传输用 WebDAV**（坚果云/Nextcloud/群晖/自建 nginx dav 都支持），只实现 PROPFIND/MKCOL/PUT/GET，
+     不做 LOCK、不做分片；单文件 `allegro-sync.json`，几十 KB；
+  2. **方向由用户选**：上传 = 本机覆盖远端，下载 = 远端覆盖本机（书签按 url upsert、文件夹按 id upsert）。
+     不做双向增量：需要墓碑与冲突解决，复杂度远超收益；
+  3. **JSON 自己写**（`util/MiniJson`）：`org.json` 在 JVM 单测里是抛 `Stub!` 的空壳，
+     用它等于同步逻辑完全不可测；自己写 100 行换来"往返一致"可断言。
+- 后果：同步行为可预测、可测试（3 条真连 WebDAV 的集成测试）；代价是没有自动合并，
+  两台设备都改过数据时后同步的一方覆盖前者（界面已明示）。
+- 已知风险：密码明文存 SharedPreferences；后续可换 EncryptedSharedPreferences（需要额外依赖）。
+
