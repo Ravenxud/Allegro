@@ -1115,12 +1115,8 @@ class WebViewBrowserController(
             kind = kind,
             pageUrl = view.url.orEmpty(),
         )
-        // 有缓存就直接弹（缓存来自页面加载完成时，绝不含面板）；没有才现场抓
-        if (_sheetSnapshot.value != null) {
-            _menu.value = request
-        } else {
-            captureForSheet { _menu.value = request }
-        }
+        // 现场抓一张再弹；缓存会过期，长按菜单同样不能用旧图
+        captureForSheet { _menu.value = request }
     }
 
     // ------------------------------------------------------------- 内部
@@ -1134,6 +1130,8 @@ class WebViewBrowserController(
         // 注意：必须先于“把 WebView 置 GONE”调用，否则只能抓到空
         val activity = context as? android.app.Activity ?: return
         val decor = activity.window?.decorView ?: return
+        // 先清空：抓图期间若有任何一帧画到面板，宁可纯色也不显示上一张旧图
+        _sheetSnapshot.value = null
         if (decor.width <= 0 || decor.height <= 0) return
         val rect = android.graphics.Rect(0, 0, decor.width, decor.height)
         requestCopy(activity.window, rect) { bitmap ->

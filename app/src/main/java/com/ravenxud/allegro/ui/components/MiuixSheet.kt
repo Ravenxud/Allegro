@@ -95,6 +95,9 @@ fun MiuixSheet(
 
             // 顶栏挡板是唯一做玻璃的一条：把"整窗快照"按屏幕坐标 1:1 对齐后只露出这一条。
             // 面板贴底且满宽 ⇒ 屏幕高 = 面板顶 y + 面板高，屏幕宽 = 面板宽，无需额外测量。
+            var geomLogged by androidx.compose.runtime.remember {
+                androidx.compose.runtime.mutableStateOf(false)
+            }
             var panelTopPx by androidx.compose.runtime.remember {
                 androidx.compose.runtime.mutableIntStateOf(0)
             }
@@ -107,6 +110,10 @@ fun MiuixSheet(
             val maxContentHeight =
                 (LocalConfiguration.current.screenHeightDp * 0.64f).dp - bandHeight
 
+            // 玻璃参数：模糊够大才像"玻璃"，tint 够高才保证文字可读
+            val glassBlur = 22.dp
+            val glassTint = 0.55f
+
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -116,10 +123,20 @@ fun MiuixSheet(
                             c.size.width,
                             panelTopPx + c.size.height,
                         )
+                        if (!geomLogged && panelTopPx > 0 && c.size.height > 0) {
+                            geomLogged = true
+                            com.ravenxud.allegro.util.DiagLog.log(
+                                "sheet-geom",
+                                "top=$panelTopPx win=${screenSizePx.width}x${screenSizePx.height} " +
+                                    "panelH=${c.size.height} snap=" +
+                                    (snapshot?.let { "${it.width}x${it.height}" } ?: "null") +
+                                    " backdrop=" + (backdrop != null),
+                            )
+                        }
                     }
                     .then(
                         if (backdrop != null) {
-                            // 真玻璃：模糊背后的 Compose 内容（首页/列表），而不是调 alpha 出重影
+                            // 首页：真玻璃，直接模糊背后的 Compose 内容
                             Modifier.appGlass(
                                 backdrop = backdrop,
                                 shape = panelShape,
@@ -130,19 +147,18 @@ fun MiuixSheet(
                         },
                     ),
                 shape = panelShape,
-                // 内容区保持不透明：WebView 表面抓不到实时内容，半透明只会透出"文字重影"。
-                // 玻璃只做在顶栏挡板（见下），那里有可对齐的快照源。
-                color = surfaceColor,
+                // 网页场景：面板自身透明，底色交给下面的"快照模糊层 + tint"
+                color = if (backdrop != null) surfaceColor else Color.Transparent,
             ) {
-                Column(Modifier.fillMaxWidth()) {
-                    // --------------------------- 顶栏挡板（玻璃） ---------------------------
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(bandHeight)
-                            .clip(panelShape),
-                    ) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(panelShape),
+                ) {
+                    if (backdrop == null) {
                         if (snapshot != null && panelTopPx > 0 && screenSizePx.height > 0) {
+                            // 整窗快照按屏幕坐标 1:1 铺满：x=0、y=-面板顶 → 与真实位置重合。
+                            // 只靠 clip(panelShape) 显示面板范围内那部分，不会溢出、不会错位。
                             androidx.compose.foundation.Image(
                                 bitmap = snapshot.asImageBitmap(),
                                 contentDescription = null,
@@ -152,55 +168,52 @@ fun MiuixSheet(
                                         with(density) { screenSizePx.width.toDp() },
                                         with(density) { screenSizePx.height.toDp() },
                                     )
-                                    // 快照是整窗的：上移"面板顶"的距离，就与屏幕坐标重合
                                     .offset { androidx.compose.ui.unit.IntOffset(0, -panelTopPx) }
-                                    .blur(18.dp),
+                                    .blur(glassBlur),
                             )
-                            // 轻微 tint：任何网页上都读得清标题，同时保留背后色彩
+                            // 半透明底色：能看见网页，同时保证文字可读
                             Box(
                                 Modifier
                                     .matchParentSize()
-                                    .background(surfaceColor.copy(alpha = 0.34f)),
+                                    .background(surfaceColor.copy(alpha = glassTint)),
                             )
-                            // 底边渐隐到不透明面板色，消除"玻璃条 / 纯色区"的硬接缝
-                            Box(
-                                Modifier
-                                    .align(Alignment.BottomCenter)
-                                    .fillMaxWidth()
-                                    .height(14.dp)
-                                    .background(
-                                        androidx.compose.ui.graphics.Brush.verticalGradient(
-                                            listOf(Color.Transparent, surfaceColor),
-                                        ),
-                                    ),
-                            )
+                        } else {
+                            // 无可用快照（首页 / 抓取失败 / 刚打开的第一帧）：退化为不透明。
+                            // 绝不显示旧图 —— 那正是之前"面板里有无关模糊"的来源。
+                            Box(Modifier.matchParentSize().background(surfaceColor))
                         }
-                        // 顶部细高光（玻璃边缘）
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .height(1.dp)
-                                .background(Color.White.copy(alpha = 0.20f)),
-                        )
-                        Column(
-                            Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
+                    }
+
+                    Column(Modifier.fillMaxWidth()) {
+                        // --------------------------- 顶栏（拖拽条 + 标题） ---------------------------
+                        Column(Modifier.fillMaxWidth()) {
                             Box(
                                 Modifier
-                                    .padding(vertical = 8.dp)
-                                    .size(width = 36.dp, height = 4.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        MiuixTheme.colorScheme.onSurface.copy(alpha = 0.22f),
-                                    ),
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(Color.White.copy(alpha = 0.22f)),
                             )
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Box(
+                                    Modifier
+                                        .size(width = 36.dp, height = 4.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            MiuixTheme.colorScheme.onSurface.copy(alpha = 0.22f),
+                                        ),
+                                )
+                            }
                             title?.let {
                                 Text(
                                     text = it,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(start = 20.dp, end = 20.dp, bottom = 8.dp),
+                                        .padding(start = 20.dp, end = 20.dp, bottom = 6.dp),
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     fontSize = 15.sp,
@@ -208,16 +221,16 @@ fun MiuixSheet(
                                 )
                             }
                         }
-                    }
-                    // --------------------------- 内容区（不透明） ---------------------------
-                    Column(
-                        Modifier
-                            .navigationBarsPadding()
-                            .heightIn(max = maxContentHeight)
-                            .verticalScroll(rememberScrollState())
-                            .padding(bottom = 8.dp),
-                    ) {
-                        content()
+                        // --------------------------- 内容区 ---------------------------
+                        Column(
+                            Modifier
+                                .navigationBarsPadding()
+                                .heightIn(max = maxContentHeight)
+                                .verticalScroll(rememberScrollState())
+                                .padding(bottom = 8.dp),
+                        ) {
+                            content()
+                        }
                     }
                 }
             }
