@@ -41,6 +41,15 @@ class SettingsRepository(context: Context) {
         _searchEngineId.value = id
     }
 
+    private val _alwaysDesktop = MutableStateFlow(prefs.getBoolean(KEY_ALWAYS_DESKTOP, false))
+    /** 全局「始终请求桌面版」。站点设置可覆盖它。 */
+    val alwaysDesktop: StateFlow<Boolean> = _alwaysDesktop.asStateFlow()
+
+    fun setAlwaysDesktop(value: Boolean) {
+        prefs.edit().putBoolean(KEY_ALWAYS_DESKTOP, value).apply()
+        _alwaysDesktop.value = value
+    }
+
     private val _homeBookmarks = MutableStateFlow(prefs.getBoolean(KEY_HOME_BOOKMARKS, true))
     val homeBookmarksEnabled: StateFlow<Boolean> = _homeBookmarks.asStateFlow()
 
@@ -74,5 +83,6 @@ class SettingsRepository(context: Context) {
         const val KEY_HOME_BOOKMARKS = "home_bookmarks"
         const val KEY_UPDATE_REPO = "update_repo"
         const val DEFAULT_UPDATE_REPO = "Ravenxud/Allegro"
+        const val KEY_ALWAYS_DESKTOP = "always_desktop"
     }
 }

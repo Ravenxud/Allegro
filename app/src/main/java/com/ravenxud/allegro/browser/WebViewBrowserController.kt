@@ -58,6 +58,7 @@ class WebViewBrowserController(
     private val downloadCenter: DownloadCenter,
     private val adBlock: AdBlockRepository,
     private val siteSettings: SiteSettingsRepository,
+    private val settings: com.ravenxud.allegro.data.SettingsRepository,
 ) : BrowserController, TabWebView.Callbacks {
 
     companion object {
@@ -85,6 +86,7 @@ class WebViewBrowserController(
 
     private val pool = WebViewPool(context, this)
     private val jsInjector = JsInjector(JsRegistry.default())
+    private val desktopProxy = com.ravenxud.allegro.desktop.DesktopProxy()
     private val menuActions = MenuActions(context)
     private val offlineStore = OfflinePageStore(context)
     private var readerCallback: ((String?) -> Unit)? = null
@@ -488,6 +490,25 @@ class WebViewBrowserController(
         } else {
             actual
         }
+
+    /**
+     * 桌面模式：主文档由 App 自取（见 docs/DESKTOP_MODE.md）。
+     *
+     * 判定顺序：站点设置强制桌面 → 标签页桌面开关 → 全局「始终桌面版」。
+     * 任何一步失败都返回 null，回落到 WebView 原生加载。
+     */
+    override fun desktopDocument(
+        view: TabWebView,
+        request: android.webkit.WebResourceRequest,
+    ): android.webkit.WebResourceResponse? {
+        val url = request.url?.toString().orEmpty()
+        if (!url.startsWith("http://") && !url.startsWith("https://")) return null
+        val tab = _state.value.tabs.firstOrNull { it.id == view.tabId } ?: return null
+        val site = siteSettings.forHost(com.ravenxud.allegro.adblock.FilterEngine.hostOf(tab.url))
+        val desktop = site?.desktopUa == true || tab.desktopMode || settings.alwaysDesktop.value
+        if (!desktop) return null
+        return desktopProxy.intercept(url, request.requestHeaders ?: emptyMap(), DESKTOP_UA)
+    }
 
     /** window.open / target=_blank：后台开新标签，不打断当前页。 */
     override fun onNewWindowRequest(view: TabWebView, url: String) {

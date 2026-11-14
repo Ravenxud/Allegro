@@ -49,6 +49,12 @@ class TabWebView @JvmOverloads constructor(
 
         fun onBlobTooLarge(view: TabWebView, fileName: String)
 
+        /**
+         * 桌面模式：拦下主文档，由 App 自己抓取（WebView 改不了 Client Hints）。
+         * 返回非 null 时直接作为响应；返回 null 表示交给 WebView 正常加载。
+         */
+        fun desktopDocument(view: TabWebView, request: WebResourceRequest): android.webkit.WebResourceResponse?
+
         /** 页面要求 window.open / target=_blank 打开新窗口。 */
         fun onNewWindowRequest(view: TabWebView, url: String)
 
@@ -194,8 +200,13 @@ class TabWebView @JvmOverloads constructor(
             view: WebView,
             request: WebResourceRequest,
         ): WebResourceResponse? {
-            // 主文档永不拦截：整页被拦就是白屏，比漏广告严重得多
-            if (request.isForMainFrame) return null
+            // 主文档：桌面模式走自建代理，其余情况永不拦截（整页被拦就是白屏）
+            if (request.isForMainFrame) {
+                if (request.method.equals("GET", ignoreCase = true)) {
+                    callbacks.desktopDocument(this@TabWebView, request)?.let { return it }
+                }
+                return null
+            }
             if (!callbacks.shouldBlockRequest(request.url.toString(), false)) return null
             return WebResourceResponse("text/plain", "utf-8", java.io.ByteArrayInputStream(ByteArray(0)))
         }

@@ -61,6 +61,7 @@ class MainActivity : ComponentActivity() {
             downloadCenter = ServiceLocator.downloadCenter,
             adBlock = ServiceLocator.adBlockRepository,
             siteSettings = ServiceLocator.siteSettingsRepository,
+            settings = ServiceLocator.settingsRepository,
         )
 
         setContent {

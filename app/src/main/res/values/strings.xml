@@ -242,4 +242,7 @@
     <string name="cd_close_tab">关闭标签页</string>
     <string name="redirect_loop_stopped">该站点在移动版与桌面版之间反复跳转，已停止加载</string>
     <string name="redirect_loop_mobile_fallback">该站点不支持桌面版（服务端按设备类型强制跳转），已自动切回移动版</string>
+    <string name="settings_browsing">浏览</string>
+    <string name="settings_always_desktop">始终请求桌面版</string>
+    <string name="settings_always_desktop_summary">所有站点默认用桌面版打开；可在「本站设置」里单独覆盖</string>
 </resources>

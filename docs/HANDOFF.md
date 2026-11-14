@@ -1,8 +1,8 @@
 # 交接说明（给下一个 AI / 开发者）
 
 > 读完这一份就能接手开发。项目：**Allegro**（代码内部名 SimpleBrowser）—— 极简 Android 浏览器。
-> 最后更新：0.29.1-beta（versionCode 67）
-> 下一版：0.30 桌面版模式 v2（见 docs/DESKTOP_MODE.md）
+> 最后更新：0.30.0-beta（versionCode 69）
+> 桌面版模式 v2 已落地：主文档代理（见 docs/DESKTOP_MODE.md）
 > 包名已改为 `com.ravenxud.allegro`（与旧包不兼容，需卸载重装）
 
 ---
@@ -176,7 +176,11 @@ app/src/test/java/.../WebDavConfigTest   6 条  URL 拼接/编码/Basic 认证
 app/src/test/java/.../WebDavClientIntegrationTest 3 条  真连 WebDAV（默认跳过，见下）
 app/src/test/java/.../MhtmlArchiveTest   12 条（含**真实 Chromium 快照** fixture）
 app/src/test/java/.../LayoutWidthTest     3 条  大屏断点与侧栏宽度
-共 67 条，全绿（集成测试需 env）
+app/src/test/java/.../DesktopHeadersTest  5 条  hint 三件套/透传/UA 映射
+app/src/test/java/.../DesktopRedirectPolicyTest 7 条  互换一次/循环/上限
+app/src/test/java/.../BaseHrefTest        5 条  base 注入
+app/src/test/java/.../DesktopFetcherIntegrationTest 6 条  真连 mock 站点（默认跳过）
+共 90 条，全绿（集成测试需 env）
 ```
 
 真机验证清单见 `docs/TESTING.md`。**没有 instrumentation 测试，也没有截图测试**。
@@ -198,8 +202,8 @@ MHTML 解析用**真实 Chromium 产物**做回归：`scripts/capture_mhtml.py` 
 
 完整路线见 `docs/ROADMAP.md`，当前重点：
 
-1. **0.30 桌面版模式 v2（P0，用户明确刚需）** —— 方案见 `docs/DESKTOP_MODE.md`：
-   主文档由 OkHttp 抓取并伪造 Client Hints，重定向自己跟随（永不循环），POST/非 HTML 回退 WebView
+1. ~~0.30 桌面版模式 v2~~（已实现：`desktop/DesktopProxy` + `DesktopDocumentFetcher`；
+   真机待验：B站/知乎/豆瓣/微博 + 登录流程）
 2. 0.30.1 桌面视口 / UA 选择 / 失败可视化
 3. 0.31 站点规则管理（桌面版、JS、图片、过滤、UA 一览 + 导入导出）
 4. 0.32 标签组（新表 + 迁移 + 拖拽入组）

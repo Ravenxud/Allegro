@@ -64,6 +64,7 @@ fun SettingsScreen(
     val blockEnabled by adBlock.enabled.collectAsState()
     val blockedCount by adBlock.blocked.collectAsState()
     val showHomeBookmarks by settings.homeBookmarksEnabled.collectAsState()
+    val alwaysDesktop by settings.alwaysDesktop.collectAsState()
     val updateState by update.state.collectAsState()
     val repoInput = remember { androidx.compose.runtime.mutableStateOf(settings.updateRepo()) }
 
@@ -126,6 +127,16 @@ fun SettingsScreen(
                         onClick = { settings.setSearchEngine(engine.id) },
                     )
                 }
+            }
+
+            SectionTitle(stringResource(R.string.settings_browsing))
+            PreferenceCard {
+                SwitchPreference(
+                    checked = alwaysDesktop,
+                    onCheckedChange = { settings.setAlwaysDesktop(it) },
+                    title = stringResource(R.string.settings_always_desktop),
+                    summary = stringResource(R.string.settings_always_desktop_summary),
+                )
             }
 
             SectionTitle(stringResource(R.string.home_section_bookmarks))
