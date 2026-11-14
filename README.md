@@ -44,6 +44,7 @@ gradle -Pandroid.aapt2FromMavenOverride=/opt/aapt2shim/aapt2 assembleDebug
 | [docs/DECISIONS.md](docs/DECISIONS.md) | 技术决策记录（ADR） |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | 迭代路线 |
 | [docs/DESKTOP_MODE.md](docs/DESKTOP_MODE.md) | 桌面版模式的技术方案 |
+| [docs/ANIMATION.md](docs/ANIMATION.md) | 动画专项方案（令牌、26 项规格、帧率预算） |
 | [docs/TESTING.md](docs/TESTING.md) | 真机验证清单 |
 | [RELEASE_NOTES.md](RELEASE_NOTES.md) | 逐版本变更 |
 
