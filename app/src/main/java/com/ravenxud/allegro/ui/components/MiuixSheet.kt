@@ -116,6 +116,7 @@ fun MiuixSheet(
                 snapshot = snapshot,
                 showClose = showClose,
                 actions = actions,
+                glassAlpha = 0.88f,
                 scrollable = scrollable,
                 content = content,
             )
@@ -131,6 +132,7 @@ private fun SheetCard(
     snapshot: android.graphics.Bitmap?,
     showClose: Boolean,
     actions: @Composable RowScope.() -> Unit,
+    glassAlpha: Float,
     scrollable: Boolean,
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -156,7 +158,7 @@ private fun SheetCard(
                 },
             ),
         shape = cardShape,
-        color = if (backdrop != null) Color.Transparent else surfaceColor.copy(alpha = 0.88f),
+        color = if (backdrop != null) Color.Transparent else surfaceColor.copy(alpha = glassAlpha),
     ) {
         Box(
             Modifier
@@ -170,7 +172,7 @@ private fun SheetCard(
                 Box(
                     Modifier
                         .matchParentSize()
-                        .background(surfaceColor.copy(alpha = 0.88f)),
+                        .background(surfaceColor.copy(alpha = glassAlpha)),
                 )
             }
 
@@ -310,9 +312,12 @@ data class SheetItem(
 fun SheetGrid(
     items: List<SheetItem>,
     columns: Int = 4,
+    ghosts: Int = 0,
 ) {
     Column(Modifier.fillMaxWidth()) {
-    items.chunked(columns).forEach { row ->
+    val rows = (items.size + ghosts + columns - 1) / columns
+    repeat(rows) { rowIndex ->
+        val row = items.drop(rowIndex * columns).take(columns)
         Row(
             Modifier
                 .fillMaxWidth()
@@ -322,13 +327,21 @@ fun SheetGrid(
             row.forEach { item ->
                 SheetGridCell(item, Modifier.weight(1f))
             }
+            // 占位格与真实格同高：保证翻页时面板高度不变（不会"硬切面积"）
             repeat(columns - row.size) {
-                Spacer(Modifier.weight(1f))
+                Spacer(
+                    Modifier
+                        .weight(1f)
+                        .height(SHEET_CELL_HEIGHT),
+                )
             }
         }
     }
     }
 }
+
+/** 单元格固定高度（圆 + 8dp 间距 + 标签 + 上下内边距）。 */
+private val SHEET_CELL_HEIGHT = 104.dp
 
 /** 分页网格：一页最多 12 项（3 行 × 4 列），页面指示点居中。 */
 @Composable
@@ -337,14 +350,16 @@ fun SheetPagedGrid(
     columns: Int = 4,
     rowsPerPage: Int = 3,
 ) {
-    val pages = items.chunked(columns * rowsPerPage).ifEmpty { listOf(emptyList()) }
+    val perPage = columns * rowsPerPage
+    val pages = items.chunked(perPage).ifEmpty { listOf(emptyList()) }
+    val ghosts = pages.map { perPage - it.size }
     val pagerState = androidx.compose.foundation.pager.rememberPagerState { pages.size }
     Column(Modifier.fillMaxWidth()) {
         androidx.compose.foundation.pager.HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxWidth(),
         ) { page ->
-            SheetGrid(pages[page], columns)
+            SheetGrid(pages[page], columns, ghosts[page])
         }
         if (pages.size > 1) {
             Row(
@@ -443,6 +458,91 @@ fun SheetRow(
         value?.let {
             Spacer(Modifier.width(8.dp))
             Text(it, fontSize = 13.sp, color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
+        }
+    }
+}
+
+
+/** 系统是否支持跨窗口模糊（API 31+ 且未被系统/设备禁用）。 */
+@Composable
+fun crossWindowBlurEnabled(): Boolean {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    return androidx.compose.runtime.remember(context) {
+        if (android.os.Build.VERSION.SDK_INT < 31) {
+            false
+        } else {
+            runCatching {
+                context.getSystemService(android.view.WindowManager::class.java)
+                    ?.isCrossWindowBlurEnabled == true
+            }.getOrDefault(false)
+        }
+    }
+}
+
+/**
+ * 用**独立 Dialog 窗口**承载面板，并开启系统级 `FLAG_BLUR_BEHIND`。
+ *
+ * 为什么必须这样：模糊"自己窗口里的 WebView"是抓不到的（前六版失败的原因），
+ * 但让**系统合成器**去模糊"下层窗口"，系统是能拿到真实像素的 —— 这是唯一能
+ * 在网页上出现真正模糊的路径。系统不支持时自动退回半透明（不崩、不白屏）。
+ */
+@Composable
+fun MiuixSheetDialog(
+    visible: Boolean,
+    onDismiss: () -> Unit,
+    title: String? = null,
+    showClose: Boolean = false,
+    actions: @Composable RowScope.() -> Unit = {},
+    scrollable: Boolean = true,
+    blurRadiusDp: Int = 28,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    if (!visible) return
+    val blurOn = crossWindowBlurEnabled()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false,
+        ),
+    ) {
+        val window = (
+            androidx.compose.ui.platform.LocalView.current.parent
+                as? androidx.compose.ui.window.DialogWindowProvider
+            )?.window
+        androidx.compose.runtime.LaunchedEffect(window, blurOn) {
+            window ?: return@LaunchedEffect
+            runCatching {
+                window.setDimAmount(0f)
+                window.setBackgroundDrawable(
+                    android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT),
+                )
+                window.setLayout(
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                )
+                if (blurOn && android.os.Build.VERSION.SDK_INT >= 31) {
+                    window.addFlags(android.view.WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
+                    val px = with(density) { blurRadiusDp.dp.roundToPx() }
+                    window.attributes = window.attributes.apply { blurBehindRadius = px }
+                }
+            }
+        }
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+            // 有系统模糊时面板要更透，模糊才看得见；没有就保持较实的浅色保证可读
+            SheetCard(
+                onDismiss = onDismiss,
+                title = title,
+                backdrop = null,
+                snapshot = null,
+                showClose = showClose,
+                actions = actions,
+                glassAlpha = if (blurOn) 0.52f else 0.9f,
+                scrollable = scrollable,
+                content = content,
+            )
         }
     }
 }

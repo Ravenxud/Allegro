@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -41,6 +43,7 @@ import com.ravenxud.allegro.data.model.ThemeMode
 import com.ravenxud.allegro.ui.components.MiuixSheet
 import com.ravenxud.allegro.ui.components.SheetCircleButton
 import com.ravenxud.allegro.ui.components.SheetPagedGrid
+import com.ravenxud.allegro.ui.components.MiuixSheetDialog
 import com.ravenxud.allegro.ui.components.SheetItem
 import com.ravenxud.allegro.ui.components.SheetRow
 import com.ravenxud.allegro.ui.components.SheetSection
@@ -131,19 +134,13 @@ fun AppMenu(
     adBlockPaused: Boolean,
     onToggleAdBlockSite: () -> Unit,
     onDismiss: () -> Unit,
+    /** 网页场景：走独立 Dialog 窗口 + 系统跨窗口模糊（唯一能真模糊网页的路径）。 */
+    useDialogWindow: Boolean = false,
 ) {
-    // Luna 形态：大圆角玻璃卡片 + 4 列圆形图标网格；关闭在左，动作胶囊在右
-    MiuixSheet(
-        state = visibleState,
-        onDismiss = onDismiss,
-        backdrop = backdrop,
-        snapshot = snapshot,
-        showClose = true,
-        scrollable = false,
-        actions = {
-            SheetCircleButton(MiuixIcons.Settings) { onNavigate(SecondaryScreen.SETTINGS) }
-        },
-    ) {
+    val barActions: @Composable RowScope.() -> Unit = {
+        SheetCircleButton(MiuixIcons.Settings) { onNavigate(SecondaryScreen.SETTINGS) }
+    }
+    val body: @Composable ColumnScope.() -> Unit = {
         SheetPagedGrid(
             listOf(
                 SheetItem(MiuixIcons.Search, stringResource(R.string.menu_reader), onClick = onReader),
@@ -193,7 +190,28 @@ fun AppMenu(
                 ),
             ),
         )
-        Spacer(Modifier.size(8.dp))
+    }
+
+    if (useDialogWindow) {
+        MiuixSheetDialog(
+            visible = visibleState.targetState,
+            onDismiss = onDismiss,
+            showClose = true,
+            scrollable = false,
+            actions = barActions,
+            content = body,
+        )
+    } else {
+        MiuixSheet(
+            state = visibleState,
+            onDismiss = onDismiss,
+            backdrop = backdrop,
+            snapshot = snapshot,
+            showClose = true,
+            scrollable = false,
+            actions = barActions,
+            content = body,
+        )
     }
 }
 

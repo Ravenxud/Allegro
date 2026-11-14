@@ -1,3 +1,33 @@
+# 0.37.0-beta
+
+两件事：**翻页面积硬切**（明确 bug）+ **真正能看见的模糊**（换窗口模型）。
+
+## 1. 翻页不再改变面板高度
+第 2 页只有 7 项（2 行）、第 1 页 12 项（3 行）→ Pager 高度随页变化。
+现在每页用**同高的占位格**补满 `columns × rowsPerPage`，所有页等高，滑动时卡片不动。
+
+## 2. 面板搬进独立 Dialog 窗口，用**系统跨窗口模糊**
+这是唯一能真模糊 WebView 的路径：模糊"自己窗口里的 WebView"抓不到像素，
+而让**系统合成器**模糊"下层窗口"，系统拿得到真实像素。
+
+- `Dialog(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)`
+- `window.setDimAmount(0f)`、透明背景、MATCH_PARENT
+- `addFlags(FLAG_BLUR_BEHIND)` + `attributes.blurBehindRadius = 28dp`
+- 只在 `WindowManager.isCrossWindowBlurEnabled()` 为 true 时启用；
+  不支持时自动退回半透明浅色（不会白屏、不会崩）
+- 开模糊时面板透明度 0.52（模糊才看得见）；不支持时 0.90（保证可读）
+- 首页仍走 Compose 内 `appGlass`，不受影响
+
+## 请验
+
+1. 打开菜单，**左右滑动翻页**：卡片高度**完全不变**（这是本版必须解决的）
+2. 面板后面应出现**真正的模糊**（不是纯色块）：把网页滚到有文字/图片的位置再看，
+   白底空白页上模糊后仍然是白的——那属于物理结果，不是 bug
+3. 若设备不支持跨窗口模糊（部分 ROM 会关掉），面板会是较实的浅色，功能正常
+4. 首页菜单不变
+
+---
+
 # 0.36.2-beta
 
 **放弃"抓图做玻璃"，改为半透明真实穿透。**
