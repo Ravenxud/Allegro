@@ -277,9 +277,9 @@ fun BrowserScreen(
         label = "tabsProgress",
     ) { if (it) 1f else 0f }
 
-    val overlayActive = isHome || screen != SecondaryScreen.BROWSER || tabsMounted ||
-        appMenuState.currentState || appMenuState.targetState ||
-        contextMenuState.currentState || contextMenuState.targetState
+    // 单变量实验（0.37.2）：菜单打开时**不再隐藏 WebView**。
+    // 之前的 GONE 会让"透出网页 / 模糊网页"在物理上不可能成立。
+    val overlayActive = isHome || screen != SecondaryScreen.BROWSER || tabsMounted
 
     BackHandler(enabled = screen != SecondaryScreen.BROWSER) { screen = SecondaryScreen.BROWSER }
     BackHandler(enabled = menu != null) { controller.dismissMenu() }

@@ -1,3 +1,38 @@
+# 0.37.2-beta
+
+## 单变量实验：菜单打开时**不再隐藏 WebView**
+
+0.37.1 及之前，`BrowserScreen.kt:280` 把菜单状态算进 `overlayActive`，
+于是 `AndroidView.update` 里执行 `visibility = GONE` —— **网页被从渲染树里摘掉了**。
+
+这一处解释了此前所有"看不到网页"：
+
+- 面板区域是窗口背景（白），不是网页
+- PixelCopy 抓不到网页 → "无关模糊块"
+- `FLAG_BLUR_BEHIND` 糊的是"已隐藏网页后的白底 + 地址栏" → "固定遮罩感"
+
+## 本版只改了一处
+
+```diff
+- val overlayActive = isHome || screen != BROWSER || tabsMounted ||
+-     appMenuState.currentState || appMenuState.targetState ||
+-     contextMenuState.currentState || contextMenuState.targetState
++ val overlayActive = isHome || screen != BROWSER || tabsMounted
+```
+
+其余一切不变（面板仍是同窗口、0.72 半透明、每页等高）。
+
+## 这是实验，只有两种结果
+
+1. **菜单正常浮在网页上，能看见背后内容** → 根因确认，之后把这条清理干净，
+   再决定要不要加模糊（那时才有真实像素可谈）
+2. **菜单被网页盖住 / 闪烁** → 说明必须把面板放进 Dialog 窗口
+   （但**不开** blurBehind，避免整窗发雾）
+
+请按这两种情况之一回报，不要只说"还是不行"——我需要知道是"看不见"还是"看见但被盖住"。
+
+---
+
 # 0.37.1-beta
 
 ## 你说的"固定遮罩感"找到了来源：窗口级模糊会糊整个下层窗口
