@@ -78,7 +78,8 @@ fun MiuixSheet(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                color = MiuixTheme.colorScheme.surface,
+                // 半透明：能透出被压暗的页面；配合顶部 1px 高光，比纯实色更有层次
+                color = MiuixTheme.colorScheme.surface.copy(alpha = 0.92f),
             ) {
                 // 行数会随功能增加（页面动作 9 行 + 常用 3 行 + 外观 3 行 + 更多），
                 // 早期写死 Column 会被屏幕裁掉，导致最底部的「设置」看不见 —— 必须可滚动并限高
@@ -90,6 +91,12 @@ fun MiuixSheet(
                         .verticalScroll(rememberScrollState())
                         .padding(bottom = 8.dp),
                 ) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(Color.White.copy(alpha = 0.18f)),
+                    )
                     Box(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         contentAlignment = Alignment.Center,

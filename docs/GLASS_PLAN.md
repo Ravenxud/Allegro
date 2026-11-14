@@ -89,7 +89,7 @@ R8：`app/proguard-rules.pro` 追加
 | # | 约束 | 检验方式 | 现状（0.33.2） |
 |---|---|---|---|
 | U1 | 动效时长/曲线/spring **只**来自 `ui/theme/Motion.kt` | `grep -rn "tween(" app/src/main` 只命中 `Motion.kt` | ✅ **P1 已完成**（15 处裸 tween 全部收敛，5 档时长 ±20ms 内） |
-| U2 | 材质**只**经 `Modifier.appGlass` / `barGlass` | call site 不得出现 `renderEffect` / `drawBackdrop` | 🟡 入口已建（`ui/glass/GlassModifier.kt`），尚未被 call site 使用（P2） |
+| U2 | 材质**只**经 `Modifier.appGlass` / `barGlass` | call site 不得出现 `renderEffect` / `drawBackdrop` | 🟡 P2 已接入 `ScreenScaffold`（10+ 二级页），其余区域待 P2.1/P3 |
 | U3 | call site 不直接依赖材质库 | `grep -rn "com.kyant.backdrop"` 只命中 `ui/glass/**` | 🟡 仅 `ui/glass` + 冒烟页（P0 遗留，P6 删除冒烟页后清零） |
 | U4 | 间距/圆角/尺寸**只**来自 `ui/theme/Tokens.kt` | 无裸 `xx.dp` 的硬性数值（允许 0/1dp 与描边） | 🟡 已存在 `Spacing/Radius/IconSize`，但新代码（桌面/同步/分组）仍有裸 dp |
 

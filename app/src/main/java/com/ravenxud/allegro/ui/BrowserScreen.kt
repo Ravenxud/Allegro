@@ -22,6 +22,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,6 +50,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -373,12 +376,24 @@ fun BrowserScreen(
                 label = "bottomBar",
             )
             Surface(
-                color = barColor,
+                // 透明底 + 渐变 scrim：网页可见时底栏不再是一块死色，同时保证图标可读
+                color = Color.Transparent,
                 modifier = Modifier.graphicsLayer {
                     alpha = chromeAlpha * (1f - tabsProgress)
                     translationY = 32.dp.toPx() * (tabsProgress + (1f - chromeAlpha))
                 },
             ) {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .background(
+                            androidx.compose.ui.graphics.Brush.verticalGradient(
+                                0f to barColor.copy(alpha = 0.55f),
+                                0.45f to barColor.copy(alpha = 0.92f),
+                                1f to barColor,
+                            ),
+                        ),
+                ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -434,6 +449,7 @@ fun BrowserScreen(
                     ToolbarButton(MiuixIcons.More, stringResource(R.string.app_menu)) {
                         showAppMenu = true
                     }
+                }
                 }
             }
         },
