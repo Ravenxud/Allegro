@@ -90,6 +90,7 @@ import com.ravenxud.allegro.ui.screens.WebDavScreen
 import com.ravenxud.allegro.ui.screens.ReaderScreen
 import com.ravenxud.allegro.ui.screens.SettingsScreen
 import com.ravenxud.allegro.ui.screens.UserScriptsScreen
+import com.kyant.backdrop.backdrops.layerBackdrop
 import com.ravenxud.allegro.ui.theme.Motion
 import com.ravenxud.allegro.ui.theme.resolveDark
 import kotlinx.coroutines.flow.first
@@ -155,6 +156,14 @@ fun BrowserScreen(
     var screen by remember { mutableStateOf(SecondaryScreen.BROWSER) }
     var lastMenu by remember { mutableStateOf<MenuRequest?>(null) }
     var moveTabId by remember { mutableStateOf<String?>(null) }
+
+    // 首页是纯 Compose，可以被真正捕获并模糊；网页是 WebView，抓不到 → 只在首页给菜单玻璃
+    val homeSurface = MiuixTheme.colorScheme.surface
+    val homeLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
+    val homeBackdrop = com.kyant.backdrop.backdrops.rememberLayerBackdrop(homeLayer) {
+        drawRect(homeSurface)
+        drawContent()
+    }
     var readerHtml by remember { mutableStateOf<String?>(null) }
     var readerTitle by remember { mutableStateOf("") }
     val readAloud = remember { com.ravenxud.allegro.reader.ReadAloudController(context) }
@@ -486,12 +495,18 @@ fun BrowserScreen(
                 enter = fadeIn(Motion.enter()) + slideInVertically(Motion.slide()) { it / 24 },
                 exit = fadeOut(Motion.exit()),
             ) {
-                HomeScreen(
-                    controller = controller,
-                    searchEngine = searchEngine,
-                    bookmarks = bookmarks,
-                    showBookmarks = showHomeBookmarks,
-                )
+                androidx.compose.foundation.layout.Box(
+                    Modifier
+                        .fillMaxSize()
+                        .layerBackdrop(homeBackdrop),
+                ) {
+                    HomeScreen(
+                        controller = controller,
+                        searchEngine = searchEngine,
+                        bookmarks = bookmarks,
+                        showBookmarks = showHomeBookmarks,
+                    )
+                }
             }
 
             AnimatedVisibility(
@@ -504,6 +519,7 @@ fun BrowserScreen(
                         visibleState = contextMenuState,
                         request = request,
                         controller = controller,
+                        backdrop = if (isHome) homeBackdrop else null,
                         onDismiss = { controller.dismissMenu() },
                     )
                 }
@@ -617,6 +633,7 @@ fun BrowserScreen(
                         showAppMenu = false
                         screen = SecondaryScreen.GROUPS
                     },
+                    backdrop = if (isHome) homeBackdrop else null,
                     desktopSite = controller.isDesktopForCurrentSite(),
                     onToggleDesktopSite = { controller.toggleDesktopForCurrentSite() },
                     adBlockPaused = controller.isAdBlockPausedForCurrentSite(),

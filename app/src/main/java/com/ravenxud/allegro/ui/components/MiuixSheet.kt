@@ -41,6 +41,7 @@ import com.ravenxud.allegro.ui.theme.Motion
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
+import com.ravenxud.allegro.ui.glass.appGlass
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -53,6 +54,8 @@ fun MiuixSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     title: String? = null,
+    /** 背景捕获层；为 null 时面板保持不透明（背后抓不到内容就别做假玻璃）。 */
+    backdrop: com.kyant.backdrop.Backdrop? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Box(modifier.fillMaxSize()) {
@@ -75,9 +78,23 @@ fun MiuixSheet(
             enter = slideInVertically(Motion.slide(Motion.Duration.Emphasized)) { it },
             exit = slideOutVertically(Motion.slide()) { it },
         ) {
+            val panelShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
             Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (backdrop != null) {
+                            // 真玻璃：模糊背后的 Compose 内容（首页/列表），而不是调 alpha 出重影
+                            Modifier.appGlass(
+                                backdrop = backdrop,
+                                shape = panelShape,
+                                spec = com.ravenxud.allegro.ui.glass.GlassSpec(blur = 26.dp),
+                            )
+                        } else {
+                            Modifier
+                        },
+                    ),
+                shape = panelShape,
                 // 不用半透明：背后多半是 WebView（抓不到、无法模糊），透出来只有文字重影。
                 // 真玻璃要等「网页区域快照模糊」（P5）；在那之前保持不透明 + 高光更干净。
                 color = MiuixTheme.colorScheme.surface,
@@ -133,13 +150,21 @@ fun MiuixSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     title: String? = null,
+    backdrop: com.kyant.backdrop.Backdrop? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val state = androidx.compose.runtime.remember {
         androidx.compose.animation.core.MutableTransitionState(false)
     }
     state.targetState = visible
-    MiuixSheet(state = state, onDismiss = onDismiss, modifier = modifier, title = title, content = content)
+    MiuixSheet(
+        state = state,
+        onDismiss = onDismiss,
+        modifier = modifier,
+        title = title,
+        backdrop = backdrop,
+        content = content,
+    )
 }
 
 @Composable

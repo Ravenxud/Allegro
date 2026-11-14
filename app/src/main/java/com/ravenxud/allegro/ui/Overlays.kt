@@ -73,8 +73,14 @@ fun ContextMenu(
     request: MenuRequest,
     controller: BrowserController,
     onDismiss: () -> Unit,
+    backdrop: com.kyant.backdrop.Backdrop? = null,
 ) {
-    MiuixSheet(state = visibleState, onDismiss = onDismiss, title = request.url) {
+    MiuixSheet(
+        state = visibleState,
+        onDismiss = onDismiss,
+        title = request.url,
+        backdrop = backdrop,
+    ) {
         val context = request.toActionContext(controller)
         ActionRegistry.forGroup(request.toGroup(), context).forEach { action ->
             SheetRow(
@@ -110,13 +116,14 @@ fun AppMenu(
     onPickElement: () -> Unit,
     onSiteSettings: () -> Unit,
     onTabGroups: () -> Unit,
+    backdrop: com.kyant.backdrop.Backdrop? = null,
     desktopSite: Boolean,
     onToggleDesktopSite: () -> Unit,
     adBlockPaused: Boolean,
     onToggleAdBlockSite: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    MiuixSheet(state = visibleState, onDismiss = onDismiss) {
+    MiuixSheet(state = visibleState, onDismiss = onDismiss, backdrop = backdrop) {
         SheetSection(stringResource(R.string.sheet_section_page))
         SheetRow(MiuixIcons.Search, stringResource(R.string.menu_reader), onClick = onReader)
         SheetRow(MiuixIcons.Play, stringResource(R.string.menu_read_aloud), onClick = onReadAloud)

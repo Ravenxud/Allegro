@@ -36,8 +36,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 /**
  * 二级页面统一外壳：MIUIX SmallTopAppBar + 返回 + 可选操作。
  *
- * 0.34 起顶栏是**玻璃**：页面内容被 `layerBackdrop` 捕获，顶栏用 `appGlass` 读取并模糊。
- * 第一帧捕获层还没画完，顶栏先用实色，避免闪一下透明。
+ * 注意（0.34.2 结论）：这里**不做玻璃**。`Scaffold` 的 `topBar` 不覆盖内容，
+ * 栏的后面什么都没有，`layerBackdrop` 捕获到的是空白 —— 模糊一块空白等于没效果。
+ * 真玻璃需要"内容穿透到栏下"（页面列表改用 contentPadding 留出首项空间），属结构改造。
  */
 @Composable
 fun ScreenScaffold(
@@ -46,29 +47,10 @@ fun ScreenScaffold(
     actions: @Composable RowScope.() -> Unit = {},
     content: @Composable (Modifier) -> Unit,
 ) {
-    val surface = MiuixTheme.colorScheme.surface
-    val graphicsLayer = rememberGraphicsLayer()
-    val backdrop = rememberLayerBackdrop(graphicsLayer) {
-        drawRect(surface)
-        drawContent()
-    }
-    var captureReady by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { captureReady = true }
-
     Scaffold(
         topBar = {
-            val barShape = RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)
             SmallTopAppBar(
                 title = title,
-                modifier = if (captureReady) {
-                    Modifier.appGlass(
-                        backdrop = backdrop,
-                        shape = barShape,
-                        spec = GlassSpec(blur = 20.dp),
-                    )
-                } else {
-                    Modifier.background(surface)
-                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(MiuixIcons.Back, stringResource(R.string.cd_back))
@@ -78,15 +60,7 @@ fun ScreenScaffold(
             )
         },
     ) { padding ->
-        // 被捕获的内容层：顶栏玻璃读取它做模糊
-        Box(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .layerBackdrop(backdrop),
-        ) {
-            content(Modifier.fillMaxSize())
-        }
+        content(Modifier.padding(padding))
     }
 }
 
