@@ -78,8 +78,14 @@ fun ScreenScaffold(
         return
     }
 
-    // Luna 形态：内容从屏幕顶部开始（穿透到栏下），顶部只浮一条 56dp 的栏
-    Box(Modifier.fillMaxSize()) {
+    // Luna 形态：内容从屏幕顶部开始（穿透到栏下），顶部只浮一条 56dp 的栏。
+    // 注意：这里必须自己铺一层不透明底色 —— 二级页是叠在首页之上的浮层，
+    // 少了这层就会透出下层（0.44 的回归 bug）。
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(MiuixTheme.colorScheme.background),
+    ) {
         content(
             Modifier
                 .fillMaxSize()
