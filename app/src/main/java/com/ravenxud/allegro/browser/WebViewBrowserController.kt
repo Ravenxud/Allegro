@@ -1177,6 +1177,34 @@ class WebViewBrowserController(
         }
     }
 
+    private var lastFrostAt = 0L
+    private var frostInFlight = false
+
+    override fun captureBarFrost(rect: android.graphics.Rect, onCaptured: (Bitmap?) -> Unit) {
+        val now = android.os.SystemClock.uptimeMillis()
+        if (frostInFlight || now - lastFrostAt < 90L) return
+        lastFrostAt = now
+        frostInFlight = true
+        val activity = context as? android.app.Activity
+        val window = activity?.window
+        val decor = window?.decorView
+        if (window == null || decor == null || decor.width <= 0) {
+            frostInFlight = false
+            return
+        }
+        val src = android.graphics.Rect(rect)
+        src.intersect(0, 0, decor.width, decor.height)
+        if (src.isEmpty) {
+            frostInFlight = false
+            return
+        }
+        requestCopy(window, src) { bitmap ->
+            frostInFlight = false
+            // 预模糊：底栏只要一小条，480 宽足够，交给 Compose 再放大
+            onCaptured(bitmap?.let { blurForSheet(it) })
+        }
+    }
+
     private fun requestCopy(
         window: android.view.Window,
         rect: android.graphics.Rect,

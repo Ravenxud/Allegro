@@ -60,6 +60,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.runtime.State
@@ -545,6 +550,30 @@ fun BrowserScreen(
                         animationSpec = Motion.color(),
                         label = "bottomBar",
                     )
+                    var barBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+                    var frost by remember { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+                    // WebView 现在铺到底栏下面：抓「底栏正上方一条」预模糊，当磨砂底
+                    LaunchedEffect(overlayActive, chromeAlpha, tab?.url) {
+                        while (true) {
+                            val b = barBounds
+                            val usable = !overlayActive && chromeAlpha > 0.05f && b != null &&
+                                b.height > 1f && tab?.url != "about:blank"
+                            if (usable && b != null) {
+                                val strip = android.graphics.Rect(
+                                    b.left.toInt(),
+                                    (b.top - b.height).toInt().coerceAtLeast(0),
+                                    b.right.toInt(),
+                                    b.top.toInt(),
+                                )
+                                controller.captureBarFrost(strip) { bitmap ->
+                                    frost = bitmap?.asImageBitmap()
+                                }
+                            } else if (frost != null) {
+                                frost = null
+                            }
+                            kotlinx.coroutines.delay(260)
+                        }
+                    }
                     Surface(
                         color = Color.Transparent,
                         modifier = Modifier.graphicsLayer {
@@ -552,131 +581,140 @@ fun BrowserScreen(
                             translationY = 32.dp.toPx() * (tabsProgress + (1f - chromeAlpha))
                         },
                     ) {
-                        Column(
-                            Modifier
-                                .fillMaxWidth()
-                                // 磨砂：竖向渐变 + 顶部发丝线，网页从下面透出来一点点
-                                .background(
-                                    androidx.compose.ui.graphics.Brush.verticalGradient(
-                                        0f to barColor.copy(alpha = 0.72f),
-                                        0.45f to barColor.copy(alpha = 0.90f),
-                                        1f to barColor,
-                                    ),
+                        androidx.compose.foundation.layout.Box {
+                            frost?.let { bmp ->
+                                Image(
+                                    bitmap = bmp,
+                                    contentDescription = null,
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                    modifier = Modifier.matchParentSize().blur(14.dp),
                                 )
-                                .imePadding()
-                                .navigationBarsPadding(),
-                        ) {
-                            Box(
+                            }
+                            Column(
                                 Modifier
                                     .fillMaxWidth()
-                                    .height(1.dp)
-                                    .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.07f)),
-                            )
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    // 横向滑动切标签保留
-                                    .pointerInput(Unit) {
-                                        var accumulated = 0f
-                                        detectHorizontalDragGestures(
-                                            onDragStart = { accumulated = 0f },
-                                            onHorizontalDrag = { change, amount ->
-                                                change.consume()
-                                                accumulated += amount
-                                                val threshold = 72.dp.toPx()
-                                                if (kotlin.math.abs(accumulated) > threshold) {
-                                                    controller.switchTab(if (accumulated > 0) -1 else 1)
-                                                    accumulated = 0f
-                                                }
-                                            },
-                                        )
-                                    }
-                                    .padding(start = 10.dp, end = 6.dp, top = 8.dp, bottom = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
+                                    .onGloballyPositioned { barBounds = it.boundsInWindow() }
+                                    // 磨砂：半透明渐变压在网页快照上，底部几乎不透明保证可读
+                                    .background(
+                                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                                            0f to barColor.copy(alpha = 0.62f),
+                                            0.45f to barColor.copy(alpha = 0.84f),
+                                            1f to barColor.copy(alpha = 0.96f),
+                                        ),
+                                    )
+                                    .imePadding()
+                                    .navigationBarsPadding(),
                             ) {
-                                TextField(
-                                    value = field,
-                                    onValueChange = { field = it },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(48.dp)
-                                        .onFocusChanged { focused = it.isFocused },
-                                    singleLine = true,
-                                    label = stringResource(R.string.address_hint),
-                                    useLabelAsPlaceholder = true,
-                                    cornerRadius = 24.dp,
-                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-                                    keyboardActions = KeyboardActions(onGo = { submit() }),
-                                    trailingIcon = {
-                                        IconButton(onClick = {
-                                            val clip = (context.getSystemService(Context.CLIPBOARD_SERVICE)
-                                                as android.content.ClipboardManager).primaryClip
-                                            val text = clip?.takeIf { it.itemCount > 0 }
-                                                ?.getItemAt(0)?.text?.toString().orEmpty()
-                                            if (text.isBlank()) {
-                                                Toast.makeText(context, R.string.paste_empty, Toast.LENGTH_SHORT).show()
-                                            } else {
-                                                field = TextFieldValue(text, TextRange(text.length))
-                                                submit()
-                                            }
-                                        }) {
-                                            Icon(AllegroIcons.Paste, stringResource(R.string.cd_paste_search))
-                                        }
-                                    },
+                                Box(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(1.dp)
+                                        .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.07f)),
                                 )
-                                // 只留后退：前进删掉（Luna 也只有一个方向键）
-                                IconButton(
-                                    onClick = {
-                                        if (tab?.canGoBack == true) {
-                                            controller.goBack()
-                                        } else {
-                                            pageToast = "已经是第一页"
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .pointerInput(Unit) {
+                                            var accumulated = 0f
+                                            detectHorizontalDragGestures(
+                                                onDragStart = { accumulated = 0f },
+                                                onHorizontalDrag = { change, amount ->
+                                                    change.consume()
+                                                    accumulated += amount
+                                                    val threshold = 72.dp.toPx()
+                                                    if (kotlin.math.abs(accumulated) > threshold) {
+                                                        controller.switchTab(if (accumulated > 0) -1 else 1)
+                                                        accumulated = 0f
+                                                    }
+                                                },
+                                            )
                                         }
-                                    },
-                                    modifier = Modifier.size(44.dp),
+                                        .padding(start = 10.dp, end = 6.dp, top = 8.dp, bottom = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    Icon(AllegroIcons.Back, stringResource(R.string.cd_back))
-                                }
-                                if (!layout.isLarge) {
-                                    TabCountButton(count = state.tabs.size) {
-                                        controller.refreshPreview()
-                                        if (lowRam) {
-                                            tabsStub = null
-                                            tabsMounted = true
-                                            showTabs = true
-                                        } else {
-                                            controller.captureStub { bitmap ->
-                                                tabsStub = bitmap
+                                    TextField(
+                                        value = field,
+                                        onValueChange = { field = it },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(48.dp)
+                                            .onFocusChanged { focused = it.isFocused },
+                                        singleLine = true,
+                                        label = stringResource(R.string.address_hint),
+                                        useLabelAsPlaceholder = true,
+                                        cornerRadius = 24.dp,
+                                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                                        keyboardActions = KeyboardActions(onGo = { submit() }),
+                                        trailingIcon = {
+                                            IconButton(onClick = {
+                                                val clip = (context.getSystemService(Context.CLIPBOARD_SERVICE)
+                                                    as android.content.ClipboardManager).primaryClip
+                                                val text = clip?.takeIf { it.itemCount > 0 }
+                                                    ?.getItemAt(0)?.text?.toString().orEmpty()
+                                                if (text.isBlank()) {
+                                                    Toast.makeText(context, R.string.paste_empty, Toast.LENGTH_SHORT).show()
+                                                } else {
+                                                    field = TextFieldValue(text, TextRange(text.length))
+                                                    submit()
+                                                }
+                                            }) {
+                                                Icon(AllegroIcons.Paste, stringResource(R.string.cd_paste_search))
+                                            }
+                                        },
+                                    )
+                                    IconButton(
+                                        onClick = {
+                                            if (tab?.canGoBack == true) {
+                                                controller.goBack()
+                                            } else {
+                                                pageToast = "已经是第一页"
+                                            }
+                                        },
+                                        modifier = Modifier.size(44.dp),
+                                    ) {
+                                        Icon(AllegroIcons.Back, stringResource(R.string.cd_back))
+                                    }
+                                    if (!layout.isLarge) {
+                                        TabCountButton(count = state.tabs.size) {
+                                            controller.refreshPreview()
+                                            if (lowRam) {
+                                                tabsStub = null
                                                 tabsMounted = true
                                                 showTabs = true
+                                            } else {
+                                                controller.captureStub { bitmap ->
+                                                    tabsStub = bitmap
+                                                    tabsMounted = true
+                                                    showTabs = true
+                                                }
                                             }
                                         }
                                     }
+                                    IconButton(
+                                        onClick = {
+                                            if (tab == null || tab.url == "about:blank") {
+                                                showAppMenu = true
+                                            } else {
+                                                controller.captureForSheet { showAppMenu = true }
+                                            }
+                                        },
+                                        modifier = Modifier.size(44.dp),
+                                    ) {
+                                        Icon(AllegroIcons.More, stringResource(R.string.app_menu))
+                                    }
                                 }
-                                IconButton(
-                                    onClick = {
-                                        if (tab == null || tab.url == "about:blank") {
-                                            showAppMenu = true
-                                        } else {
-                                            controller.captureForSheet { showAppMenu = true }
-                                        }
-                                    },
-                                    modifier = Modifier.size(44.dp),
-                                ) {
-                                    Icon(AllegroIcons.More, stringResource(R.string.app_menu))
+                                if (tab?.isLoading == true) {
+                                    LinearProgressIndicator(
+                                        progress = (tab?.progress ?: 0) / 100f,
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
                                 }
-                            }
-                            if (tab?.isLoading == true) {
-                                LinearProgressIndicator(
-                                    progress = (tab?.progress ?: 0) / 100f,
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
                             }
                         }
                     }
                 },
             ) { innerPadding ->
-                Box(Modifier.padding(innerPadding).fillMaxSize()) {
+                Box(Modifier.fillMaxSize()) {
                     val swipe = remember { mutableStateOf<PullRefreshLayout?>(null) }
                     AndroidView(
                         factory = { ctx ->

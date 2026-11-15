@@ -37,6 +37,12 @@ interface BrowserController {
      */
     fun captureForSheet(onReady: ((android.graphics.Bitmap?) -> Unit)? = null)
 
+    /**
+     * 底栏磨砂底图：抓取窗口坐标 [rect]（底栏正上方一条），预模糊后回主线程。
+     * 内部节流（约 11fps），重复调用不会堆积。
+     */
+    fun captureBarFrost(rect: android.graphics.Rect, onCaptured: (android.graphics.Bitmap?) -> Unit)
+
     /** 面板是否可见：滚动时据此节流刷新玻璃底图。 */
     fun setSheetVisible(visible: Boolean)
 
