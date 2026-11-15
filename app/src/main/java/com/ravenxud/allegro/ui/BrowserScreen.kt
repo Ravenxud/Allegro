@@ -887,16 +887,22 @@ fun BrowserScreen(
                         if (tab?.isLoading == false) swipe.value?.isRefreshing = false
                     }
         
-                    // 二级页盖上来时不再组合首页内容：首页有壁纸 + 多张玻璃卡，
-                    // 转场期间每帧重绘它是"进二级页卡顿"的主要来源（早于玻璃就存在）。
+                    // 注意：二级页期间**不能**把首页移出组合 —— 首页的 backdrop 图层是靠绘制录制的，
+                    // 不组合就等于图层失效，返回时玻璃会采到空/旧内容（0.80.6 的 bug）。
+                    // 正确做法：保持组合，只跳过绘制。
                     AnimatedVisibility(
-                        visible = isHome && !secondaryVisible,
+                        visible = isHome,
                         enter = fadeIn(Motion.enter()) + slideInVertically(Motion.slide()) { it / 24 },
                         exit = fadeOut(Motion.exit()),
                     ) {
+                        // 二级页期间保持「组合但跳过绘制」：图层不被重录（省掉转场每帧的首页重绘），
+                        // 又不销毁首页状态，返回时玻璃能正常采样。
+                        val homeDraw = remember { mutableStateOf(true) }
+                        LaunchedEffect(secondaryVisible) { homeDraw.value = !secondaryVisible }
                         androidx.compose.foundation.layout.Box(
                             Modifier
                                 .fillMaxSize()
+                                .drawWithContent { if (homeDraw.value) drawContent() }
                                 .layerBackdrop(homeBackdrop),
                         ) {
                             HomeScreen(
