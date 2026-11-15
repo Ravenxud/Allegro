@@ -155,6 +155,10 @@ fun BrowserScreen(
     var focused by remember { mutableStateOf(false) }
     var showTabs by remember { mutableStateOf(false) }
     var tabsMounted by remember { mutableStateOf(false) }
+    // 最近关闭：打开标签面板时读取一次
+    var recentClosed by remember {
+        mutableStateOf<List<com.ravenxud.allegro.data.entity.ClosedTabEntity>>(emptyList())
+    }
     var tabsStub by remember { mutableStateOf<Bitmap?>(null) }
     var showAppMenu by remember { mutableStateOf(false) }
     var screen by remember { mutableStateOf(SecondaryScreen.BROWSER) }
@@ -300,6 +304,12 @@ fun BrowserScreen(
     val overlayActive = isHome
 
     // 面板可见时，网页滚动会节流重抓玻璃底图（否则模糊不跟随滚动）
+    LaunchedEffect(showTabs) {
+        if (showTabs) {
+            recentClosed = runCatching { controller.recentClosed(5) }.getOrDefault(emptyList())
+        }
+    }
+
     // 启动时把已保存的缩放套到所有 WebView
     LaunchedEffect(Unit) {
         controller.applyTextZoom(settings.textZoom.value)
@@ -731,6 +741,11 @@ fun BrowserScreen(
         onNew = { controller.openTab("about:blank"); showTabs = false },
         onNewIncognito = { controller.openTab("about:blank", incognito = true); showTabs = false },
         onReopen = { controller.restoreLastClosed(); showTabs = false },
+        recentClosed = recentClosed,
+        onRestoreClosed = { entity ->
+            controller.openTab(entity.url)
+            showTabs = false
+        },
         onDismiss = { showTabs = false },
         onDismissed = {
             tabsMounted = false

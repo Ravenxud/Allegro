@@ -84,6 +84,7 @@ import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Sort
+import top.yukonga.miuix.kmp.icon.extended.Recent
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Close
@@ -124,6 +125,8 @@ fun TabSwitcherOverlay(
     onNew: () -> Unit,
     onNewIncognito: () -> Unit,
     onReopen: () -> Unit,
+    recentClosed: List<com.ravenxud.allegro.data.entity.ClosedTabEntity> = emptyList(),
+    onRestoreClosed: (com.ravenxud.allegro.data.entity.ClosedTabEntity) -> Unit = {},
     onDismiss: () -> Unit,
     onDismissed: () -> Unit,
     onCloseOthers: (String) -> Unit,
@@ -266,11 +269,13 @@ fun TabSwitcherOverlay(
                 onMenuDismiss = { menuTab = null },
                 onMenuCloseOthers = { menuTab?.let { onCloseOthers(it.id) }; menuTab = null },
                 onMenuMoveToGroup = { menuTab?.let { onMoveToGroup(it.id) }; menuTab = null },
-                onMenuCopyLink = { menuTab?.let { onCopyLink(it.url) }; menuTab = null },
+                onMenuCopyLink = { keepOpen -> menuTab?.let { onCopyLink(it.url) }; if (!keepOpen) menuTab = null },
                 onMenuClose = { menuTab?.let { onClose(it.id) }; menuTab = null },
                 onNew = onNew,
                 onNewIncognito = onNewIncognito,
                 onReopen = onReopen,
+                recentClosed = recentClosed,
+                onRestoreClosed = onRestoreClosed,
                 onDismiss = onDismiss,
                 onLongPress = { menuTab = it },
             )
@@ -359,7 +364,7 @@ private fun TabGrid(
     onMenuDismiss: () -> Unit,
     onMenuCloseOthers: () -> Unit,
     onMenuMoveToGroup: () -> Unit,
-    onMenuCopyLink: () -> Unit,
+    onMenuCopyLink: (Boolean) -> Unit,
     onMenuClose: () -> Unit,
     onMove: (Int, Int) -> Unit,
     onSelect: (String) -> Unit,
@@ -367,9 +372,12 @@ private fun TabGrid(
     onNew: () -> Unit,
     onNewIncognito: () -> Unit,
     onReopen: () -> Unit,
+    recentClosed: List<com.ravenxud.allegro.data.entity.ClosedTabEntity> = emptyList(),
+    onRestoreClosed: (com.ravenxud.allegro.data.entity.ClosedTabEntity) -> Unit = {},
     onDismiss: () -> Unit,
     onLongPress: (TabState) -> Unit,
 ) {
+    var showRecent by remember { mutableStateOf(false) }
     var dragId by remember { mutableStateOf<String?>(null) }
     var dragOffset by remember { mutableStateOf(Offset.Zero) }
     val spacingPx = with(LocalDensity.current) { 8.dp.toPx() }
@@ -384,6 +392,12 @@ private fun TabGrid(
                 Text(stringResource(R.string.tabs_title, state.tabs.size), fontSize = 20.sp)
                 Spacer(Modifier.weight(1f))
                 // 排序：点击循环 时间 → 标题 → 网站（非「按打开时间」时禁用拖拽重排）
+                com.ravenxud.allegro.ui.components.PillButton(
+                    label = "最近关闭",
+                    onClick = { showRecent = true },
+                    icon = MiuixIcons.Recent,
+                )
+                Spacer(Modifier.width(8.dp))
                 com.ravenxud.allegro.ui.components.PillButton(
                     label = sort.label,
                     onClick = onCycleSort,
@@ -495,6 +509,27 @@ private fun TabGrid(
                     )
                 }
             }
+
+            // 最近关闭：独立面板（列表形式，点一条即在新标签打开）
+            MiuixSheet(visible = showRecent, onDismiss = { showRecent = false }, title = "最近关闭的标签页") {
+                if (recentClosed.isEmpty()) {
+                    Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
+                        Text("没有最近关闭的标签", color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
+                    }
+                } else {
+                    recentClosed.forEach { entity ->
+                        SheetRow(
+                            icon = MiuixIcons.Recent,
+                            title = entity.title.ifBlank { entity.url },
+                            value = runCatching { java.net.URI(entity.url).host }.getOrNull(),
+                            onClick = {
+                                onRestoreClosed(entity)
+                                showRecent = false
+                            },
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -508,7 +543,7 @@ private fun TabCard(
     onMenuDismiss: () -> Unit,
     onMenuCloseOthers: () -> Unit,
     onMenuMoveToGroup: () -> Unit,
-    onMenuCopyLink: () -> Unit,
+    onMenuCopyLink: (Boolean) -> Unit,
     onMenuClose: () -> Unit,
     tab: TabState,
     active: Boolean,
@@ -685,10 +720,23 @@ private fun TabCard(
                 label = stringResource(R.string.move_to_group),
                 onClick = onMenuMoveToGroup,
             )
+            // C3：复制后图标短暂变 ✓（菜单不关闭）
+            var copied by remember(menuOpen) { mutableStateOf(false) }
+            LaunchedEffect(copied) {
+                if (copied) {
+                    kotlinx.coroutines.delay(600)
+                    copied = false
+                }
+            }
             com.ravenxud.allegro.ui.components.MenuActionRow(
-                icon = MiuixIcons.Copy,
-                label = stringResource(R.string.tabs_copy_link),
-                onClick = onMenuCopyLink,
+                icon = if (copied) MiuixIcons.Ok else MiuixIcons.Copy,
+                label = if (copied) "已复制" else stringResource(R.string.tabs_copy_link),
+                onClick = {
+                    if (!copied) {
+                        onMenuCopyLink(true)
+                        copied = true
+                    }
+                },
             )
             com.ravenxud.allegro.ui.components.MenuActionRow(
                 icon = MiuixIcons.Delete,
