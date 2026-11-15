@@ -1230,9 +1230,13 @@ class WebViewBrowserController(
     override fun applyTextZoom(percent: Int) {
         val pct = percent.coerceIn(80, 140)
         textZoomPercent = pct
+        var applied = 0
         _state.value.tabs.forEach { tab ->
-            pool.peek(tab.id)?.settings?.textZoom = pct
+            val view = pool.peek(tab.id) ?: return@forEach
+            view.settings.textZoom = pct
+            applied++
         }
+        com.ravenxud.allegro.util.DiagLog.log("text-zoom", "pct=$pct views=$applied")
     }
 
     override fun onContentScrolled(view: TabWebView, scrollY: Int) {

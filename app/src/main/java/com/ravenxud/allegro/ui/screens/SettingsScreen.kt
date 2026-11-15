@@ -95,8 +95,10 @@ fun SettingsScreen(
         title = stringResource(R.string.screen_settings),
         onBack = onBack,
     ) { inner ->
+        // 对话框必须放在滚动容器之外：放在 verticalScroll 里会被裁剪、定位也会错
+        androidx.compose.foundation.layout.Box(inner.fillMaxSize()) {
         Column(
-            modifier = inner
+            modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 12.dp),
@@ -341,16 +343,17 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_version, version),
                 )
             }
-            com.ravenxud.allegro.ui.components.vendor.PercentInputDialog(
-                show = showZoomDialog,
-                title = "页面缩放",
-                onDismissRequest = { showZoomDialog = false },
-                value = { textZoom / 100f },
-                onValueChange = { onTextZoomChange((it * 100).toInt()) },
-                range = 80..140,
-            )
-
             Column(Modifier.padding(bottom = 24.dp)) {}
+        }
+
+        com.ravenxud.allegro.ui.components.vendor.PercentInputDialog(
+            show = showZoomDialog,
+            title = "页面缩放",
+            onDismissRequest = { showZoomDialog = false },
+            value = { textZoom / 100f },
+            onValueChange = { onTextZoomChange((it * 100).toInt()) },
+            range = 80..140,
+        )
         }
     }
 }
