@@ -693,8 +693,9 @@ fun BrowserScreen(
                                                                 top = inset,
                                                                 right = size.width - inset,
                                                                 bottom = size.height - inset,
-                                                                radiusX = (size.height - inset * 2) / 2f,
-                                                                radiusY = (size.height - inset * 2) / 2f,
+                                                                // 胶囊圆角是 22dp；按"高度的一半"算会变成跑道形，和栏对不上
+                                                                radiusX = 22.dp.toPx() - inset,
+                                                                radiusY = 22.dp.toPx() - inset,
                                                             ),
                                                         )
                                                     }

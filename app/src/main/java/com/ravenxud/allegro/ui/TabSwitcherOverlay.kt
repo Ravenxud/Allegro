@@ -317,7 +317,7 @@ fun TabSwitcherOverlay(
                         translationY = rect.top
                         scaleX = rect.width / start.width.coerceAtLeast(1f)
                         scaleY = rect.height / start.height.coerceAtLeast(1f)
-                        alpha = 1f - ((e - 0.72f) / 0.28f).coerceIn(0f, 1f)
+                        alpha = 1f - ((e - 0.82f) / 0.18f).coerceIn(0f, 1f)
                         shadowElevation = 10.dp.toPx()
                         clip = true
                         // 圆角只在贴近卡片的那 30% 行程里收放，中途始终等于卡片圆角（Shapes.Tile = 20dp），
@@ -374,9 +374,9 @@ private fun gridCardRect(
     val pad = 12f * density
     val spacing = 8f * density
     val header = (56f + 12f) * density
-    val textArea = 26f * density
     val cardWidth = (width - pad * 2 - spacing) / 2f
-    val cardHeight = cardWidth / 0.72f + textArea
+    // 目标矩形只取「预览框」：标题在卡外，若把标题算进来，飞行图会盖住下面的标题
+    val cardHeight = cardWidth / 0.72f
     val row = index / 2
     val col = index % 2
     val left = pad + col * (cardWidth + spacing)
