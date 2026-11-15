@@ -1,3 +1,42 @@
+# 0.68.1-beta
+
+**紧急修复：0.68.0 启动即闪退。**
+
+## 原因
+
+```kotlin
+LaunchedEffect(screen) {
+    val route = SecondaryRoute(screen)   // ← 启动时 screen == BROWSER
+    ...
+}
+```
+
+`SecondaryRoute` 的 `init { require(screen != BROWSER) }` 直接抛 `IllegalArgumentException`
+→ 首帧就崩，所以表现为"打开应用即闪退"。
+
+**为什么编译期没暴露**：`require` 是运行时校验；参数在启动时恰好是非法值。
+
+## 改法
+
+1. 同步逻辑**先判断 `BROWSER`**，再构造 route（根页不再构造二级路由）
+2. 移除 `SecondaryRoute` 里的 `require` —— 一个构造点拿到非法值就崩溃的代价太大，
+   改为文档化约定 + 渲染侧对 `BROWSER` 走空分支
+
+## 教训（已记入流程）
+
+**不变量不要用 `require` 守在构造器里，除非所有调用点都在编译期可证合法。**
+更稳的做法是让非法状态"无副作用"（渲染空），而不是让进程崩掉。
+
+## 请验
+
+1. 应用能正常启动（不再闪退）
+2. 设置 → 开源许可 → 返回：回设置
+3. 二级页之间跳转：有库自带转场
+4. 二级页系统返回键、快速连点不穿透
+5. 退出二级页回网页正常
+
+---
+
 # 0.68.0-beta
 
 **A/2b1 落地：二级页容器换成 `NavDisplay`。**

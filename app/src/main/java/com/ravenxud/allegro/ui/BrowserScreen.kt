@@ -181,11 +181,14 @@ fun BrowserScreen(
     // 2b1：栈驱动容器。screen 仍是页面选择的事实源，单向、幂等地镜像到栈（栈底恒为 Root）
     val navStack = rememberBrowserStack()
     LaunchedEffect(screen) {
-        val route = SecondaryRoute(screen)
         if (screen == SecondaryScreen.BROWSER) {
+            // 回到浏览器：清掉所有二级页，只留栈底 Root
             while (navStack.size > 1) navStack.removeAt(navStack.lastIndex)
-        } else if (navStack.lastOrNull() != route) {
-            if (navStack.size > 1) navStack[navStack.lastIndex] = route else navStack.add(route)
+        } else {
+            val route = SecondaryRoute(screen)
+            if (navStack.lastOrNull() != route) {
+                if (navStack.size > 1) navStack[navStack.lastIndex] = route else navStack.add(route)
+            }
         }
     }
     // 2a：二级页之间的导航历史。从浏览器进入不记录；页内跳转记录来源，
