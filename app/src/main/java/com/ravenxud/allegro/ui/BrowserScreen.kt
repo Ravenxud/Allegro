@@ -39,6 +39,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -538,68 +539,6 @@ fun BrowserScreen(
                     scaleY = 1f - 0.06f * p
                     alpha = 1f - 0.25f * p
                 },
-                topBar = {
-                    Column(
-                        Modifier
-                            .fillMaxWidth()
-                            .statusBarsPadding()
-                            .graphicsLayer {
-                                alpha = chromeAlpha * (1f - tabsProgress)
-                                translationY = -32.dp.toPx() * (tabsProgress + (1f - chromeAlpha))
-                            },
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            TextField(
-                                value = field,
-                                onValueChange = { field = it },
-                                modifier = Modifier.weight(1f).onFocusChanged { focused = it.isFocused },
-                                singleLine = true,
-                                label = stringResource(R.string.address_hint),
-                                useLabelAsPlaceholder = true,
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-                                keyboardActions = KeyboardActions(onGo = { submit() }),
-                                trailingIcon = {
-                                    IconButton(onClick = {
-                                        val clip = (context.getSystemService(Context.CLIPBOARD_SERVICE)
-                                            as android.content.ClipboardManager).primaryClip
-                                        val text = clip?.takeIf { it.itemCount > 0 }
-                                            ?.getItemAt(0)?.text?.toString().orEmpty()
-                                        if (text.isBlank()) {
-                                            Toast.makeText(context, R.string.paste_empty, Toast.LENGTH_SHORT).show()
-                                        } else {
-                                            field = TextFieldValue(text, TextRange(text.length))
-                                            submit()
-                                        }
-                                    }) {
-                                        Icon(AllegroIcons.Paste, stringResource(R.string.cd_paste_search))
-                                    }
-                                },
-                            )
-                            // 之前加载中会变成 ✕，容易被当成"关闭标签页"；统一用刷新图标，
-                            // 加载中点击=停止加载（行为不变，语义变清楚）
-                            IconButton(onClick = {
-                                if (tab?.isLoading == true) controller.stopLoading() else controller.reload()
-                            }) {
-                                Icon(
-                                    imageVector = AllegroIcons.Refresh,
-                                    contentDescription = stringResource(
-                                        if (tab?.isLoading == true) R.string.cd_stop_loading else R.string.cd_refresh,
-                                    ),
-                                )
-                            }
-                        }
-                        if (tab?.isLoading == true) {
-                            LinearProgressIndicator(
-                                progress = (tab?.progress ?: 0) / 100f,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                        }
-                    }
-                },
                 bottomBar = {
                     val barColor by animateColorAsState(
                         targetValue = MiuixTheme.colorScheme.surface,
@@ -607,85 +546,132 @@ fun BrowserScreen(
                         label = "bottomBar",
                     )
                     Surface(
-                        // 透明底 + 渐变 scrim：网页可见时底栏不再是一块死色，同时保证图标可读
                         color = Color.Transparent,
                         modifier = Modifier.graphicsLayer {
                             alpha = chromeAlpha * (1f - tabsProgress)
                             translationY = 32.dp.toPx() * (tabsProgress + (1f - chromeAlpha))
                         },
                     ) {
-                        Box(
+                        Column(
                             Modifier
                                 .fillMaxWidth()
+                                // 磨砂：竖向渐变 + 顶部发丝线，网页从下面透出来一点点
                                 .background(
                                     androidx.compose.ui.graphics.Brush.verticalGradient(
-                                        0f to barColor.copy(alpha = 0.55f),
-                                        0.45f to barColor.copy(alpha = 0.92f),
+                                        0f to barColor.copy(alpha = 0.72f),
+                                        0.45f to barColor.copy(alpha = 0.90f),
                                         1f to barColor,
                                     ),
-                                ),
+                                )
+                                .imePadding()
+                                .navigationBarsPadding(),
                         ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .navigationBarsPadding()
-                                .height(56.dp)
-                                .pointerInput(Unit) {
-                                    var accumulated = 0f
-                                    detectHorizontalDragGestures(
-                                        onDragStart = { accumulated = 0f },
-                                        onHorizontalDrag = { change, amount ->
-                                            change.consume()
-                                            accumulated += amount
-                                            val threshold = 72.dp.toPx()
-                                            if (kotlin.math.abs(accumulated) > threshold) {
-                                                controller.switchTab(if (accumulated > 0) -1 else 1)
-                                                accumulated = 0f
+                            Box(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .height(1.dp)
+                                    .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.07f)),
+                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    // 横向滑动切标签保留
+                                    .pointerInput(Unit) {
+                                        var accumulated = 0f
+                                        detectHorizontalDragGestures(
+                                            onDragStart = { accumulated = 0f },
+                                            onHorizontalDrag = { change, amount ->
+                                                change.consume()
+                                                accumulated += amount
+                                                val threshold = 72.dp.toPx()
+                                                if (kotlin.math.abs(accumulated) > threshold) {
+                                                    controller.switchTab(if (accumulated > 0) -1 else 1)
+                                                    accumulated = 0f
+                                                }
+                                            },
+                                        )
+                                    }
+                                    .padding(start = 10.dp, end = 6.dp, top = 8.dp, bottom = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                TextField(
+                                    value = field,
+                                    onValueChange = { field = it },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(48.dp)
+                                        .onFocusChanged { focused = it.isFocused },
+                                    singleLine = true,
+                                    label = stringResource(R.string.address_hint),
+                                    useLabelAsPlaceholder = true,
+                                    cornerRadius = 24.dp,
+                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                                    keyboardActions = KeyboardActions(onGo = { submit() }),
+                                    trailingIcon = {
+                                        IconButton(onClick = {
+                                            val clip = (context.getSystemService(Context.CLIPBOARD_SERVICE)
+                                                as android.content.ClipboardManager).primaryClip
+                                            val text = clip?.takeIf { it.itemCount > 0 }
+                                                ?.getItemAt(0)?.text?.toString().orEmpty()
+                                            if (text.isBlank()) {
+                                                Toast.makeText(context, R.string.paste_empty, Toast.LENGTH_SHORT).show()
+                                            } else {
+                                                field = TextFieldValue(text, TextRange(text.length))
+                                                submit()
                                             }
-                                        },
-                                    )
-                                },
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            ToolbarButton(AllegroIcons.Back, stringResource(R.string.cd_back)) {
-                                if (tab?.canGoBack == true) {
-                                    controller.goBack()
-                                } else {
-                                    pageToast = "已经是第一页"
+                                        }) {
+                                            Icon(AllegroIcons.Paste, stringResource(R.string.cd_paste_search))
+                                        }
+                                    },
+                                )
+                                // 只留后退：前进删掉（Luna 也只有一个方向键）
+                                IconButton(
+                                    onClick = {
+                                        if (tab?.canGoBack == true) {
+                                            controller.goBack()
+                                        } else {
+                                            pageToast = "已经是第一页"
+                                        }
+                                    },
+                                    modifier = Modifier.size(44.dp),
+                                ) {
+                                    Icon(AllegroIcons.Back, stringResource(R.string.cd_back))
                                 }
-                            }
-                            ToolbarButton(AllegroIcons.Forward, stringResource(R.string.cd_forward)) {
-                                if (tab?.canGoForward == true) {
-                                    controller.goForward()
-                                } else {
-                                    pageToast = "没有可前进的页面"
-                                }
-                            }
-                            if (!layout.isLarge) TabCountButton(count = state.tabs.size) {
-                                controller.refreshPreview()
-                                if (lowRam) {
-                                    // 低端机不做截图，直接用占位块 + 短动画
-                                    tabsStub = null
-                                    tabsMounted = true
-                                    showTabs = true
-                                } else {
-                                    // 先截图再开面板：PixelCopy 异步返回后再上动画
-                                    controller.captureStub { bitmap ->
-                                        tabsStub = bitmap
-                                        tabsMounted = true
-                                        showTabs = true
+                                if (!layout.isLarge) {
+                                    TabCountButton(count = state.tabs.size) {
+                                        controller.refreshPreview()
+                                        if (lowRam) {
+                                            tabsStub = null
+                                            tabsMounted = true
+                                            showTabs = true
+                                        } else {
+                                            controller.captureStub { bitmap ->
+                                                tabsStub = bitmap
+                                                tabsMounted = true
+                                                showTabs = true
+                                            }
+                                        }
                                     }
                                 }
-                            }
-                            ToolbarButton(AllegroIcons.More, stringResource(R.string.app_menu)) {
-                                if (tab == null || tab.url == "about:blank") {
-                                    showAppMenu = true
-                                } else {
-                                    // 每次打开都现场抓：缓存快照会因滚动/换页而过期，显示成"无关模糊"
-                                    controller.captureForSheet { showAppMenu = true }
+                                IconButton(
+                                    onClick = {
+                                        if (tab == null || tab.url == "about:blank") {
+                                            showAppMenu = true
+                                        } else {
+                                            controller.captureForSheet { showAppMenu = true }
+                                        }
+                                    },
+                                    modifier = Modifier.size(44.dp),
+                                ) {
+                                    Icon(AllegroIcons.More, stringResource(R.string.app_menu))
                                 }
                             }
-                        }
+                            if (tab?.isLoading == true) {
+                                LinearProgressIndicator(
+                                    progress = (tab?.progress ?: 0) / 100f,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
                         }
                     }
                 },
@@ -712,6 +698,7 @@ fun BrowserScreen(
                         update = { view -> view.visibility = if (overlayActive) View.GONE else View.VISIBLE },
                         modifier = Modifier
                             .fillMaxSize()
+                            .statusBarsPadding()
                             .graphicsLayer {
                                 // A1/A2：二级页打开时背景轻微后缩（1 → 0.94），返回时回弹
                                 val p = secondaryProgress.value
@@ -964,10 +951,10 @@ private fun androidx.compose.foundation.layout.RowScope.TabCountButton(
     onClick: () -> Unit,
 ) {
     Box(
-        modifier = Modifier.weight(1f).fillMaxHeight(),
+        modifier = Modifier.size(44.dp),
         contentAlignment = Alignment.Center,
     ) {
-        IconButton(onClick = onClick, modifier = Modifier.size(48.dp)) {
+        IconButton(onClick = onClick, modifier = Modifier.size(40.dp)) {
             Box(
                 modifier = Modifier
                     .size(22.dp)
