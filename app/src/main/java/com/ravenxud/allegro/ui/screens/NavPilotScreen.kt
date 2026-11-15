@@ -42,8 +42,10 @@ fun NavPilotScreen(onBack: () -> Unit) {
     val backStack = remember { androidx.compose.runtime.mutableStateListOf<NavKey>(PilotRoot) }
     val controller = remember(backStack) { NavController(backStack) }
 
+    ScreenScaffold(title = "转场实验", onBack = onBack) { inner ->
     NavDisplay(
         backStack = backStack,
+        modifier = inner,
         onBack = { if (!controller.pop()) onBack() },
     ) {
         entry<PilotRoot> {
@@ -54,12 +56,6 @@ fun NavPilotScreen(onBack: () -> Unit) {
                     .padding(horizontal = Dimens.PagePadding),
                 verticalArrangement = Arrangement.spacedBy(Dimens.GroupGap),
             ) {
-                Text(
-                    text = "miuix-nav 试点",
-                    modifier = Modifier.padding(top = 12.dp, start = 6.dp),
-                    fontSize = TypeScale.Title,
-                    color = MiuixTheme.colorScheme.onSurface,
-                )
                 Text(
                     text = "验证 NavDisplay 的转场、系统返回与边缘手势；不参与正式导航。",
                     modifier = Modifier.padding(start = 6.dp),
@@ -114,5 +110,6 @@ fun NavPilotScreen(onBack: () -> Unit) {
                 )
             }
         }
+    }
     }
 }
