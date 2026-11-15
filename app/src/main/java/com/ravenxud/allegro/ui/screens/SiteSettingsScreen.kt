@@ -37,6 +37,7 @@ import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.ravenxud.allegro.ui.theme.Dimens
 
 /**
  * 站点设置：针对**当前域名**的 JS / 图片 / 桌面版 UA / 广告过滤开关，
@@ -68,6 +69,7 @@ fun SiteSettingsScreen(
 
     ScreenScaffold(
         title = stringResource(R.string.site_title),
+        contentUnderBar = true,
         onBack = onBack,
         actions = {
             if (host != null) {
@@ -86,6 +88,7 @@ fun SiteSettingsScreen(
             modifier = modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
+                .padding(top = Dimens.TopBar)
                 .padding(horizontal = Spacing.m),
         ) {
             if (host == null || current == null) {

@@ -58,6 +58,11 @@ fun ScreenScaffold(
     onBack: () -> Unit,
     /** false 时退回旧 SmallTopAppBar（出问题可一处回退）。 */
     floating: Boolean = true,
+    /**
+     * true 时内容不再预留顶栏高度，改由页面自己在滚动内容里加 top padding。
+     * 只有这样内容才会滚到栏下面，玻璃才采得到东西（否则栏下永远是纯底色）。
+     */
+    contentUnderBar: Boolean = false,
     actions: @Composable RowScope.() -> Unit = {},
     content: @Composable (Modifier) -> Unit,
 ) {
@@ -96,7 +101,7 @@ fun ScreenScaffold(
                 Modifier
                     .fillMaxSize()
                     .statusBarsPadding()
-                    .padding(top = Dimens.TopBar),
+                    .then(if (contentUnderBar) Modifier else Modifier.padding(top = Dimens.TopBar)),
             )
         }
 

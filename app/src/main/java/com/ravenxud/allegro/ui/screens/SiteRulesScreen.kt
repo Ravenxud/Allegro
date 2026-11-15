@@ -40,6 +40,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.ravenxud.allegro.ui.theme.Dimens
 
 /**
  * 站点规则总览：把散落在各页的「按站点设置」汇总成一张表。
@@ -73,11 +74,12 @@ fun SiteRulesScreen(
         return if (parts.isEmpty()) resources.getString(R.string.rules_default) else parts.joinToString(" · ")
     }
 
-    ScreenScaffold(title = stringResource(R.string.rules_title), onBack = onBack) { modifier ->
+    ScreenScaffold(contentUnderBar = true, title = stringResource(R.string.rules_title), onBack = onBack) { modifier ->
         Column(
             modifier = modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
+                .padding(top = Dimens.TopBar)
                 .padding(horizontal = Spacing.m),
         ) {
             Text(

@@ -42,7 +42,7 @@ fun NavPilotScreen(onBack: () -> Unit) {
     val backStack = remember { androidx.compose.runtime.mutableStateListOf<NavKey>(PilotRoot) }
     val controller = remember(backStack) { NavController(backStack) }
 
-    ScreenScaffold(title = "转场实验", onBack = onBack) { inner ->
+    ScreenScaffold(contentUnderBar = true, title = "转场实验", onBack = onBack) { inner ->
     NavDisplay(
         backStack = backStack,
         modifier = inner,
@@ -53,6 +53,7 @@ fun NavPilotScreen(onBack: () -> Unit) {
                 Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
+                    .padding(top = Dimens.TopBar)
                     .padding(horizontal = Dimens.PagePadding),
                 verticalArrangement = Arrangement.spacedBy(Dimens.GroupGap),
             ) {

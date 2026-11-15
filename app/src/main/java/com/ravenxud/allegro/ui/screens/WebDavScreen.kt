@@ -31,6 +31,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.ravenxud.allegro.ui.theme.Dimens
 
 /**
  * WebDAV 同步页：填服务器/账号 → 测试连接 → 上传或下载。
@@ -66,11 +67,12 @@ fun WebDavScreen(
 
     val formatter = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
 
-    ScreenScaffold(title = stringResource(R.string.sync_title), onBack = onBack) { modifier ->
+    ScreenScaffold(contentUnderBar = true, title = stringResource(R.string.sync_title), onBack = onBack) { modifier ->
         Column(
             modifier = modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
+                .padding(top = Dimens.TopBar)
                 .padding(horizontal = Spacing.m),
         ) {
             Text(

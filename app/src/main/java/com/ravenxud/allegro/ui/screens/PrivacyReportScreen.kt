@@ -36,6 +36,8 @@ import top.yukonga.miuix.kmp.icon.extended.Blocklist
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.ravenxud.allegro.ui.theme.Dimens
+import androidx.compose.foundation.layout.PaddingValues
 
 /**
  * 隐私报告：本机拦截总数 + 按域名 Top 榜 + 本地隐藏规则管理。
@@ -64,6 +66,7 @@ fun PrivacyReportScreen(
 
     ScreenScaffold(
         title = stringResource(R.string.privacy_report_title),
+        contentUnderBar = true,
         onBack = onBack,
         actions = {
             if (total > 0 || stats.isNotEmpty()) {
@@ -77,6 +80,7 @@ fun PrivacyReportScreen(
         },
     ) { modifier ->
         LazyColumn(
+            contentPadding = PaddingValues(top = Dimens.TopBar),
             modifier = modifier.padding(horizontal = Spacing.m),
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {

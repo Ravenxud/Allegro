@@ -37,11 +37,12 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun LicensesScreen(onBack: () -> Unit) {
     val context = LocalContext.current
 
-    ScreenScaffold(title = "开源许可", onBack = onBack) { inner ->
+    ScreenScaffold(contentUnderBar = true, title = "开源许可", onBack = onBack) { inner ->
         Column(
             modifier = inner
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .padding(top = Dimens.TopBar)
                 .padding(horizontal = Dimens.PagePadding),
             verticalArrangement = Arrangement.spacedBy(Dimens.GroupGap),
         ) {

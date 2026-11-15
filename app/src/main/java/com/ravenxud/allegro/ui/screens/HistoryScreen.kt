@@ -39,6 +39,8 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import com.ravenxud.allegro.ui.theme.Dimens
+import androidx.compose.foundation.layout.PaddingValues
 
 /**
  * 历史记录：按「今天 / 昨天 / 更早」分组，每行显示标题、站点与时间。
@@ -57,6 +59,7 @@ fun HistoryScreen(
 
     ScreenScaffold(
         title = stringResource(R.string.screen_history),
+        contentUnderBar = true,
         onBack = onBack,
         actions = {
             if (items.isNotEmpty()) {
@@ -81,6 +84,7 @@ fun HistoryScreen(
             )
         } else {
             LazyColumn(
+                contentPadding = PaddingValues(top = Dimens.TopBar),
                 modifier = modifier.padding(horizontal = Spacing.m),
                 verticalArrangement = Arrangement.spacedBy(Spacing.s),
             ) {

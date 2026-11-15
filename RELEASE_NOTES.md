@@ -1,3 +1,35 @@
+# 0.73.4-beta
+
+**修「二级页玻璃没效果」：内容没从栏下滚过，玻璃只能采到纯底色。**
+
+## 根因
+
+`ScreenScaffold` 把 `padding(top = TopBar)` 加在**滚动容器外面**：
+
+```kotlin
+content(Modifier.fillMaxSize().statusBarsPadding().padding(top = TopBar))
+```
+
+于是 LazyColumn 的**视口**从栏下方开始，滚动内容在视口边界被裁掉 —— 栏底下永远只有纯底色。
+玻璃采到纯底色 = 只显示一层淡色，看起来就是「没效果」。设置页能用，是因为它的 `padding`
+写在 `verticalScroll` **里面**，内容本来就会滚到栏下面。
+
+## 改法
+
+`ScreenScaffold` 新增开关 `contentUnderBar`：
+
+- `false`（默认）：保持旧行为，内容在栏下开始
+- `true`：内容不再预留栏高，改由页面在**滚动内容内部**加顶部间距
+  - LazyColumn 页：`contentPadding = PaddingValues(top = Dimens.TopBar)`
+  - Column + verticalScroll 页：`.verticalScroll(...).padding(top = Dimens.TopBar)`
+
+静止时首屏位置不变，滚动时内容会从玻璃下面穿过。
+
+## 覆盖范围
+
+13 个二级页全部改完：书签/下载/历史/离线页/用户脚本/隐私报告（LazyColumn）+
+许可/NavPilot/站点规则/站点设置/标签组/WebDAV/着色器烟测（verticalScroll）。
+
 # 0.73.3-beta
 
 **玻璃铺开到全部二级页：改一处 `ScreenScaffold`，13 个页面同时生效。**

@@ -37,6 +37,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.ravenxud.allegro.ui.theme.Dimens
+import androidx.compose.foundation.layout.PaddingValues
 
 /** 离线页面列表。 */
 @Composable
@@ -50,7 +52,7 @@ fun OfflinePagesScreen(
     val items = remember(version) { load() }
     val formatter = remember { SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()) }
 
-    ScreenScaffold(title = stringResource(R.string.offline_title), onBack = onBack) { modifier ->
+    ScreenScaffold(contentUnderBar = true, title = stringResource(R.string.offline_title), onBack = onBack) { modifier ->
         if (items.isEmpty()) {
             EmptyState(
                 icon = AllegroIcons.Download,
@@ -59,6 +61,7 @@ fun OfflinePagesScreen(
             )
         } else {
             LazyColumn(
+                contentPadding = PaddingValues(top = Dimens.TopBar),
                 modifier = modifier.padding(horizontal = Spacing.m),
                 verticalArrangement = Arrangement.spacedBy(Spacing.s),
             ) {

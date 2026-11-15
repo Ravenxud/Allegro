@@ -39,6 +39,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Folder
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.ravenxud.allegro.ui.theme.Dimens
 
 /**
  * 标签分组管理。
@@ -58,11 +59,12 @@ fun TabGroupsScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val input = remember { mutableStateOf("") }
 
-    ScreenScaffold(title = stringResource(R.string.groups_title), onBack = onBack) { modifier ->
+    ScreenScaffold(contentUnderBar = true, title = stringResource(R.string.groups_title), onBack = onBack) { modifier ->
         Column(
             modifier = modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
+                .padding(top = Dimens.TopBar)
                 .padding(horizontal = Spacing.m),
         ) {
             Text(

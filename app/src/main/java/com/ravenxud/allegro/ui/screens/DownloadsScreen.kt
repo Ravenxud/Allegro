@@ -44,6 +44,8 @@ import top.yukonga.miuix.kmp.icon.extended.Pause
 import top.yukonga.miuix.kmp.icon.extended.Play
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.ravenxud.allegro.ui.theme.Dimens
+import androidx.compose.foundation.layout.PaddingValues
 
 /**
  * 下载列表：按「进行中 / 已完成」分组，单行只保留一个主操作，
@@ -63,7 +65,7 @@ fun DownloadsScreen(
     val active = items.filter { it.status in ACTIVE_STATUS }
     val finished = items.filter { it.status !in ACTIVE_STATUS }
 
-    ScreenScaffold(title = stringResource(R.string.screen_downloads), onBack = onBack) { modifier ->
+    ScreenScaffold(contentUnderBar = true, title = stringResource(R.string.screen_downloads), onBack = onBack) { modifier ->
         if (items.isEmpty()) {
             EmptyState(
                 icon = AllegroIcons.Download,
@@ -72,6 +74,7 @@ fun DownloadsScreen(
             )
         } else {
             LazyColumn(
+                contentPadding = PaddingValues(top = Dimens.TopBar),
                 modifier = modifier.padding(horizontal = Spacing.m),
                 verticalArrangement = Arrangement.spacedBy(Spacing.s),
             ) {

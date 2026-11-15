@@ -48,6 +48,8 @@ import top.yukonga.miuix.kmp.icon.extended.Folder
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.net.HttpURLConnection
 import java.net.URL
+import com.ravenxud.allegro.ui.theme.Dimens
+import androidx.compose.foundation.layout.PaddingValues
 
 /** 用户脚本管理：安装（URL / 粘贴）、启用开关、删除。 */
 @Composable
@@ -65,6 +67,7 @@ fun UserScriptsScreen(
 
     ScreenScaffold(
         title = stringResource(R.string.userscript_title),
+        contentUnderBar = true,
         onBack = onBack,
         actions = {
             IconButton(onClick = { showInstall = true }) {
@@ -80,6 +83,7 @@ fun UserScriptsScreen(
             )
         } else {
             LazyColumn(
+                contentPadding = PaddingValues(top = Dimens.TopBar),
                 modifier = modifier.padding(horizontal = Spacing.m),
                 verticalArrangement = Arrangement.spacedBy(Spacing.s),
             ) {

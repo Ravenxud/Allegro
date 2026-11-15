@@ -46,6 +46,7 @@ import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.ravenxud.allegro.ui.theme.Dimens
 
 /**
  * AGSL 冒烟页（P0 专用，确认环境支持后再删）。
@@ -102,11 +103,12 @@ fun ShaderSmokeScreen(onBack: () -> Unit) {
         true
     }
 
-    ScreenScaffold(title = stringResource(R.string.shader_smoke_title), onBack = onBack) { modifier ->
+    ScreenScaffold(contentUnderBar = true, title = stringResource(R.string.shader_smoke_title), onBack = onBack) { modifier ->
         Column(
             modifier = modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
+                .padding(top = Dimens.TopBar)
                 .padding(horizontal = Spacing.m),
         ) {
             Card(modifier = Modifier.fillMaxWidth()) {

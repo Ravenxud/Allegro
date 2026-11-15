@@ -46,6 +46,8 @@ import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Folder
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.ravenxud.allegro.ui.theme.Dimens
+import androidx.compose.foundation.layout.PaddingValues
 
 /** 书签页：文件夹筛选 + 移动/删除 + 导入导出入口（由外层提供）。 */
 @Composable
@@ -74,6 +76,7 @@ fun BookmarksScreen(
 
     ScreenScaffold(
         title = stringResource(R.string.screen_bookmarks),
+        contentUnderBar = true,
         onBack = onBack,
         actions = {
             IconButton(onClick = onImport) {
@@ -107,6 +110,7 @@ fun BookmarksScreen(
                 )
             } else {
                 LazyColumn(
+                    contentPadding = PaddingValues(top = Dimens.TopBar),
                     modifier = Modifier.padding(horizontal = Spacing.m),
                     verticalArrangement = Arrangement.spacedBy(Spacing.s),
                 ) {
