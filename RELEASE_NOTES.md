@@ -1,3 +1,31 @@
+# 0.73.1-beta
+
+**内嵌 Miuix 玻璃内核（miuix-glass），设置页顶栏先做一次落地验证。**
+
+## 改了什么
+
+| 项 | 之前 | 现在 |
+|---|---|---|
+| 玻璃内核 | 无（`backdrop` 库只有模糊+着色） | **内嵌 miuix-glass + miuix-material + miuix-blur**，38 个文件 |
+| `AllegroTopBar` | 透明 + 发丝线 | 新增 `backdrop` 参数：非空时走 `Modifier.glass`（AGSL 折射/受光），空时行为不变 |
+| 设置页 | 内容从栏下穿过 | 内容层加 `layerBackdrop`，顶栏采样该层 |
+
+## 说明
+
+- 玻璃代码取自 `compose-miuix-ui/miuix` main（Compose 1.12.2 / Kotlin 2.4.21，与本工程一致），
+  详见 `docs/GLASS_VENDOR.md`
+- 上游 `GlassTopAppBar` 等组件依赖未发布的 miuix-ui 内部 API，故未内嵌；顶栏由工程自己搭
+- **仅设置页启用**，浏览器页/首页仍是原方案
+
+## 已知限制
+
+- 本机构建环境 `adb` 不可用（PRoot 下 Illegal instruction），**未做真机截图验证**
+- AGSL 每帧运行，长列表滚动性能待真机确认
+
+## 回退
+
+`AllegroTopBar(backdrop = null)` 即恢复发丝线方案，无需改其它代码。
+
 # 0.73.0-beta
 
 **S2：设置页迁移到设计系统组件（第一张"新样式"截图）。**

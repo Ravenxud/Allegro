@@ -1,6 +1,7 @@
 package com.ravenxud.allegro.ui.design
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +38,11 @@ import com.ravenxud.allegro.ui.theme.Dimens
 import com.ravenxud.allegro.ui.theme.Shapes
 import com.ravenxud.allegro.ui.theme.TypeScale
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.glass.glass
+import top.yukonga.miuix.kmp.material.GlassMaterials
+import top.yukonga.miuix.kmp.material.GlassShape
+import top.yukonga.miuix.kmp.material.GlassStyles
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -62,9 +68,22 @@ fun AllegroTopBar(
     onBack: (() -> Unit)? = null,
     /** 是否显示底部发丝线（内容滚到栏下时打开，避免文字与栏重叠）。 */
     hairline: Boolean = true,
+    /** 非空时绘制 Miuix 玻璃（折射 + 受光），需指向被记录的页面内容层。 */
+    backdrop: Backdrop? = null,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
-    Column(modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars)) {
+    val glassMod = if (backdrop != null) {
+        Modifier.glass(
+            backdrop = backdrop,
+            shape = GlassShape(cornerRadius = 0.dp),
+            style = GlassStyles.CommonMediumRegularLowLight,
+            material = GlassMaterials.puredThinGlass(isSystemInDarkTheme()),
+            shading = false,
+        )
+    } else {
+        Modifier
+    }
+    Column(modifier.fillMaxWidth().then(glassMod).windowInsetsPadding(WindowInsets.statusBars)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()

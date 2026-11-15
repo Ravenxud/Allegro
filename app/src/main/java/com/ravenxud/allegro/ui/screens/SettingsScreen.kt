@@ -6,6 +6,8 @@ import com.ravenxud.allegro.ui.design.AllegroRow
 import com.ravenxud.allegro.ui.design.AllegroTopBar
 import com.ravenxud.allegro.ui.theme.Dimens
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -101,11 +103,15 @@ fun SettingsScreen(
     }
 
     // 方案 B：内容铺满整屏并从顶栏下穿过，顶栏浮在上面（AllegroTopBar 自带发丝线）
-    androidx.compose.foundation.layout.Box(
-        Modifier
-            .fillMaxSize()
-            .background(MiuixTheme.colorScheme.background),
-    ) {
+    // 顶栏玻璃需要一份被记录的页面内容层，故背景色 + 滚动内容一起进 layerBackdrop。
+    val topBarBackdrop = rememberLayerBackdrop()
+    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
+        androidx.compose.foundation.layout.Box(
+            Modifier
+                .fillMaxSize()
+                .background(MiuixTheme.colorScheme.background)
+                .layerBackdrop(topBarBackdrop),
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -378,10 +384,12 @@ fun SettingsScreen(
             }
             Column(Modifier.padding(bottom = 24.dp)) {}
         }
+        }
 
         com.ravenxud.allegro.ui.design.AllegroTopBar(
             title = stringResource(R.string.screen_settings),
             onBack = onBack,
+            backdrop = topBarBackdrop,
         )
 
         com.ravenxud.allegro.ui.components.ZoomDialog(
