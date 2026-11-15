@@ -28,6 +28,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -61,6 +67,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  *
  * 透明背景 + 底部发丝线：页面内容可以滚到栏下，栏本身不画底色。
  */
+/** 栏下渐变的扩散高度与起始不透明度（想更明显就调大这两个值）。 */
+private val TopBarFadeHeight = 28.dp
+private const val TopBarFadeAlpha = 0.55f
+
 @Composable
 fun AllegroTopBar(
     title: String,
@@ -83,7 +93,32 @@ fun AllegroTopBar(
     } else {
         Modifier
     }
-    Column(modifier.fillMaxWidth().then(glassMod).windowInsetsPadding(WindowInsets.statusBars)) {
+    // 栏下淡出：内容穿过玻璃后被拦腰切断会看到一条生硬的接缝，用 surface 渐变把它化开
+    val density = LocalDensity.current
+    val fadePx = with(density) { TopBarFadeHeight.toPx() }
+    val bandColor = MiuixTheme.colorScheme.surface
+    val fadeMod = if (backdrop != null) {
+        Modifier.drawWithContent {
+            drawContent()
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(bandColor.copy(alpha = TopBarFadeAlpha), Color.Transparent),
+                    startY = size.height,
+                    endY = size.height + fadePx,
+                ),
+                topLeft = Offset(0f, size.height),
+                size = Size(size.width, fadePx),
+            )
+        }
+    } else {
+        Modifier
+    }
+    Column(
+        modifier.fillMaxWidth()
+            .then(glassMod)
+            .then(fadeMod)
+            .windowInsetsPadding(WindowInsets.statusBars),
+    ) {
         // 标题按整屏宽度居中：先铺满再居中，避免被左侧返回钮挤偏半个按钮宽
         Box(Modifier.fillMaxWidth().height(Dimens.TopBar)) {
             Text(
