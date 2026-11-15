@@ -172,6 +172,19 @@ fun BrowserScreen(
     var tabsStub by remember { mutableStateOf<Bitmap?>(null) }
     var showAppMenu by remember { mutableStateOf(false) }
     var screen by remember { mutableStateOf(SecondaryScreen.BROWSER) }
+    // 2a：二级页之间的导航历史。从浏览器进入不记录；页内跳转记录来源，
+    // 返回时逐层回退（修「设置 → 许可证 → 返回直接回网页」）
+    val screenHistory = remember { androidx.compose.runtime.mutableStateListOf<SecondaryScreen>() }
+    val navigate: (SecondaryScreen) -> Unit = { target ->
+        if (target != SecondaryScreen.BROWSER && target != screen) {
+            screenHistory.add(screen)
+            screen = target
+        }
+    }
+    val backOnce: () -> Unit = {
+        screen = if (screenHistory.isNotEmpty()) screenHistory.removeAt(screenHistory.lastIndex)
+        else SecondaryScreen.BROWSER
+    }
     var lastMenu by remember { mutableStateOf<MenuRequest?>(null) }
     var moveTabId by remember { mutableStateOf<String?>(null) }
     // 网页可见时，菜单的玻璃底来自一张 PixelCopy 快照（WebView 抓不到实时内容）
@@ -332,7 +345,7 @@ fun BrowserScreen(
         controller.setSheetVisible(showAppMenu || menu != null)
     }
 
-    BackHandler(enabled = screen != SecondaryScreen.BROWSER) { screen = SecondaryScreen.BROWSER }
+    BackHandler(enabled = screen != SecondaryScreen.BROWSER) { backOnce() }
     BackHandler(enabled = menu != null) { controller.dismissMenu() }
     BackHandler(enabled = showTabs) { showTabs = false }
     BackHandler(enabled = showAppMenu) { showAppMenu = false }
@@ -780,7 +793,7 @@ fun BrowserScreen(
                 enter = fadeIn(Motion.enter(Motion.Duration.Emphasized)) + slideInHorizontally(Motion.slide(Motion.Duration.Long)) { it / 7 },
                 exit = fadeOut(Motion.exit(Motion.Duration.Quick)) + slideOutHorizontally(Motion.slide(Motion.Duration.Emphasized)) { it / 9 },
             ) {
-                val back: () -> Unit = { screen = SecondaryScreen.BROWSER }
+                val back: () -> Unit = { backOnce() }
                 val openAndBack: (String) -> Unit = {
                     screen = SecondaryScreen.BROWSER
                     controller.openTab(it)
@@ -810,7 +823,7 @@ fun BrowserScreen(
                         controller = controller,
                         siteSettings = com.ravenxud.allegro.di.ServiceLocator.siteSettingsRepository,
                         adBlock = adBlock,
-                        onEdit = { screen = SecondaryScreen.SITE },
+                        onEdit = { navigate(SecondaryScreen.SITE) },
                         onBack = back,
                         onExport = {
                             val text = SiteRulesIo.exportText(
@@ -868,11 +881,11 @@ fun BrowserScreen(
                         adBlock = adBlock,
                         update = update,
                         onBack = back,
-                        onOpenSync = { screen = SecondaryScreen.SYNC },
-                        onOpenSiteRules = { screen = SecondaryScreen.SITE_RULES },
-                        onOpenShaderSmoke = { screen = SecondaryScreen.SHADER_SMOKE },
-                    onOpenLicenses = { screen = SecondaryScreen.LICENSES },
-                    onOpenNavPilot = { screen = SecondaryScreen.NAV_PILOT },
+                        onOpenSync = { navigate(SecondaryScreen.SYNC) },
+                        onOpenSiteRules = { navigate(SecondaryScreen.SITE_RULES) },
+                        onOpenShaderSmoke = { navigate(SecondaryScreen.SHADER_SMOKE) },
+                    onOpenLicenses = { navigate(SecondaryScreen.LICENSES) },
+                    onOpenNavPilot = { navigate(SecondaryScreen.NAV_PILOT) },
                     onTextZoomChange = { pct ->
                         settings.setTextZoom(pct)
                         controller.applyTextZoom(pct)
