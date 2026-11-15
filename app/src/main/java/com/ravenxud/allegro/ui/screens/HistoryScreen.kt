@@ -66,7 +66,14 @@ fun HistoryScreen(
             }
         },
     ) { modifier ->
-        if (items.isEmpty()) {
+        androidx.compose.animation.Crossfade(
+            targetState = items.isEmpty(),
+            animationSpec = androidx.compose.animation.core.tween(
+                com.ravenxud.allegro.ui.theme.Motion.Duration.Standard,
+            ),
+            label = "historyEmpty",
+        ) { empty ->
+        if (empty) {
             EmptyState(
                 icon = AllegroIcons.Refresh,
                 title = stringResource(R.string.empty_history),
@@ -99,6 +106,7 @@ fun HistoryScreen(
                 }
                 item(key = "bottom") { Spacer(Modifier.height(Spacing.l)) }
             }
+        }
         }
     }
 }

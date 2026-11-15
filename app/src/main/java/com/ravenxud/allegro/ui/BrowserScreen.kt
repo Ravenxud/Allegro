@@ -157,6 +157,15 @@ fun BrowserScreen(
     var showTabs by remember { mutableStateOf(false) }
     var tabsMounted by remember { mutableStateOf(false) }
     // 最近关闭：打开标签面板时读取一次
+    // C6：页内提示（替代系统 Toast）
+    var pageToast by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(pageToast) {
+        if (pageToast != null) {
+            kotlinx.coroutines.delay(2000)
+            pageToast = null
+        }
+    }
+
     var recentClosed by remember {
         mutableStateOf<List<com.ravenxud.allegro.data.entity.ClosedTabEntity>>(emptyList())
     }
@@ -479,14 +488,14 @@ fun BrowserScreen(
                         if (tab?.canGoBack == true) {
                             controller.goBack()
                         } else {
-                            Toast.makeText(context, R.string.nav_no_back, Toast.LENGTH_SHORT).show()
+                            pageToast = "已经是第一页"
                         }
                     }
                     ToolbarButton(AllegroIcons.Forward, stringResource(R.string.cd_forward)) {
                         if (tab?.canGoForward == true) {
                             controller.goForward()
                         } else {
-                            Toast.makeText(context, R.string.nav_no_forward, Toast.LENGTH_SHORT).show()
+                            pageToast = "没有可前进的页面"
                         }
                     }
                     if (!layout.isLarge) TabCountButton(count = state.tabs.size) {
@@ -762,6 +771,9 @@ fun BrowserScreen(
         onCopyLink = { controller.copyToClipboard(it) },
         simplify = lowRam,
     )
+
+            // C6 宿主：整页浮层，必须在根 Box 内、且不在任何 Column 里
+            com.ravenxud.allegro.ui.components.PageToastHost(message = pageToast)
 
             AnimatedVisibility(
                 visibleState = secondaryState,
