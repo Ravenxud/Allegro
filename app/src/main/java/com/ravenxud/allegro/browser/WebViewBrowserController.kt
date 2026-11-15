@@ -1391,24 +1391,31 @@ class WebViewBrowserController(
     override fun refreshPreviews() {
         val tabs = _state.value.tabs
         val activeId = _state.value.activeTabId
-        tabs.forEach { tab ->
-            // 当前标签每次重抓（内容最新）；其余只在缺图时补，避免打开面板瞬间做 N 次全量重绘
-            val need = tab.id == activeId || tab.preview == null
-            if (need) capturePreview(tab.id)
+        val queue = tabs.filter { it.id == activeId || it.preview == null }.map { it.id }
+        if (queue.isEmpty()) return
+        // 一次开面板最多补 3 张，其余留给下次：首次进入时所有标签都没图，
+        // 同步连抓 N 次会把主线程卡住（用户反馈的"第一次切换标签页卡顿"）。
+        queue.take(3).forEachIndexed { index, id ->
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(
+                { runCatching { capturePreview(id) } },
+                16L * index,
+            )
         }
     }
 
     private fun capturePreview(tabId: String?) {
         val id = tabId ?: return
         val view = pool.peek(id) ?: return
-        if (view.width <= 0 || view.height <= 0) return
+        val vw = if (view.width > 0) view.width else view.measuredWidth
+        val vh = if (view.height > 0) view.height else view.measuredHeight
+        if (vw <= 0 || vh <= 0) return
         val bitmap = runCatching {
             val targetWidth = 360
-            val targetHeight = (view.height.toFloat() / view.width * targetWidth)
+            val targetHeight = (vh.toFloat() / vw * targetWidth)
                 .toInt().coerceIn(1, 720)
             val bmp = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
             val canvas = android.graphics.Canvas(bmp)
-            val scale = targetWidth.toFloat() / view.width
+            val scale = targetWidth.toFloat() / vw
             canvas.scale(scale, scale)
             view.draw(canvas)
             bmp

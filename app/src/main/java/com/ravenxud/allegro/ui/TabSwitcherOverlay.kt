@@ -44,6 +44,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -146,12 +147,14 @@ fun TabSwitcherOverlay(
     var lockedIndex by remember { mutableStateOf(0) }
     var menuTab by remember { mutableStateOf<TabState?>(null) }
     var dismissed by remember { mutableStateOf(true) }
+    var openedAt by remember { mutableLongStateOf(0L) }
     var dragOffset by remember { mutableFloatStateOf(0f) }
     val gridState = rememberLazyGridState()
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(visible) {
         if (visible) {
+            openedAt = android.os.SystemClock.uptimeMillis()
             runCatching { gridState.scrollToItem(0) }
             dismissed = false
             lockedIndex = state.tabs.indexOfFirst { it.id == state.activeTabId }.coerceAtLeast(0)
@@ -284,7 +287,10 @@ fun TabSwitcherOverlay(
                 onNewIncognito = onNewIncognito,
                 onReopen = onReopen,
                 onDismiss = onDismiss,
-                onLongPress = { menuTab = it },
+                onLongPress = { tab ->
+                    // 打开面板的那一下按键如果被识别成长按，会"凭空"弹出卡片菜单
+                    if (android.os.SystemClock.uptimeMillis() - openedAt > 300L) menuTab = tab
+                },
             )
         }
 
