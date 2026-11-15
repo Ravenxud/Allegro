@@ -91,7 +91,14 @@ fun BookmarksScreen(
                 onCreate = { createFolderDialog = true },
             )
 
-            if (filtered.isEmpty()) {
+            androidx.compose.animation.Crossfade(
+                targetState = filtered.isEmpty(),
+                animationSpec = androidx.compose.animation.core.tween(
+                    com.ravenxud.allegro.ui.theme.Motion.Duration.Standard,
+                ),
+                label = "bookmarksEmpty",
+            ) { isEmpty ->
+            if (isEmpty) {
                 EmptyState(
                     icon = MiuixIcons.Folder,
                     title = stringResource(R.string.empty_bookmarks),
@@ -114,6 +121,7 @@ fun BookmarksScreen(
                     }
                     item { Spacer(Modifier.height(Spacing.l)) }
                 }
+            }
             }
         }
     }

@@ -88,6 +88,7 @@ import top.yukonga.miuix.kmp.icon.extended.Recent
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Folder
@@ -401,12 +402,14 @@ private fun TabGrid(
     onDismiss: () -> Unit,
     onLongPress: (TabState) -> Unit,
 ) {
+    var showHeaderMenu by remember { mutableStateOf(false) }
     var dragId by remember { mutableStateOf<String?>(null) }
     var dragOffset by remember { mutableStateOf(Offset.Zero) }
     val spacingPx = with(LocalDensity.current) { 8.dp.toPx() }
 
     // 必须透明：否则这张不透明面会把下面的"模糊页面背景"整块盖住（观感像白闪/遮罩）
     Surface(Modifier.fillMaxSize(), color = Color.Transparent) {
+      Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().systemBarsPadding().padding(horizontal = 12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
@@ -414,17 +417,11 @@ private fun TabGrid(
             ) {
                 Text(stringResource(R.string.tabs_title, state.tabs.size), fontSize = 20.sp)
                 Spacer(Modifier.weight(1f))
-                // 排序：点击循环 时间 → 标题 → 网站（非「按打开时间」时禁用拖拽重排）
-                com.ravenxud.allegro.ui.components.PillButton(
-                    label = "最近关闭",
-                    onClick = onOpenRecent,
-                    icon = MiuixIcons.Recent,
-                )
-                Spacer(Modifier.width(8.dp))
-                com.ravenxud.allegro.ui.components.PillButton(
-                    label = sort.label,
-                    onClick = onCycleSort,
-                    icon = MiuixIcons.Sort,
+                // 头部只留一个溢出按钮：最近关闭 / 排序 收进菜单（与设置页、菜单页的规范一致）
+                com.ravenxud.allegro.ui.components.CircleIconButton(
+                    icon = MiuixIcons.More,
+                    onClick = { showHeaderMenu = true },
+                    contentDescription = "更多",
                 )
                 Spacer(Modifier.width(8.dp))
                 com.ravenxud.allegro.ui.components.CircleIconButton(
@@ -535,6 +532,29 @@ private fun TabGrid(
             }
 
         }
+
+        // 头部溢出菜单：与 Column 同级（不参与 Column 的高度分配）
+        MiuixSheet(
+            visible = showHeaderMenu,
+            onDismiss = { showHeaderMenu = false },
+            title = "标签页",
+        ) {
+            SheetRow(
+                icon = MiuixIcons.Recent,
+                title = "最近关闭的标签页",
+                onClick = {
+                    showHeaderMenu = false
+                    onOpenRecent()
+                },
+            )
+            SheetRow(
+                icon = MiuixIcons.Sort,
+                title = "排列方式",
+                value = sort.label,
+                onClick = onCycleSort,
+            )
+        }
+      }
     }
 }
 

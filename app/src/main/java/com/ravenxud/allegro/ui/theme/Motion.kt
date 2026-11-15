@@ -83,7 +83,13 @@ object Motion {
      * 为 true 时所有位移类动效压到 Instant，只保留透明度变化。
      */
     fun reduceMotion(context: android.content.Context): Boolean =
-        appReduceMotion(context) || systemReduceMotion(context)
+        appReduceMotion(context) || systemReduceMotion(context) || isLowRam(context)
+
+    /** 低端机：位移类动效同样压到 Instant（原计划里的「低端机降级」）。 */
+    private fun isLowRam(context: android.content.Context): Boolean = runCatching {
+        (context.getSystemService(android.content.Context.ACTIVITY_SERVICE)
+            as android.app.ActivityManager).isLowRamDevice
+    }.getOrDefault(false)
 
     /** 应用内开关（设置页「减少动画」）。 */
     private fun appReduceMotion(context: android.content.Context): Boolean = runCatching {
