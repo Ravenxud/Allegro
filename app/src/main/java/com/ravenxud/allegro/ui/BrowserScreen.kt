@@ -629,7 +629,8 @@ fun BrowserScreen(
                                                 },
                                             )
                                         }
-                                        .padding(start = 10.dp, end = 6.dp, top = 8.dp, bottom = 8.dp),
+                                        .padding(start = 12.dp, end = 8.dp, top = 8.dp, bottom = 10.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     TextField(
@@ -637,12 +638,12 @@ fun BrowserScreen(
                                         onValueChange = { field = it },
                                         modifier = Modifier
                                             .weight(1f)
-                                            .height(48.dp)
+                                            .height(44.dp)
                                             .onFocusChanged { focused = it.isFocused },
                                         singleLine = true,
                                         label = stringResource(R.string.address_hint),
                                         useLabelAsPlaceholder = true,
-                                        cornerRadius = 24.dp,
+                                        cornerRadius = 22.dp,
                                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
                                         keyboardActions = KeyboardActions(onGo = { submit() }),
                                         trailingIcon = {
@@ -670,7 +671,7 @@ fun BrowserScreen(
                                                 pageToast = "已经是第一页"
                                             }
                                         },
-                                        modifier = Modifier.size(44.dp),
+                                        modifier = Modifier.size(40.dp),
                                     ) {
                                         Icon(AllegroIcons.Back, stringResource(R.string.cd_back))
                                     }
@@ -698,7 +699,7 @@ fun BrowserScreen(
                                                 controller.captureForSheet { showAppMenu = true }
                                             }
                                         },
-                                        modifier = Modifier.size(44.dp),
+                                        modifier = Modifier.size(40.dp),
                                     ) {
                                         Icon(AllegroIcons.More, stringResource(R.string.app_menu))
                                     }
@@ -989,10 +990,10 @@ private fun androidx.compose.foundation.layout.RowScope.TabCountButton(
     onClick: () -> Unit,
 ) {
     Box(
-        modifier = Modifier.size(44.dp),
+        modifier = Modifier.size(40.dp),
         contentAlignment = Alignment.Center,
     ) {
-        IconButton(onClick = onClick, modifier = Modifier.size(40.dp)) {
+        IconButton(onClick = onClick, modifier = Modifier.size(36.dp)) {
             Box(
                 modifier = Modifier
                     .size(22.dp)

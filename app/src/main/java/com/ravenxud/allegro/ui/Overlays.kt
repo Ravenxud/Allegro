@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -193,6 +194,8 @@ fun AppMenu(
                 ),
             ),
         )
+        // 底栏浮在页面之上，面板底部要留出它的高度，否则最后一行被盖住
+        Spacer(Modifier.height(104.dp))
     }
 
     if (useDialogWindow) {
