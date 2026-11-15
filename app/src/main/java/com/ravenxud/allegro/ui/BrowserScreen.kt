@@ -405,36 +405,9 @@ fun BrowserScreen(
         return
     }
 
-    TabSwitcherOverlay(
-        visible = showTabs,
-        stub = tabsStub,
-        progressProvider = { tabsProgress },
-        state = state,
-        onSelect = { controller.selectTab(it); showTabs = false },
-        onClose = { controller.closeTab(it) },
-        onNew = { controller.openTab("about:blank"); showTabs = false },
-        onNewIncognito = { controller.openTab("about:blank", incognito = true); showTabs = false },
-        onReopen = { controller.restoreLastClosed(); showTabs = false },
-        recentClosed = recentClosed,
-        onRestoreClosed = { entity ->
-            com.ravenxud.allegro.util.DiagLog.log("restore-closed", entity.url)
-            controller.openTab(entity.url)
-            showTabs = false
-        },
-        onDismiss = { showTabs = false },
-        onDismissed = {
-            tabsMounted = false
-            tabsStub = null
-        },
-        onCloseOthers = { controller.closeOtherTabs(it) },
-        onMoveToGroup = { moveTabId = it },
-        onMove = { from, to -> controller.moveTab(from, to) },
-        onCopyLink = { controller.copyToClipboard(it) },
-        simplify = lowRam,
-    )
+
 
             // C6 宿主：整页浮层，必须在根 Box 内、且不在任何 Column 里
-            com.ravenxud.allegro.ui.components.PageToastHost(message = pageToast)
 
             // 2b1：二级页渲染提取为局部函数（捕获所需状态，逻辑未改），供 NavDisplay 调用
             @Composable
@@ -925,6 +898,36 @@ fun BrowserScreen(
                 rootContent = { BrowserRootView() },
                 secondaryContent = { RenderSecondary(it) },
             )
+
+    TabSwitcherOverlay(
+        visible = showTabs,
+        stub = tabsStub,
+        progressProvider = { tabsProgress },
+        state = state,
+        onSelect = { controller.selectTab(it); showTabs = false },
+        onClose = { controller.closeTab(it) },
+        onNew = { controller.openTab("about:blank"); showTabs = false },
+        onNewIncognito = { controller.openTab("about:blank", incognito = true); showTabs = false },
+        onReopen = { controller.restoreLastClosed(); showTabs = false },
+        recentClosed = recentClosed,
+        onRestoreClosed = { entity ->
+            com.ravenxud.allegro.util.DiagLog.log("restore-closed", entity.url)
+            controller.openTab(entity.url)
+            showTabs = false
+        },
+        onDismiss = { showTabs = false },
+        onDismissed = {
+            tabsMounted = false
+            tabsStub = null
+        },
+        onCloseOthers = { controller.closeOtherTabs(it) },
+        onMoveToGroup = { moveTabId = it },
+        onMove = { from, to -> controller.moveTab(from, to) },
+        onCopyLink = { controller.copyToClipboard(it) },
+        simplify = lowRam,
+    )
+            com.ravenxud.allegro.ui.components.PageToastHost(message = pageToast)
+
     }
 }
 

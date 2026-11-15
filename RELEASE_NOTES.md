@@ -1,3 +1,43 @@
+# 0.70.1-beta
+
+修「无法进入标签页」——2b3 引入的**绘制顺序**问题。
+
+## 原因
+
+2b3 把浏览器 UI 变成了 `NavDisplay` 的 Root entry，而 `BrowserNavHost` 是根 `Box` 里的**最后一个兄弟**，
+于是它绘制在**所有东西之上**：
+
+```
+Box {                       // 根
+   TabSwitcherOverlay(...)  // ← 在 NavDisplay 之前 → 被盖住
+   PageToastHost(...)       // ← 同样被盖住
+   BrowserNavHost(...)      // ← 最后绘制，整屏覆盖
+}
+```
+
+点标签按钮其实**状态变了**，但面板被 `NavDisplay` 盖在下面，所以"进不去"。
+
+## 改法
+
+把 `TabSwitcherOverlay` 与 `PageToastHost` 移到 `BrowserNavHost` **之后**，绘制顺序回到正确层级：
+
+```
+Box {
+   BrowserNavHost(...)         // 浏览器 UI + 二级页
+   TabSwitcherOverlay(...)     // 面板在最上层
+   PageToastHost(...)          // 提示在最上层
+}
+```
+
+## 请验
+
+1. **点标签数按钮能打开标签面板**（本版的核心）
+2. 面板内：卡片、排序、最近关闭、关闭/新建都正常
+3. 页内提示（如"已经是第一页"）能显示
+4. 二级页返回、冷启动、网页滚动正常
+
+---
+
 # 0.70.0-beta
 
 **A/2b3：浏览器 UI 成为 `NavDisplay` 的 Root entry —— A 方案完成。**
