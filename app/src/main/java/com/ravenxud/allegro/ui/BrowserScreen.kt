@@ -44,6 +44,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -558,6 +559,14 @@ fun BrowserScreen(
                     var frost by remember { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
                     // 进度条：数据 → 单点动画（Luna 也是状态驱动，范围外不做动画）
                     val progressColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.95f)
+                    // 聚焦（键盘弹出）时右侧按钮横向收掉，地址栏随之撑开
+                    val expand by animateFloatAsState(
+                        targetValue = if (focused) 1f else 0f,
+                        animationSpec = spring(stiffness = 520f, dampingRatio = 0.9f),
+                        label = "barExpand",
+                    )
+                    val btnWidth = (40.dp * (1f - expand)).coerceAtLeast(0.dp)
+                    val btnAlpha = (1f - expand).coerceAtLeast(0f)
                     val progressTarget = (tab?.progress ?: 0) / 100f
                     val progressAnim = remember { androidx.compose.animation.core.Animatable(0f) }
                     LaunchedEffect(progressTarget, tab?.isLoading) {
@@ -739,7 +748,7 @@ fun BrowserScreen(
                                         // 首页没有「后退」语义，这个位置给书签
                                         IconButton(
                                             onClick = { pushSecondary(SecondaryScreen.BOOKMARKS) },
-                                            modifier = Modifier.size(40.dp),
+                                            modifier = Modifier.height(40.dp).width(btnWidth).graphicsLayer { alpha = btnAlpha },
                                         ) {
                                             Icon(AllegroIcons.Favorites, stringResource(R.string.home_section_bookmarks))
                                         }
@@ -752,13 +761,16 @@ fun BrowserScreen(
                                                     pageToast = "已经是第一页"
                                                 }
                                             },
-                                            modifier = Modifier.size(40.dp),
+                                            modifier = Modifier.height(40.dp).width(btnWidth).graphicsLayer { alpha = btnAlpha },
                                         ) {
                                             Icon(AllegroIcons.Back, stringResource(R.string.cd_back))
                                         }
                                     }
                                     if (!layout.isLarge) {
-                                        TabCountButton(count = state.tabs.size) {
+                                        TabCountButton(
+                                            count = state.tabs.size,
+                                            modifier = Modifier.height(40.dp).width(btnWidth).graphicsLayer { alpha = btnAlpha },
+                                        ) {
                                             controller.refreshPreview()
                                             if (lowRam) {
                                                 tabsStub = null
@@ -781,7 +793,7 @@ fun BrowserScreen(
                                                 controller.captureForSheet { showAppMenu = true }
                                             }
                                         },
-                                        modifier = Modifier.size(40.dp),
+                                        modifier = Modifier.height(40.dp).width(btnWidth).graphicsLayer { alpha = btnAlpha },
                                     ) {
                                         Icon(AllegroIcons.More, stringResource(R.string.app_menu))
                                     }
@@ -1061,12 +1073,13 @@ private fun androidx.compose.foundation.layout.RowScope.ToolbarButton(
 
 /** 标签入口：圆角方框 + 数字，比一个列表图标更直观。 */
 @Composable
-private fun androidx.compose.foundation.layout.RowScope.TabCountButton(
+private fun TabCountButton(
     count: Int,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
     Box(
-        modifier = Modifier.size(40.dp),
+        modifier = modifier,
         contentAlignment = Alignment.Center,
     ) {
         IconButton(onClick = onClick, modifier = Modifier.size(36.dp)) {
