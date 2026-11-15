@@ -43,6 +43,7 @@ gradle -Pandroid.aapt2FromMavenOverride=/opt/aapt2shim/aapt2 assembleDebug
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 分层与模块职责 |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | 技术决策记录（ADR） |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | 迭代路线 |
+| [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | **设计系统收口规格**（组件/令牌/页面映射/验收） |
 | [docs/DESKTOP_MODE.md](docs/DESKTOP_MODE.md) | 桌面版模式的技术方案 |
 | [docs/ANIMATION.md](docs/ANIMATION.md) | 动效令牌与 26 项逐条规格 |
 | [docs/GLASS_PLAN.md](docs/GLASS_PLAN.md) | 玻璃材质 + 动效完整方案（v3：Backdrop + 自研 AGSL） |
