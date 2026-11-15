@@ -191,7 +191,6 @@ fun BrowserScreen(
         mutableStateOf<List<com.ravenxud.allegro.data.entity.ClosedTabEntity>>(emptyList())
     }
     var tabsStub by remember { mutableStateOf<Bitmap?>(null) }
-    var tabsThumb by remember { mutableStateOf<Bitmap?>(null) }
     var showAppMenu by remember { mutableStateOf(false) }
     // 2b2：**栈是唯一事实源**。screen 由栈顶派生，不再单独持有可写状态。
     // 这条规则来自两次回归（0.68.0 闪退、0.68.2 顶栏透明占位）：
@@ -793,7 +792,6 @@ fun BrowserScreen(
                                                     tabsMounted = true
                                                     showTabs = true
                                                 }
-                                                controller.captureThumb { bitmap -> tabsThumb = bitmap }
                                             }
                                         }
                                     }
@@ -1049,7 +1047,6 @@ fun BrowserScreen(
     TabSwitcherOverlay(
         visible = showTabs,
         stub = tabsStub,
-        thumb = tabsThumb,
         progressProvider = { tabsProgress },
         state = state,
         onSelect = { controller.selectTab(it); showTabs = false },
