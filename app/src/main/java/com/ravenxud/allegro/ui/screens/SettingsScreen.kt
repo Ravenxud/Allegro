@@ -108,6 +108,7 @@ fun SettingsScreen(
     // 方案 B：内容铺满整屏并从顶栏下穿过，顶栏浮在上面（AllegroTopBar 自带发丝线）
     // 顶栏玻璃需要一份被记录的页面内容层，故背景色 + 滚动内容一起进 layerBackdrop。
     val wallpaper by settings.wallpaperUri.collectAsState()
+    val wallpaperSource by settings.wallpaperSource.collectAsState()
     val pickWallpaper = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             runCatching {
@@ -149,21 +150,34 @@ fun SettingsScreen(
                     )
                 }
                 ComponentDivider()
-                BasicComponent(
-                    title = stringResource(R.string.settings_wallpaper),
-                    summary = if (wallpaper == null) {
-                        stringResource(R.string.settings_wallpaper_summary)
-                    } else {
-                        stringResource(R.string.settings_wallpaper_on)
-                    },
-                    onClick = { pickWallpaper.launch(arrayOf("image/*")) },
-                )
-                if (wallpaper != null) {
+                com.ravenxud.allegro.data.model.WallpaperSource.entries.forEachIndexed { index, source ->
+                    if (index > 0) ComponentDivider()
+                    RadioButtonPreference(
+                        title = stringResource(
+                            when (source) {
+                                com.ravenxud.allegro.data.model.WallpaperSource.DEFAULT -> R.string.settings_wallpaper_default
+                                com.ravenxud.allegro.data.model.WallpaperSource.BING -> R.string.settings_wallpaper_bing
+                                com.ravenxud.allegro.data.model.WallpaperSource.CUSTOM -> R.string.settings_wallpaper_custom
+                            },
+                        ),
+                        selected = wallpaperSource == source,
+                        onClick = { settings.setWallpaperSource(source) },
+                    )
+                }
+                if (wallpaperSource == com.ravenxud.allegro.data.model.WallpaperSource.CUSTOM) {
                     ComponentDivider()
                     BasicComponent(
-                        title = stringResource(R.string.settings_wallpaper_reset),
-                        onClick = { settings.setWallpaperUri(null) },
+                        title = stringResource(R.string.settings_wallpaper_pick),
+                        summary = if (wallpaper == null) stringResource(R.string.settings_wallpaper_summary) else stringResource(R.string.settings_wallpaper_on),
+                        onClick = { pickWallpaper.launch(arrayOf("image/*")) },
                     )
+                    if (wallpaper != null) {
+                        ComponentDivider()
+                        BasicComponent(
+                            title = stringResource(R.string.settings_wallpaper_reset),
+                            onClick = { settings.setWallpaperUri(null) },
+                        )
+                    }
                 }
             }
 

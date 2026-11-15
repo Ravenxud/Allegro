@@ -85,6 +85,14 @@
     <string name="home_section_frequent">最常访问</string>
     <string name="home_see_all">查看全部</string>
     <string name="settings_wallpaper">首页壁纸</string>
+    <string name="settings_wallpaper_default">默认（主题光斑）</string>
+    <string name="settings_wallpaper_bing">Bing 每日壁纸</string>
+    <string name="settings_wallpaper_custom">自定义图片</string>
+    <string name="settings_wallpaper_pick">选择图片…</string>
+    <string name="home_ai_assistant">AI 助手</string>
+    <string name="home_ai_assistant_hint">暂无会话 · 功能接入后显示</string>
+    <string name="home_ai_artifacts">AI 产物</string>
+    <string name="home_ai_artifacts_hint">暂无产物 · 功能接入后显示</string>
     <string name="settings_wallpaper_summary">自定义壁纸 · 未设置时用主题光斑</string>
     <string name="settings_wallpaper_on">已自定义</string>
     <string name="settings_wallpaper_reset">恢复默认壁纸</string>

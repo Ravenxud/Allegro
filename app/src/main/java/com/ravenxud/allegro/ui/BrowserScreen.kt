@@ -321,6 +321,7 @@ fun BrowserScreen(
 
     val showHomeBookmarks by settings.homeBookmarksEnabled.collectAsState()
     val homeWallpaper by settings.wallpaperUri.collectAsState()
+    val homeWallpaperSource by settings.wallpaperSource.collectAsState()
     val blockedCount by adBlock.blocked.collectAsState()
 
     val tabsTransition = updateTransition(targetState = showTabs, label = "tabsTransition")
@@ -750,6 +751,7 @@ fun BrowserScreen(
                                 bookmarks = bookmarks,
                                 history = history,
                                 blockedCount = blockedCount,
+                                wallpaperSource = homeWallpaperSource,
                                 wallpaperUri = homeWallpaper,
                                 showBookmarks = showHomeBookmarks,
                                 onOpenPrivacy = { pushSecondary(SecondaryScreen.PRIVACY) },

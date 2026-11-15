@@ -80,6 +80,17 @@ class SettingsRepository(context: Context) {
         _textZoom.value = clamped
     }
 
+    private val _wallpaperSource = MutableStateFlow(
+        com.ravenxud.allegro.data.model.WallpaperSource.fromKey(prefs.getString(KEY_WALLPAPER_SOURCE, null)),
+    )
+    /** 壁纸来源：默认光斑 / Bing 每日 / 自定义图片。 */
+    val wallpaperSource: StateFlow<com.ravenxud.allegro.data.model.WallpaperSource> = _wallpaperSource.asStateFlow()
+
+    fun setWallpaperSource(source: com.ravenxud.allegro.data.model.WallpaperSource) {
+        prefs.edit().putString(KEY_WALLPAPER_SOURCE, source.key).apply()
+        _wallpaperSource.value = source
+    }
+
     private val _wallpaperUri = MutableStateFlow(prefs.getString(KEY_WALLPAPER, null))
     /** 首页自定义壁纸（content:// URI，空表示用默认光斑）。 */
     val wallpaperUri: StateFlow<String?> = _wallpaperUri.asStateFlow()
@@ -123,6 +134,7 @@ class SettingsRepository(context: Context) {
         const val KEY_ENGINE = "search_engine"
         const val KEY_HOME_BOOKMARKS = "home_bookmarks"
         const val KEY_WALLPAPER = "home_wallpaper"
+        const val KEY_WALLPAPER_SOURCE = "home_wallpaper_source"
         const val KEY_TEXT_ZOOM = "text_zoom"
         const val KEY_REDUCE_MOTION = "reduce_motion"
         const val KEY_UPDATE_REPO = "update_repo"

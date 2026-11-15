@@ -55,7 +55,9 @@ import androidx.compose.ui.unit.sp
 import com.ravenxud.allegro.R
 import com.ravenxud.allegro.browser.BrowserController
 import com.ravenxud.allegro.browser.UrlParser
+import com.ravenxud.allegro.data.BingWallpaper
 import com.ravenxud.allegro.data.entity.ClosedTabEntity
+import com.ravenxud.allegro.data.model.WallpaperSource
 import com.ravenxud.allegro.data.model.SearchEngine
 import com.ravenxud.allegro.data.repo.BookmarkRepository
 import com.ravenxud.allegro.data.repo.HistoryRepository
@@ -96,6 +98,7 @@ fun HomeScreen(
     bookmarks: BookmarkRepository,
     history: HistoryRepository? = null,
     blockedCount: Int = 0,
+    wallpaperSource: WallpaperSource = WallpaperSource.DEFAULT,
     wallpaperUri: String? = null,
     showBookmarks: Boolean = true,
     onOpenPrivacy: () -> Unit = {},
@@ -128,7 +131,7 @@ fun HomeScreen(
     Box(Modifier.fillMaxSize()) {
         // 只记录「壁纸 + 压暗」，卡片本身不进层，避免自采样
         Box(Modifier.fillMaxSize().layerBackdrop(backdrop)) {
-            Wallpaper(wallpaperUri)
+            Wallpaper(wallpaperSource, wallpaperUri)
             Scrim()
         }
 
@@ -221,6 +224,23 @@ fun HomeScreen(
                         )
                     }
                 }
+            }
+
+            // —— 以下两块是占位，功能接入后把 onAction 换成真实入口 ——
+            SectionHeader(title = stringResource(R.string.home_ai_assistant))
+            GlassCard(backdrop = backdrop) {
+                PlaceholderRow(
+                    text = stringResource(R.string.home_ai_assistant_hint),
+                    icon = AllegroIcons.Edit,
+                )
+            }
+
+            SectionHeader(title = stringResource(R.string.home_ai_artifacts))
+            GlassCard(backdrop = backdrop) {
+                PlaceholderRow(
+                    text = stringResource(R.string.home_ai_artifacts_hint),
+                    icon = AllegroIcons.Folder,
+                )
             }
 
             Spacer(Modifier.height(120.dp))
@@ -347,6 +367,24 @@ private fun SiteRow(title: String, subtitle: String, onClick: () -> Unit) {
     }
 }
 
+/** AI 区块的占位行：等真实功能接入后替换，样式与普通行一致，避免将来再调排版。 */
+@Composable
+private fun PlaceholderRow(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.height(20.dp).width(20.dp),
+            tint = OnWallpaperFaint,
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(text = text, fontSize = 14.sp, color = OnWallpaperDim)
+    }
+}
+
 @Composable
 private fun CardDivider() {
     Box(
@@ -375,11 +413,19 @@ private fun Modifier.clickableNoIndication(onClick: () -> Unit): Modifier =
     this.clickable(onClick = onClick)
 
 @Composable
-private fun Wallpaper(uri: String?) {
+private fun Wallpaper(source: WallpaperSource, uri: String?) {
     val context = LocalContext.current
-    var image by remember(uri) { mutableStateOf<ImageBitmap?>(null) }
-    LaunchedEffect(uri) {
-        image = if (uri.isNullOrBlank()) null else withContext(Dispatchers.IO) { loadWallpaper(context, uri) }
+    var image by remember(source, uri) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(source, uri) {
+        image = when (source) {
+            WallpaperSource.DEFAULT -> null
+            WallpaperSource.CUSTOM -> uri?.takeIf { it.isNotBlank() }?.let {
+                withContext(Dispatchers.IO) { loadWallpaper(context, it) }
+            }
+            WallpaperSource.BING -> withContext(Dispatchers.IO) {
+                BingWallpaper.load(context)?.asImageBitmap()
+            }
+        }
     }
     val bitmap = image
     if (bitmap != null) {
