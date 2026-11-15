@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -107,6 +108,13 @@ fun SettingsScreen(
 
     // 方案 B：内容铺满整屏并从顶栏下穿过，顶栏浮在上面（AllegroTopBar 自带发丝线）
     // 顶栏玻璃需要一份被记录的页面内容层，故背景色 + 滚动内容一起进 layerBackdrop。
+    var query by remember { mutableStateOf("") }
+    // 只按「分组标题 + 关键词」过滤：设置项太多，逐控件过滤反而更难找
+    fun match(vararg keywords: String): Boolean {
+        val q = query.trim()
+        return q.isEmpty() || keywords.any { it.contains(q, ignoreCase = true) }
+    }
+
     val wallpaper by settings.wallpaperUri.collectAsState()
     val wallpaperSource by settings.wallpaperSource.collectAsState()
     val pickWallpaper = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -139,8 +147,21 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(Dimens.GroupGap),
         ) {
             item {
+                top.yukonga.miuix.kmp.basic.TextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    modifier = Modifier.fillMaxWidth().padding(bottom = Dimens.GroupGap),
+                    singleLine = true,
+                    label = "搜索设置",
+                    useLabelAsPlaceholder = true,
+                )
+            }
+            if (match("主题", "深色", "壁纸", "外观", "字体", "字号")) {
+            item {
                 SectionTitle(stringResource(R.string.settings_theme))
             }
+            }
+            if (match("主题", "深色", "壁纸", "外观", "字体", "字号")) {
             item {
                 PreferenceCard {
                     ThemeMode.entries.forEachIndexed { index, mode ->
@@ -183,9 +204,13 @@ fun SettingsScreen(
                     }
                 }
             }
+            }
+            if (match("搜索", "引擎", "默认", "地址栏")) {
             item {
                 SectionTitle(stringResource(R.string.settings_search_engine))
             }
+            }
+            if (match("搜索", "引擎", "默认", "地址栏")) {
             item {
                 PreferenceCard {
                     // 0.28 改名时这段被误删，导致设置里没有搜索引擎可切
@@ -199,9 +224,13 @@ fun SettingsScreen(
                     }
                 }
             }
+            }
+            if (match("浏览", "桌面版", "UA", "缩放", "手势")) {
             item {
                 SectionTitle(stringResource(R.string.settings_browsing))
             }
+            }
+            if (match("浏览", "桌面版", "UA", "缩放", "手势")) {
             item {
                 PreferenceCard {
                     AllegroRow(
@@ -227,9 +256,13 @@ fun SettingsScreen(
                     }
                 }
             }
+            }
+            if (match("书签", "首页", "快捷")) {
             item {
                 SectionTitle(stringResource(R.string.home_section_bookmarks))
             }
+            }
+            if (match("书签", "首页", "快捷")) {
             item {
                 PreferenceCard {
                     SwitchPreference(
@@ -246,9 +279,13 @@ fun SettingsScreen(
                     )
                 }
             }
+            }
+            if (match("同步", "WebDAV", "备份", "冲突")) {
             item {
                 SectionTitle(stringResource(R.string.sync_section))
             }
+            }
+            if (match("同步", "WebDAV", "备份", "冲突")) {
             item {
                 PreferenceCard {
                     AllegroRow(
@@ -264,9 +301,13 @@ fun SettingsScreen(
                     )
                 }
             }
+            }
+            if (match("广告", "拦截", "隐私")) {
             item {
                 SectionTitle(stringResource(R.string.adblock_section))
             }
+            }
+            if (match("广告", "拦截", "隐私")) {
             item {
                 PreferenceCard {
                     SwitchPreference(
@@ -302,9 +343,13 @@ fun SettingsScreen(
                     )
                 }
             }
+            }
+            if (match("规则源", "EasyList", "订阅", "规则")) {
             item {
                 SectionTitle(stringResource(R.string.adblock_sources))
             }
+            }
+            if (match("规则源", "EasyList", "订阅", "规则")) {
             item {
                 PreferenceCard {
                     FilterSources.all.forEachIndexed { index, source ->
@@ -317,9 +362,13 @@ fun SettingsScreen(
                     }
                 }
             }
+            }
+            if (match("数据", "清除", "历史", "下载")) {
             item {
                 SectionTitle(stringResource(R.string.settings_data))
             }
+            }
+            if (match("数据", "清除", "历史", "下载")) {
             item {
                 PreferenceCard {
                     AllegroRow(
@@ -329,9 +378,13 @@ fun SettingsScreen(
                     )
                 }
             }
+            }
+            if (match("内核", "WebView", "实验", "GPU")) {
             item {
                 SectionTitle(stringResource(R.string.settings_kernel))
             }
+            }
+            if (match("内核", "WebView", "实验", "GPU")) {
             item {
                 PreferenceCard {
                     BasicComponent(
@@ -340,9 +393,13 @@ fun SettingsScreen(
                     )
                 }
             }
+            }
+            if (match("更新", "版本", "检查")) {
             item {
                 SectionTitle(stringResource(R.string.settings_update_section))
             }
+            }
+            if (match("更新", "版本", "检查")) {
             item {
                 PreferenceCard {
                     BasicComponent(
@@ -365,6 +422,8 @@ fun SettingsScreen(
                     )
                 }
             }
+            }
+            if (match("更新", "版本", "检查")) {
             item {
                 PreferenceCard {
                     AllegroRow(
@@ -392,9 +451,13 @@ fun SettingsScreen(
                     )
                 }
             }
+            }
+            if (match("诊断", "日志", "调试")) {
             item {
                 SectionTitle(stringResource(R.string.settings_diag_section))
             }
+            }
+            if (match("诊断", "日志", "调试")) {
             item {
                 PreferenceCard {
                     AllegroRow(
@@ -449,9 +512,13 @@ fun SettingsScreen(
                     )
                 }
             }
+            }
+            if (match("关于", "许可", "开源", "致谢")) {
             item {
                 SectionTitle(stringResource(R.string.settings_about))
             }
+            }
+            if (match("关于", "许可", "开源", "致谢")) {
             item {
                 PreferenceCard {
                     AllegroRow(
@@ -465,8 +532,11 @@ fun SettingsScreen(
                     )
                 }
             }
+            }
+            if (match("关于", "许可", "开源", "致谢")) {
             item {
                 Column(Modifier.padding(bottom = 24.dp)) {}
+            }
             }
         }
         }
