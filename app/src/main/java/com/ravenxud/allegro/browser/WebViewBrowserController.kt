@@ -1236,7 +1236,13 @@ class WebViewBrowserController(
             view.settings.textZoom = pct
             applied++
         }
-        com.ravenxud.allegro.util.DiagLog.log("text-zoom", "pct=$pct views=$applied")
+        // 当前可见视图单独再套一次：池里可能还没登记（首次打开时）
+        val active = activeView()
+        active?.settings?.textZoom = pct
+        com.ravenxud.allegro.util.DiagLog.log(
+            "text-zoom",
+            "pct=$pct views=$applied active=${active != null}",
+        )
     }
 
     override fun onContentScrolled(view: TabWebView, scrollY: Int) {

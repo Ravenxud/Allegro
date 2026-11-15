@@ -346,13 +346,11 @@ fun SettingsScreen(
             Column(Modifier.padding(bottom = 24.dp)) {}
         }
 
-        com.ravenxud.allegro.ui.components.vendor.PercentInputDialog(
+        com.ravenxud.allegro.ui.components.ZoomDialog(
             show = showZoomDialog,
-            title = "页面缩放",
-            onDismissRequest = { showZoomDialog = false },
-            value = { textZoom / 100f },
-            onValueChange = { onTextZoomChange((it * 100).toInt()) },
-            range = 80..140,
+            current = textZoom,
+            onDismiss = { showZoomDialog = false },
+            onConfirm = { onTextZoomChange(it) },
         )
         }
     }
