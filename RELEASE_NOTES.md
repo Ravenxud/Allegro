@@ -1,3 +1,41 @@
+# 0.69.0-beta
+
+**A/2b2：`screen` 删除，导航栈成为唯一事实源。**
+
+## 为什么这一步是关键
+
+前两次回归（0.68.0 启动闪退、0.68.2 顶栏透明占位）都是同一个病根：
+**存在两个可独立写入的状态**（`screen` 与 `navStack`），只要有一条路径漏同步就出错。
+
+本版把 `screen` 整个删除：
+
+| 之前 | 现在 |
+|---|---|
+| `var screen by remember { … }` + `screenHistory` + 镜像 `LaunchedEffect` | **`val screen = navStack.currentSecondary() ?: BROWSER`**（纯派生） |
+| 所有跳转写 `screen = X` | 统一 `pushSecondary(X)`；回浏览器 `backToBrowser()` |
+| 返回靠 `backOnce()` 维护 history | `backOnce()` = `navStack.popSecondary()` |
+| `NavDisplay.onBack` 需手动同步 `screen` | 栈变了，`screen` 自动跟着变 |
+
+代码上现在只有**一个可写入口**：`navStack`。
+
+## 删除的代码
+
+- `screenHistory`（38 行相关逻辑）
+- 镜像用的 `LaunchedEffect(screen)`
+- `NavDisplay.onBack` 里的手动 `screen = …`
+- 旧的 `navigate()`（语义已被 `pushSecondary` 覆盖）
+
+## 请验
+
+1. 冷启动正常
+2. 菜单进任意二级页 → 返回：回网页
+3. 设置 → 开源许可 → 返回：回设置
+4. 设置 → 站点规则 → 编辑 → 返回：回站点规则
+5. 从二级页返回首页：**顶栏正常**（0.68.2 的修复保持）
+6. 标签面板 / 菜单 / 网页滚动正常
+
+---
+
 # 0.68.2-beta
 
 修「回到首页时顶栏消失、上方留一条空白」。

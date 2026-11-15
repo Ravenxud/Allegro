@@ -177,32 +177,23 @@ fun BrowserScreen(
     }
     var tabsStub by remember { mutableStateOf<Bitmap?>(null) }
     var showAppMenu by remember { mutableStateOf(false) }
-    var screen by remember { mutableStateOf(SecondaryScreen.BROWSER) }
-    // 2b1：栈驱动容器。screen 仍是页面选择的事实源，单向、幂等地镜像到栈（栈底恒为 Root）
+    // 2b2：**栈是唯一事实源**。screen 由栈顶派生，不再单独持有可写状态。
+    // 这条规则来自两次回归（0.68.0 闪退、0.68.2 顶栏透明占位）：
+    // 只要存在两个可独立写入的状态，就一定会有一条路径漏同步。
     val navStack = rememberBrowserStack()
-    LaunchedEffect(screen) {
-        if (screen == SecondaryScreen.BROWSER) {
-            // 回到浏览器：清掉所有二级页，只留栈底 Root
-            while (navStack.size > 1) navStack.removeAt(navStack.lastIndex)
-        } else {
-            val route = SecondaryRoute(screen)
-            if (navStack.lastOrNull() != route) {
-                if (navStack.size > 1) navStack[navStack.lastIndex] = route else navStack.add(route)
-            }
-        }
+    val screen: SecondaryScreen = navStack.currentSecondary() ?: SecondaryScreen.BROWSER
+
+    /** 进二级页：push（返回回上一页）。 */
+    fun pushSecondary(screen: SecondaryScreen) {
+        if (screen != SecondaryScreen.BROWSER) navStack.pushSecondary(screen)
     }
-    // 2a：二级页之间的导航历史。从浏览器进入不记录；页内跳转记录来源，
-    // 返回时逐层回退（修「设置 → 许可证 → 返回直接回网页」）
-    val screenHistory = remember { androidx.compose.runtime.mutableStateListOf<SecondaryScreen>() }
-    val navigate: (SecondaryScreen) -> Unit = { target ->
-        if (target != SecondaryScreen.BROWSER && target != screen) {
-            screenHistory.add(screen)
-            screen = target
-        }
-    }
-    val backOnce: () -> Unit = {
-        screen = if (screenHistory.isNotEmpty()) screenHistory.removeAt(screenHistory.lastIndex)
-        else SecondaryScreen.BROWSER
+
+    /** 返回一层；栈里只剩 Root 时什么也不做（由 Activity 处理退出）。 */
+    val backOnce: () -> Unit = { navStack.popSecondary() }
+
+    /** 回到浏览器主界面：清掉所有二级页。 */
+    fun backToBrowser() {
+        while (navStack.popSecondary()) { }
     }
     var lastMenu by remember { mutableStateOf<MenuRequest?>(null) }
     var moveTabId by remember { mutableStateOf<String?>(null) }
@@ -392,7 +383,7 @@ fun BrowserScreen(
             onSelect = { controller.selectTab(it) },
             onClose = { controller.closeTab(it) },
             onNew = { controller.openTab("about:blank") },
-            onNavigate = { screen = it },
+            onNavigate = { pushSecondary(it) },
             onToggleGroup = { id, collapsed ->
                 scope.launch { controller.setTabGroupCollapsed(id, collapsed) }
             },
@@ -682,7 +673,7 @@ fun BrowserScreen(
                     },
                     onNavigate = { target ->
                         showAppMenu = false
-                        screen = target
+                        pushSecondary(target)
                     },
                     onBookmark = {
                         val current = controller.state.value.activeTab
@@ -726,15 +717,15 @@ fun BrowserScreen(
                     },
                     onOfflinePages = {
                         showAppMenu = false
-                        screen = SecondaryScreen.OFFLINE
+                        pushSecondary(SecondaryScreen.OFFLINE)
                     },
                     onUserScripts = {
                         showAppMenu = false
-                        screen = SecondaryScreen.USERSCRIPTS
+                        pushSecondary(SecondaryScreen.USERSCRIPTS)
                     },
                     onPrivacyReport = {
                         showAppMenu = false
-                        screen = SecondaryScreen.PRIVACY
+                        pushSecondary(SecondaryScreen.PRIVACY)
                     },
                     onPickElement = {
                         showAppMenu = false
@@ -742,11 +733,11 @@ fun BrowserScreen(
                     },
                     onSiteSettings = {
                         showAppMenu = false
-                        screen = SecondaryScreen.SITE
+                        pushSecondary(SecondaryScreen.SITE)
                     },
                     onTabGroups = {
                         showAppMenu = false
-                        screen = SecondaryScreen.GROUPS
+                        pushSecondary(SecondaryScreen.GROUPS)
                     },
                     backdrop = if (isHome) homeBackdrop else null,
                     snapshot = if (isHome) null else sheetSnapshot,
@@ -840,7 +831,7 @@ fun BrowserScreen(
                         controller = controller,
                         siteSettings = com.ravenxud.allegro.di.ServiceLocator.siteSettingsRepository,
                         adBlock = adBlock,
-                        onEdit = { navigate(SecondaryScreen.SITE) },
+                        onEdit = { pushSecondary(SecondaryScreen.SITE) },
                         onBack = back,
                         onExport = {
                             val text = SiteRulesIo.exportText(
@@ -898,11 +889,11 @@ fun BrowserScreen(
                         adBlock = adBlock,
                         update = update,
                         onBack = back,
-                        onOpenSync = { navigate(SecondaryScreen.SYNC) },
-                        onOpenSiteRules = { navigate(SecondaryScreen.SITE_RULES) },
-                        onOpenShaderSmoke = { navigate(SecondaryScreen.SHADER_SMOKE) },
-                    onOpenLicenses = { navigate(SecondaryScreen.LICENSES) },
-                    onOpenNavPilot = { navigate(SecondaryScreen.NAV_PILOT) },
+                        onOpenSync = { pushSecondary(SecondaryScreen.SYNC) },
+                        onOpenSiteRules = { pushSecondary(SecondaryScreen.SITE_RULES) },
+                        onOpenShaderSmoke = { pushSecondary(SecondaryScreen.SHADER_SMOKE) },
+                    onOpenLicenses = { pushSecondary(SecondaryScreen.LICENSES) },
+                    onOpenNavPilot = { pushSecondary(SecondaryScreen.NAV_PILOT) },
                     onTextZoomChange = { pct ->
                         settings.setTextZoom(pct)
                         controller.applyTextZoom(pct)
@@ -923,14 +914,8 @@ fun BrowserScreen(
             if (navStack.size > 1) {
                 com.ravenxud.allegro.ui.nav.BrowserNavHost(
                     stack = navStack,
-                    onBack = {
-                    // 关键：pop 之后必须把 screen 跟着退回去。
-                    // 否则 secondaryVisible 仍为 true → chromeAlpha 卡在 0，
-                    // 顶栏会"透明但占位"，首页顶部出现一条空白（0.68.1 的现象）。
-                    navStack.popSecondary()
-                    screen = navStack.currentSecondary() ?: SecondaryScreen.BROWSER
-                    true
-                },
+                    // 栈即事实源：pop 后 screen 自动派生，不需要额外同步
+                onBack = { navStack.popSecondary() },
                     rootContent = { },
                     secondaryContent = { RenderSecondary(it) },
                 )
