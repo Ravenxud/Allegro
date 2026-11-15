@@ -91,6 +91,7 @@ fun MiuixSheet(
     scrollOffsetPx: Int = 0,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val reduceMotionNow = Motion.reduceMotion(androidx.compose.ui.platform.LocalContext.current)
     Box(modifier.fillMaxSize()) {
         // 只负责接收"面板外点击"，不绘制任何颜色 —— 页面颜色/亮度完全不变
         AnimatedVisibility(
@@ -104,10 +105,10 @@ fun MiuixSheet(
         AnimatedVisibility(
             visibleState = state,
             modifier = Modifier.align(Alignment.BottomCenter),
-            // 弹簧进场：Luna 的手感不是匀速缓动，而是 340 刚度、略欠阻尼的落位
+            // 弹簧进场；系统关闭动画时压到 0 时长（只保留淡入）
             enter = slideInVertically(
-                // Luna 的卡片弹簧（0.9 / 320），这里按 IntOffset 特化
-                animationSpec = spring(dampingRatio = 0.9f, stiffness = 320f),
+                animationSpec = if (reduceMotionNow) tween(0) else
+                    spring(dampingRatio = 0.9f, stiffness = 320f),
                 initialOffsetY = { it },
             ) + fadeIn(tween(Motion.Duration.Quick)),
             exit = slideOutVertically(

@@ -78,6 +78,18 @@ object Motion {
         const val DURATION = Duration.Instant
     }
 
+    /**
+     * 系统是否关闭了动画（开发者选项 / 无障碍「移除动画」）。
+     * 为 true 时所有位移类动效压到 Instant，只保留透明度变化。
+     */
+    fun reduceMotion(context: android.content.Context): Boolean = runCatching {
+        android.provider.Settings.Global.getFloat(
+            context.contentResolver,
+            android.provider.Settings.Global.ANIMATOR_DURATION_SCALE,
+            1f,
+        ) == 0f
+    }.getOrDefault(false)
+
     /** 跟手类场景用弹簧（可打断）。 */
     object Springs {
         val Snappy: FiniteAnimationSpec<Float> = spring(dampingRatio = 0.85f, stiffness = 380f)

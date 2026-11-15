@@ -226,8 +226,15 @@ private fun DownloadCard(
 
             if (showBar) {
                 Spacer(Modifier.height(Spacing.s))
+                val animatedPercent by androidx.compose.animation.core.animateFloatAsState(
+                    targetValue = percent / 100f,
+                    animationSpec = androidx.compose.animation.core.tween(
+                        com.ravenxud.allegro.ui.theme.Motion.Duration.Instant,
+                    ),
+                    label = "dlProgress",
+                )
                 LinearProgressIndicator(
-                    progress = percent / 100f,
+                    progress = animatedPercent,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(Spacing.xs))

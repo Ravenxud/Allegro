@@ -378,6 +378,7 @@ private fun TabGrid(
                 ) {
                     itemsIndexed(state.tabs, key = { _, it -> it.id }) { index, item ->
                         TabCard(
+                            modifier = Modifier.animateItem(),
                             // 20ms/张的错峰：在绘制层折算，组合期不读进度
                             cardIndex = index,
                             progressProvider = progressProvider,
@@ -464,6 +465,7 @@ private fun TabGrid(
 
 @Composable
 private fun TabCard(
+    modifier: Modifier = Modifier,
     cardIndex: Int,
     progressProvider: () -> Float,
     menuOpen: Boolean,
@@ -496,7 +498,7 @@ private fun TabCard(
     }
 
     Box(
-        Modifier
+        modifier
             .fillMaxWidth()
             .zIndex(if (dragging) 1f else 0f)
             .graphicsLayer {

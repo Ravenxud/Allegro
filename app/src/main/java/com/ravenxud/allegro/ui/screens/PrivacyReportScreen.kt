@@ -48,7 +48,15 @@ fun PrivacyReportScreen(
 ) {
     // 本地规则与域名榜不是 Flow，用版本号触发重新读取
     var version by remember { mutableIntStateOf(0) }
-    val total by adBlock.blocked.collectAsState()
+    val totalRaw by adBlock.blocked.collectAsState()
+    // 数字滚动：避免数值跳变（B9）
+    val total by androidx.compose.animation.core.animateIntAsState(
+        targetValue = totalRaw,
+        animationSpec = androidx.compose.animation.core.tween(
+            com.ravenxud.allegro.ui.theme.Motion.Duration.Standard,
+        ),
+        label = "blockedTotal",
+    )
     val stats = remember(version) { adBlock.stats(limit = 20) }
     val hostCount = remember(version) { adBlock.trackedHostCount() }
     val rules = remember(version) { adBlock.localCosmeticRules() }

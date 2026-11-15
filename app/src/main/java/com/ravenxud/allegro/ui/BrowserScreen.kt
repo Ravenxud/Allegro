@@ -53,6 +53,10 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.runtime.State
+import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -263,6 +267,14 @@ fun BrowserScreen(
     val secondaryVisible = screen != SecondaryScreen.BROWSER
     val secondaryState = remember { MutableTransitionState(false) }
     secondaryState.targetState = secondaryVisible
+    // A1/A2：二级页进度（0→1）。只在 graphicsLayer / drawBehind 里读，不参与组合期计算
+    val secondaryTransition = updateTransition(secondaryVisible, label = "secondary")
+    val secondaryProgress: State<Float> = secondaryTransition.animateFloat(
+        transitionSpec = {
+            spring(dampingRatio = 0.9f, stiffness = 320f, visibilityThreshold = 0.001f)
+        },
+        label = "secondaryProgress",
+    ) { if (it) 1f else 0f }
     // 顶/底栏不再直接移除（会造成布局瞬间跳动），改为淡出 + 轻微位移
     val chromeAlpha by animateFloatAsState(
         targetValue = if (secondaryVisible) 0f else 1f,
@@ -273,8 +285,11 @@ fun BrowserScreen(
     val showHomeBookmarks by settings.homeBookmarksEnabled.collectAsState()
 
     val tabsTransition = updateTransition(targetState = showTabs, label = "tabsTransition")
+    val reduceMotion = com.ravenxud.allegro.ui.theme.Motion.reduceMotion(context)
     val tabsProgress by tabsTransition.animateFloat(
-        transitionSpec = { spring(dampingRatio = 1f, stiffness = 180f) },
+        transitionSpec = {
+            if (reduceMotion) tween(0) else spring(dampingRatio = 1f, stiffness = 180f)
+        },
         label = "tabsProgress",
     ) { if (it) 1f else 0f }
 
@@ -508,7 +523,25 @@ fun BrowserScreen(
                     }
                 },
                 update = { view -> view.visibility = if (overlayActive) View.GONE else View.VISIBLE },
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        // A1/A2：二级页打开时背景轻微后缩（1 → 0.94），返回时回弹
+                        val p = secondaryProgress.value
+                        val s2 = 1f - 0.06f * p
+                        scaleX = s2
+                        scaleY = s2
+                    },
+            )
+
+            // A1/A2：随二级页进度压暗背景（8%）；alpha 在 drawBehind 内读，避免每帧重组
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .drawBehind {
+                        val p = secondaryProgress.value
+                        if (p > 0.001f) drawRect(Color.Black.copy(alpha = 0.08f * p))
+                    },
             )
 
             LaunchedEffect(tab?.isLoading) {
