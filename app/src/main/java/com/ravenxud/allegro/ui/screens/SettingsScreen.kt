@@ -1,4 +1,11 @@
 package com.ravenxud.allegro.ui.screens
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.statusBarsPadding
+import com.ravenxud.allegro.ui.design.AllegroCard
+import com.ravenxud.allegro.ui.design.AllegroRow
+import com.ravenxud.allegro.ui.design.AllegroTopBar
+import com.ravenxud.allegro.ui.theme.Dimens
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -93,18 +100,20 @@ fun SettingsScreen(
         }.getOrNull().orEmpty()
     }
 
-    ScreenScaffold(
-        title = stringResource(R.string.screen_settings),
-        onBack = onBack,
-    ) { inner ->
-        // 对话框必须放在滚动容器之外：放在 verticalScroll 里会被裁剪、定位也会错
-        androidx.compose.foundation.layout.Box(inner.fillMaxSize()) {
+    // 方案 B：内容铺满整屏并从顶栏下穿过，顶栏浮在上面（AllegroTopBar 自带发丝线）
+    androidx.compose.foundation.layout.Box(
+        Modifier
+            .fillMaxSize()
+            .background(MiuixTheme.colorScheme.background),
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .statusBarsPadding()
+                .padding(top = Dimens.TopBar)
+                .padding(horizontal = Dimens.PagePadding),
+            verticalArrangement = Arrangement.spacedBy(Dimens.GroupGap),
         ) {
             SectionTitle(stringResource(R.string.settings_theme))
             PreferenceCard {
@@ -134,7 +143,7 @@ fun SettingsScreen(
 
             SectionTitle(stringResource(R.string.settings_browsing))
             PreferenceCard {
-                SettingRow(
+                AllegroRow(
                     title = "页面缩放",
                     summary = "$textZoom%",
                     onClick = { showZoomDialog = true },
@@ -175,13 +184,13 @@ fun SettingsScreen(
 
             SectionTitle(stringResource(R.string.sync_section))
             PreferenceCard {
-                SettingRow(
+                AllegroRow(
                     title = stringResource(R.string.sync_title),
                     summary = stringResource(R.string.sync_entry_summary),
                     onClick = onOpenSync,
                 )
                 ComponentDivider()
-                SettingRow(
+                AllegroRow(
                     title = stringResource(R.string.rules_title),
                     summary = stringResource(R.string.rules_settings_summary),
                     onClick = onOpenSiteRules,
@@ -197,7 +206,7 @@ fun SettingsScreen(
                     summary = stringResource(R.string.adblock_summary, blockedCount),
                 )
                 ComponentDivider()
-                SettingRow(
+                AllegroRow(
                     title = stringResource(R.string.adblock_update),
                     summary = when {
                         updating -> stringResource(R.string.adblock_updating)
@@ -205,7 +214,7 @@ fun SettingsScreen(
                         else -> stringResource(R.string.adblock_never_updated)
                     },
                     onClick = {
-                        if (updating) return@SettingRow
+                        if (updating) return@AllegroRow
                         scope.launch {
                             val count = adBlock.updateAll()
                             updateMessage.value = resources.getString(
@@ -217,7 +226,7 @@ fun SettingsScreen(
                     },
                 )
                 ComponentDivider()
-                SettingRow(
+                AllegroRow(
                     title = stringResource(R.string.adblock_reset_stats),
                     onClick = { adBlock.resetStats() },
                 )
@@ -237,7 +246,7 @@ fun SettingsScreen(
 
             SectionTitle(stringResource(R.string.settings_data))
             PreferenceCard {
-                SettingRow(
+                AllegroRow(
                     title = stringResource(R.string.settings_clear),
                     summary = stringResource(R.string.settings_clear_summary),
                     onClick = onClearData,
@@ -276,7 +285,7 @@ fun SettingsScreen(
                 )
             }
             PreferenceCard {
-                SettingRow(
+                AllegroRow(
                     title = stringResource(R.string.settings_update_check),
                     summary = when (val s2 = updateState) {
                         is UpdateState.Checking -> stringResource(R.string.update_checking)
@@ -303,19 +312,19 @@ fun SettingsScreen(
 
             SectionTitle(stringResource(R.string.settings_diag_section))
             PreferenceCard {
-                SettingRow(
+                AllegroRow(
                     title = stringResource(R.string.shader_smoke_title),
                     summary = stringResource(R.string.shader_smoke_entry),
                     onClick = onOpenShaderSmoke,
                 )
                 ComponentDivider()
-                SettingRow(
+                AllegroRow(
                     title = "分享日志文件",
                     summary = "发送到其他应用（系统分享面板）",
                     onClick = { shareLog(context, resources, fileExists = true) },
                 )
                 ComponentDivider()
-                SettingRow(
+                AllegroRow(
                     title = "复制日志到剪贴板",
                     summary = "分享面板没有可用目标时用这条",
                     onClick = {
@@ -327,7 +336,7 @@ fun SettingsScreen(
                     },
                 )
                 ComponentDivider()
-                SettingRow(
+                AllegroRow(
                     title = "保存到「下载」目录",
                     summary = "生成 allegro-diag-*.log 文件",
                     onClick = {
@@ -340,13 +349,13 @@ fun SettingsScreen(
                     },
                 )
                 ComponentDivider()
-                SettingRow(
+                AllegroRow(
                     title = "转场实验（miuix-nav）",
                     summary = "验证 NavDisplay 的转场与返回",
                     onClick = onOpenNavPilot,
                 )
                 ComponentDivider()
-                SettingRow(
+                AllegroRow(
                     title = "清空日志",
                     onClick = {
                         com.ravenxud.allegro.util.LogExporter.clear()
@@ -357,7 +366,7 @@ fun SettingsScreen(
 
             SectionTitle(stringResource(R.string.settings_about))
             PreferenceCard {
-                SettingRow(
+                AllegroRow(
                     title = "开源许可",
                     summary = "第三方组件与致谢",
                     onClick = onOpenLicenses,
@@ -370,19 +379,23 @@ fun SettingsScreen(
             Column(Modifier.padding(bottom = 24.dp)) {}
         }
 
+        com.ravenxud.allegro.ui.design.AllegroTopBar(
+            title = stringResource(R.string.screen_settings),
+            onBack = onBack,
+        )
+
         com.ravenxud.allegro.ui.components.ZoomDialog(
             show = showZoomDialog,
             current = textZoom,
             onDismiss = { showZoomDialog = false },
             onConfirm = { onTextZoomChange(it) },
         )
-        }
     }
 }
 
 @Composable
 private fun PreferenceCard(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
-    GroupedCard { content() }
+    AllegroCard { content() }
 }
 
 @Composable
