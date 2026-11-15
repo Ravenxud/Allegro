@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -130,307 +130,344 @@ fun SettingsScreen(
                 .layerBackdrop(topBarBackdrop)
                 .background(MiuixTheme.colorScheme.background),
         ) {
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
                 .statusBarsPadding()
-                .padding(top = Dimens.TopBar)
-                .padding(horizontal = Dimens.PagePadding),
+                .padding(top = Dimens.TopBar),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = Dimens.PagePadding),
             verticalArrangement = Arrangement.spacedBy(Dimens.GroupGap),
         ) {
-            SectionTitle(stringResource(R.string.settings_theme))
-            PreferenceCard {
-                ThemeMode.entries.forEachIndexed { index, mode ->
-                    if (index > 0) ComponentDivider()
-                    RadioButtonPreference(
-                        title = stringResource(mode.labelRes()),
-                        selected = theme == mode,
-                        onClick = { settings.setThemeMode(mode) },
-                    )
-                }
-                ComponentDivider()
-                com.ravenxud.allegro.data.model.WallpaperSource.entries.forEachIndexed { index, source ->
-                    if (index > 0) ComponentDivider()
-                    RadioButtonPreference(
-                        title = stringResource(
-                            when (source) {
-                                com.ravenxud.allegro.data.model.WallpaperSource.DEFAULT -> R.string.settings_wallpaper_default
-                                com.ravenxud.allegro.data.model.WallpaperSource.BING -> R.string.settings_wallpaper_bing
-                                com.ravenxud.allegro.data.model.WallpaperSource.CUSTOM -> R.string.settings_wallpaper_custom
-                            },
-                        ),
-                        selected = wallpaperSource == source,
-                        onClick = { settings.setWallpaperSource(source) },
-                    )
-                }
-                if (wallpaperSource == com.ravenxud.allegro.data.model.WallpaperSource.CUSTOM) {
+            item {
+                SectionTitle(stringResource(R.string.settings_theme))
+            }
+            item {
+                PreferenceCard {
+                    ThemeMode.entries.forEachIndexed { index, mode ->
+                        if (index > 0) ComponentDivider()
+                        RadioButtonPreference(
+                            title = stringResource(mode.labelRes()),
+                            selected = theme == mode,
+                            onClick = { settings.setThemeMode(mode) },
+                        )
+                    }
                     ComponentDivider()
-                    BasicComponent(
-                        title = stringResource(R.string.settings_wallpaper_pick),
-                        summary = if (wallpaper == null) stringResource(R.string.settings_wallpaper_summary) else stringResource(R.string.settings_wallpaper_on),
-                        onClick = { pickWallpaper.launch(arrayOf("image/*")) },
-                    )
-                    if (wallpaper != null) {
+                    com.ravenxud.allegro.data.model.WallpaperSource.entries.forEachIndexed { index, source ->
+                        if (index > 0) ComponentDivider()
+                        RadioButtonPreference(
+                            title = stringResource(
+                                when (source) {
+                                    com.ravenxud.allegro.data.model.WallpaperSource.DEFAULT -> R.string.settings_wallpaper_default
+                                    com.ravenxud.allegro.data.model.WallpaperSource.BING -> R.string.settings_wallpaper_bing
+                                    com.ravenxud.allegro.data.model.WallpaperSource.CUSTOM -> R.string.settings_wallpaper_custom
+                                },
+                            ),
+                            selected = wallpaperSource == source,
+                            onClick = { settings.setWallpaperSource(source) },
+                        )
+                    }
+                    if (wallpaperSource == com.ravenxud.allegro.data.model.WallpaperSource.CUSTOM) {
                         ComponentDivider()
                         BasicComponent(
-                            title = stringResource(R.string.settings_wallpaper_reset),
-                            onClick = { settings.setWallpaperUri(null) },
+                            title = stringResource(R.string.settings_wallpaper_pick),
+                            summary = if (wallpaper == null) stringResource(R.string.settings_wallpaper_summary) else stringResource(R.string.settings_wallpaper_on),
+                            onClick = { pickWallpaper.launch(arrayOf("image/*")) },
+                        )
+                        if (wallpaper != null) {
+                            ComponentDivider()
+                            BasicComponent(
+                                title = stringResource(R.string.settings_wallpaper_reset),
+                                onClick = { settings.setWallpaperUri(null) },
+                            )
+                        }
+                    }
+                }
+            }
+            item {
+                SectionTitle(stringResource(R.string.settings_search_engine))
+            }
+            item {
+                PreferenceCard {
+                    // 0.28 改名时这段被误删，导致设置里没有搜索引擎可切
+                    SearchEngines.builtIn.forEachIndexed { index, engine ->
+                        if (index > 0) ComponentDivider()
+                        RadioButtonPreference(
+                            title = engine.name,
+                            selected = engineId == engine.id,
+                            onClick = { settings.setSearchEngine(engine.id) },
                         )
                     }
                 }
             }
-
-
-            SectionTitle(stringResource(R.string.settings_search_engine))
-            PreferenceCard {
-                // 0.28 改名时这段被误删，导致设置里没有搜索引擎可切
-                SearchEngines.builtIn.forEachIndexed { index, engine ->
-                    if (index > 0) ComponentDivider()
-                    RadioButtonPreference(
-                        title = engine.name,
-                        selected = engineId == engine.id,
-                        onClick = { settings.setSearchEngine(engine.id) },
+            item {
+                SectionTitle(stringResource(R.string.settings_browsing))
+            }
+            item {
+                PreferenceCard {
+                    AllegroRow(
+                        title = "页面缩放",
+                        summary = "$textZoom%",
+                        onClick = { showZoomDialog = true },
                     )
-                }
-            }
-
-            SectionTitle(stringResource(R.string.settings_browsing))
-            PreferenceCard {
-                AllegroRow(
-                    title = "页面缩放",
-                    summary = "$textZoom%",
-                    onClick = { showZoomDialog = true },
-                )
-                ComponentDivider()
-                SwitchPreference(
-                    checked = alwaysDesktop,
-                    onCheckedChange = { settings.setAlwaysDesktop(it) },
-                    title = stringResource(R.string.settings_always_desktop),
-                    summary = stringResource(R.string.settings_always_desktop_summary),
-                )
-                ComponentDivider()
-                com.ravenxud.allegro.data.model.DesktopUa.entries.forEachIndexed { index, option ->
-                    if (index > 0) ComponentDivider()
-                    RadioButtonPreference(
-                        title = stringResource(R.string.settings_desktop_ua) + " · " + option.label,
-                        selected = desktopUa == option,
-                        onClick = { settings.setDesktopUa(option) },
-                    )
-                }
-            }
-
-            SectionTitle(stringResource(R.string.home_section_bookmarks))
-            PreferenceCard {
-                SwitchPreference(
-                    checked = showHomeBookmarks,
-                    onCheckedChange = { settings.setHomeBookmarksEnabled(it) },
-                    title = stringResource(R.string.settings_home_bookmarks),
-                )
-                ComponentDivider()
-                SwitchPreference(
-                    checked = reduceMotion,
-                    onCheckedChange = { settings.setReduceMotion(it) },
-                    title = "减少动画",
-                    summary = "关闭位移类动效，只保留淡入淡出",
-                )
-            }
-
-            SectionTitle(stringResource(R.string.sync_section))
-            PreferenceCard {
-                AllegroRow(
-                    title = stringResource(R.string.sync_title),
-                    summary = stringResource(R.string.sync_entry_summary),
-                    onClick = onOpenSync,
-                )
-                ComponentDivider()
-                AllegroRow(
-                    title = stringResource(R.string.rules_title),
-                    summary = stringResource(R.string.rules_settings_summary),
-                    onClick = onOpenSiteRules,
-                )
-            }
-
-            SectionTitle(stringResource(R.string.adblock_section))
-            PreferenceCard {
-                SwitchPreference(
-                    checked = blockEnabled,
-                    onCheckedChange = { adBlock.setEnabled(it) },
-                    title = stringResource(R.string.adblock_title),
-                    summary = stringResource(R.string.adblock_summary, blockedCount),
-                )
-                ComponentDivider()
-                AllegroRow(
-                    title = stringResource(R.string.adblock_update),
-                    summary = when {
-                        updating -> stringResource(R.string.adblock_updating)
-                        updateMessage.value != null -> updateMessage.value
-                        else -> stringResource(R.string.adblock_never_updated)
-                    },
-                    onClick = {
-                        if (updating) return@AllegroRow
-                        scope.launch {
-                            val count = adBlock.updateAll()
-                            updateMessage.value = resources.getString(
-                                if (count > 0) R.string.adblock_update_done
-                                else R.string.adblock_update_failed,
-                                count,
-                            )
-                        }
-                    },
-                )
-                ComponentDivider()
-                AllegroRow(
-                    title = stringResource(R.string.adblock_reset_stats),
-                    onClick = { adBlock.resetStats() },
-                )
-            }
-
-            SectionTitle(stringResource(R.string.adblock_sources))
-            PreferenceCard {
-                FilterSources.all.forEachIndexed { index, source ->
-                    if (index > 0) ComponentDivider()
+                    ComponentDivider()
                     SwitchPreference(
-                        checked = adBlock.sourceEnabled(source.id),
-                        onCheckedChange = { adBlock.setSourceEnabled(source.id, it) },
-                        title = source.title,
+                        checked = alwaysDesktop,
+                        onCheckedChange = { settings.setAlwaysDesktop(it) },
+                        title = stringResource(R.string.settings_always_desktop),
+                        summary = stringResource(R.string.settings_always_desktop_summary),
+                    )
+                    ComponentDivider()
+                    com.ravenxud.allegro.data.model.DesktopUa.entries.forEachIndexed { index, option ->
+                        if (index > 0) ComponentDivider()
+                        RadioButtonPreference(
+                            title = stringResource(R.string.settings_desktop_ua) + " · " + option.label,
+                            selected = desktopUa == option,
+                            onClick = { settings.setDesktopUa(option) },
+                        )
+                    }
+                }
+            }
+            item {
+                SectionTitle(stringResource(R.string.home_section_bookmarks))
+            }
+            item {
+                PreferenceCard {
+                    SwitchPreference(
+                        checked = showHomeBookmarks,
+                        onCheckedChange = { settings.setHomeBookmarksEnabled(it) },
+                        title = stringResource(R.string.settings_home_bookmarks),
+                    )
+                    ComponentDivider()
+                    SwitchPreference(
+                        checked = reduceMotion,
+                        onCheckedChange = { settings.setReduceMotion(it) },
+                        title = "减少动画",
+                        summary = "关闭位移类动效，只保留淡入淡出",
                     )
                 }
             }
-
-            SectionTitle(stringResource(R.string.settings_data))
-            PreferenceCard {
-                AllegroRow(
-                    title = stringResource(R.string.settings_clear),
-                    summary = stringResource(R.string.settings_clear_summary),
-                    onClick = onClearData,
-                )
+            item {
+                SectionTitle(stringResource(R.string.sync_section))
             }
-
-
-            SectionTitle(stringResource(R.string.settings_kernel))
-            PreferenceCard {
-                BasicComponent(
-                    title = stringResource(R.string.settings_kernel_version, kernel.first),
-                    summary = stringResource(R.string.settings_kernel_provider, kernel.second),
-                )
+            item {
+                PreferenceCard {
+                    AllegroRow(
+                        title = stringResource(R.string.sync_title),
+                        summary = stringResource(R.string.sync_entry_summary),
+                        onClick = onOpenSync,
+                    )
+                    ComponentDivider()
+                    AllegroRow(
+                        title = stringResource(R.string.rules_title),
+                        summary = stringResource(R.string.rules_settings_summary),
+                        onClick = onOpenSiteRules,
+                    )
+                }
             }
-
-
-            SectionTitle(stringResource(R.string.settings_update_section))
-            PreferenceCard {
-                BasicComponent(
-                    title = stringResource(R.string.settings_update_repo),
-                    summary = stringResource(R.string.settings_update_repo_hint),
-                    bottomAction = {
-                        top.yukonga.miuix.kmp.basic.TextField(
-                            value = repoInput.value,
-                            onValueChange = {
-                                repoInput.value = it
-                                settings.setUpdateRepo(it)
-                                com.ravenxud.allegro.di.ServiceLocator.rebindUpdateRepo(it)
-                            },
-                            singleLine = true,
-                            label = "owner/repo",
-                            useLabelAsPlaceholder = true,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    },
-                )
+            item {
+                SectionTitle(stringResource(R.string.adblock_section))
             }
-            PreferenceCard {
-                AllegroRow(
-                    title = stringResource(R.string.settings_update_check),
-                    summary = when (val s2 = updateState) {
-                        is UpdateState.Checking -> stringResource(R.string.update_checking)
-                        is UpdateState.UpToDate -> stringResource(R.string.update_up_to_date)
-                        is UpdateState.Available -> stringResource(R.string.update_available, s2.info.versionName)
-                        is UpdateState.Downloading -> stringResource(R.string.update_downloading, s2.percent)
-                        is UpdateState.Ready -> stringResource(R.string.update_ready)
-                        is UpdateState.Failed -> stringResource(R.string.update_failed, s2.message)
-                        else -> null
-                    },
-                    onClick = {
-                        scope.launch {
-                            when (val s3 = update.check()) {
-                                is UpdateState.Available -> {
-                                    val file = update.download(s3.info)
-                                    if (file != null) update.install(file)
-                                }
-                                else -> Unit
+            item {
+                PreferenceCard {
+                    SwitchPreference(
+                        checked = blockEnabled,
+                        onCheckedChange = { adBlock.setEnabled(it) },
+                        title = stringResource(R.string.adblock_title),
+                        summary = stringResource(R.string.adblock_summary, blockedCount),
+                    )
+                    ComponentDivider()
+                    AllegroRow(
+                        title = stringResource(R.string.adblock_update),
+                        summary = when {
+                            updating -> stringResource(R.string.adblock_updating)
+                            updateMessage.value != null -> updateMessage.value
+                            else -> stringResource(R.string.adblock_never_updated)
+                        },
+                        onClick = {
+                            if (updating) return@AllegroRow
+                            scope.launch {
+                                val count = adBlock.updateAll()
+                                updateMessage.value = resources.getString(
+                                    if (count > 0) R.string.adblock_update_done
+                                    else R.string.adblock_update_failed,
+                                    count,
+                                )
                             }
-                        }
-                    },
-                )
+                        },
+                    )
+                    ComponentDivider()
+                    AllegroRow(
+                        title = stringResource(R.string.adblock_reset_stats),
+                        onClick = { adBlock.resetStats() },
+                    )
+                }
             }
-
-            SectionTitle(stringResource(R.string.settings_diag_section))
-            PreferenceCard {
-                AllegroRow(
-                    title = stringResource(R.string.shader_smoke_title),
-                    summary = stringResource(R.string.shader_smoke_entry),
-                    onClick = onOpenShaderSmoke,
-                )
-                ComponentDivider()
-                AllegroRow(
-                    title = "分享日志文件",
-                    summary = "发送到其他应用（系统分享面板）",
-                    onClick = { shareLog(context, resources, fileExists = true) },
-                )
-                ComponentDivider()
-                AllegroRow(
-                    title = "复制日志到剪贴板",
-                    summary = "分享面板没有可用目标时用这条",
-                    onClick = {
-                        if (com.ravenxud.allegro.util.LogExporter.copyToClipboard(context)) {
-                            Toast.makeText(context, "已复制日志", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(context, R.string.settings_diag_empty, Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                )
-                ComponentDivider()
-                AllegroRow(
-                    title = "保存到「下载」目录",
-                    summary = "生成 allegro-diag-*.log 文件",
-                    onClick = {
-                        val name = com.ravenxud.allegro.util.LogExporter.saveToDownloads(context)
-                        Toast.makeText(
-                            context,
-                            if (name != null) "已保存到下载：$name" else resources.getString(R.string.settings_diag_empty),
-                            Toast.LENGTH_LONG,
-                        ).show()
-                    },
-                )
-                ComponentDivider()
-                AllegroRow(
-                    title = "转场实验（miuix-nav）",
-                    summary = "验证 NavDisplay 的转场与返回",
-                    onClick = onOpenNavPilot,
-                )
-                ComponentDivider()
-                AllegroRow(
-                    title = "清空日志",
-                    onClick = {
-                        com.ravenxud.allegro.util.LogExporter.clear()
-                        Toast.makeText(context, "已清空诊断日志", Toast.LENGTH_SHORT).show()
-                    },
-                )
+            item {
+                SectionTitle(stringResource(R.string.adblock_sources))
             }
-
-            SectionTitle(stringResource(R.string.settings_about))
-            PreferenceCard {
-                AllegroRow(
-                    title = "开源许可",
-                    summary = "第三方组件与致谢",
-                    onClick = onOpenLicenses,
-                )
-                ComponentDivider()
-                BasicComponent(
-                    title = stringResource(R.string.settings_version, version),
-                )
+            item {
+                PreferenceCard {
+                    FilterSources.all.forEachIndexed { index, source ->
+                        if (index > 0) ComponentDivider()
+                        SwitchPreference(
+                            checked = adBlock.sourceEnabled(source.id),
+                            onCheckedChange = { adBlock.setSourceEnabled(source.id, it) },
+                            title = source.title,
+                        )
+                    }
+                }
             }
-            Column(Modifier.padding(bottom = 24.dp)) {}
+            item {
+                SectionTitle(stringResource(R.string.settings_data))
+            }
+            item {
+                PreferenceCard {
+                    AllegroRow(
+                        title = stringResource(R.string.settings_clear),
+                        summary = stringResource(R.string.settings_clear_summary),
+                        onClick = onClearData,
+                    )
+                }
+            }
+            item {
+                SectionTitle(stringResource(R.string.settings_kernel))
+            }
+            item {
+                PreferenceCard {
+                    BasicComponent(
+                        title = stringResource(R.string.settings_kernel_version, kernel.first),
+                        summary = stringResource(R.string.settings_kernel_provider, kernel.second),
+                    )
+                }
+            }
+            item {
+                SectionTitle(stringResource(R.string.settings_update_section))
+            }
+            item {
+                PreferenceCard {
+                    BasicComponent(
+                        title = stringResource(R.string.settings_update_repo),
+                        summary = stringResource(R.string.settings_update_repo_hint),
+                        bottomAction = {
+                            top.yukonga.miuix.kmp.basic.TextField(
+                                value = repoInput.value,
+                                onValueChange = {
+                                    repoInput.value = it
+                                    settings.setUpdateRepo(it)
+                                    com.ravenxud.allegro.di.ServiceLocator.rebindUpdateRepo(it)
+                                },
+                                singleLine = true,
+                                label = "owner/repo",
+                                useLabelAsPlaceholder = true,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        },
+                    )
+                }
+            }
+            item {
+                PreferenceCard {
+                    AllegroRow(
+                        title = stringResource(R.string.settings_update_check),
+                        summary = when (val s2 = updateState) {
+                            is UpdateState.Checking -> stringResource(R.string.update_checking)
+                            is UpdateState.UpToDate -> stringResource(R.string.update_up_to_date)
+                            is UpdateState.Available -> stringResource(R.string.update_available, s2.info.versionName)
+                            is UpdateState.Downloading -> stringResource(R.string.update_downloading, s2.percent)
+                            is UpdateState.Ready -> stringResource(R.string.update_ready)
+                            is UpdateState.Failed -> stringResource(R.string.update_failed, s2.message)
+                            else -> null
+                        },
+                        onClick = {
+                            scope.launch {
+                                when (val s3 = update.check()) {
+                                    is UpdateState.Available -> {
+                                        val file = update.download(s3.info)
+                                        if (file != null) update.install(file)
+                                    }
+                                    else -> Unit
+                                }
+                            }
+                        },
+                    )
+                }
+            }
+            item {
+                SectionTitle(stringResource(R.string.settings_diag_section))
+            }
+            item {
+                PreferenceCard {
+                    AllegroRow(
+                        title = stringResource(R.string.shader_smoke_title),
+                        summary = stringResource(R.string.shader_smoke_entry),
+                        onClick = onOpenShaderSmoke,
+                    )
+                    ComponentDivider()
+                    AllegroRow(
+                        title = "分享日志文件",
+                        summary = "发送到其他应用（系统分享面板）",
+                        onClick = { shareLog(context, resources, fileExists = true) },
+                    )
+                    ComponentDivider()
+                    AllegroRow(
+                        title = "复制日志到剪贴板",
+                        summary = "分享面板没有可用目标时用这条",
+                        onClick = {
+                            if (com.ravenxud.allegro.util.LogExporter.copyToClipboard(context)) {
+                                Toast.makeText(context, "已复制日志", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, R.string.settings_diag_empty, Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                    )
+                    ComponentDivider()
+                    AllegroRow(
+                        title = "保存到「下载」目录",
+                        summary = "生成 allegro-diag-*.log 文件",
+                        onClick = {
+                            val name = com.ravenxud.allegro.util.LogExporter.saveToDownloads(context)
+                            Toast.makeText(
+                                context,
+                                if (name != null) "已保存到下载：$name" else resources.getString(R.string.settings_diag_empty),
+                                Toast.LENGTH_LONG,
+                            ).show()
+                        },
+                    )
+                    ComponentDivider()
+                    AllegroRow(
+                        title = "转场实验（miuix-nav）",
+                        summary = "验证 NavDisplay 的转场与返回",
+                        onClick = onOpenNavPilot,
+                    )
+                    ComponentDivider()
+                    AllegroRow(
+                        title = "清空日志",
+                        onClick = {
+                            com.ravenxud.allegro.util.LogExporter.clear()
+                            Toast.makeText(context, "已清空诊断日志", Toast.LENGTH_SHORT).show()
+                        },
+                    )
+                }
+            }
+            item {
+                SectionTitle(stringResource(R.string.settings_about))
+            }
+            item {
+                PreferenceCard {
+                    AllegroRow(
+                        title = "开源许可",
+                        summary = "第三方组件与致谢",
+                        onClick = onOpenLicenses,
+                    )
+                    ComponentDivider()
+                    BasicComponent(
+                        title = stringResource(R.string.settings_version, version),
+                    )
+                }
+            }
+            item {
+                Column(Modifier.padding(bottom = 24.dp)) {}
+            }
         }
         }
 

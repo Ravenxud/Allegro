@@ -887,8 +887,10 @@ fun BrowserScreen(
                         if (tab?.isLoading == false) swipe.value?.isRefreshing = false
                     }
         
+                    // 二级页盖上来时不再组合首页内容：首页有壁纸 + 多张玻璃卡，
+                    // 转场期间每帧重绘它是"进二级页卡顿"的主要来源（早于玻璃就存在）。
                     AnimatedVisibility(
-                        visible = isHome,
+                        visible = isHome && !secondaryVisible,
                         enter = fadeIn(Motion.enter()) + slideInVertically(Motion.slide()) { it / 24 },
                         exit = fadeOut(Motion.exit()),
                     ) {
