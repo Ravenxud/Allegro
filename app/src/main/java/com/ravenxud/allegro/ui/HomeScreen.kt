@@ -391,6 +391,8 @@ private fun Modifier.glassSurface(backdrop: Backdrop, corner: Dp): Modifier {
             style = GlassStyles.CommonMediumRegularLowLight,
             material = GlassMaterials.puredThinGlass(isSystemInDarkTheme()),
             shading = false,
+            // 关掉噪点抖动通道：省一遍 shader 采样，肉眼几乎无差别
+            noiseCoefficient = 0f,
         )
         .drawBehind { drawRoundRect(color = frost, cornerRadius = CornerRadius(radius, radius)) }
         .clip(RoundedCornerShape(corner))
@@ -416,24 +418,23 @@ private fun Wallpaper(bitmap: Bitmap?) {
 private fun DefaultBackdrop() {
     val primary = MiuixTheme.colorScheme.primary
     Box(Modifier.fillMaxSize().background(MiuixTheme.colorScheme.background)) {
-        Box(Modifier.fillMaxSize().blur(72.dp)) {
-            Canvas(Modifier.fillMaxSize()) {
+        // 用径向渐变代替「实心圆 + 全屏 blur(72dp)」：
+        // 观感接近，但省掉一整层全屏 RenderEffect（那是首帧最贵的一笔）。
+        Canvas(Modifier.fillMaxSize()) {
+            fun blob(color: Color, cx: Float, cy: Float, radius: Float) {
                 drawCircle(
-                    color = primary.copy(alpha = 0.55f),
-                    radius = size.minDimension * 0.62f,
-                    center = Offset(size.width * 0.18f, size.height * 0.12f),
-                )
-                drawCircle(
-                    color = Color(0xFF6EE7F9).copy(alpha = 0.42f),
-                    radius = size.minDimension * 0.55f,
-                    center = Offset(size.width * 0.92f, size.height * 0.28f),
-                )
-                drawCircle(
-                    color = Color(0xFFFFA26B).copy(alpha = 0.35f),
-                    radius = size.minDimension * 0.50f,
-                    center = Offset(size.width * 0.55f, size.height * 0.85f),
+                    brush = Brush.radialGradient(
+                        colors = listOf(color, color.copy(alpha = 0f)),
+                        center = Offset(cx, cy),
+                        radius = radius,
+                    ),
+                    radius = radius,
+                    center = Offset(cx, cy),
                 )
             }
+            blob(primary.copy(alpha = 0.55f), size.width * 0.18f, size.height * 0.12f, size.minDimension * 0.95f)
+            blob(Color(0xFF6EE7F9).copy(alpha = 0.42f), size.width * 0.92f, size.height * 0.28f, size.minDimension * 0.85f)
+            blob(Color(0xFFFFA26B).copy(alpha = 0.35f), size.width * 0.55f, size.height * 0.85f, size.minDimension * 0.80f)
         }
     }
 }

@@ -89,6 +89,7 @@ fun AllegroTopBar(
             style = GlassStyles.CommonMediumRegularLowLight,
             material = GlassMaterials.puredThinGlass(isSystemInDarkTheme()),
             shading = false,
+            noiseCoefficient = 0f,
         )
     } else {
         Modifier

@@ -595,25 +595,38 @@ fun BrowserScreen(
                         }
                     }
                     // WebView 现在铺到底栏下面：抓「底栏正上方一条」预模糊，当磨砂底
-                    LaunchedEffect(overlayActive, chromeAlpha, tab?.url) {
-                        while (true) {
-                            val b = barBounds
-                            val usable = !overlayActive && chromeAlpha > 0.05f && b != null &&
-                                b.height > 1f && tab?.url != "about:blank"
-                            if (usable && b != null) {
-                                val strip = android.graphics.Rect(
-                                    b.left.toInt(),
-                                    (b.top - b.height).toInt().coerceAtLeast(0),
-                                    b.right.toInt(),
-                                    b.top.toInt(),
-                                )
-                                controller.captureBarFrost(strip) { bitmap ->
-                                    frost = bitmap?.asImageBitmap()
-                                }
-                            } else if (frost != null) {
-                                frost = null
+                    // 只在「需要变」的时候抓：打开/切换标签、加载进度变化。
+                    // 之前是 260ms 死循环做 PixelCopy（GPU 回读），静置时也在烧 —— 全局卡顿的主要来源之一。
+                    LaunchedEffect(tab?.id, tab?.url, chromeAlpha, overlayActive, tab?.isLoading) {
+                        val b = barBounds
+                        val usable = !overlayActive && chromeAlpha > 0.05f && b != null &&
+                            b.height > 1f && tab?.url != "about:blank"
+                        if (usable && b != null) {
+                            val strip = android.graphics.Rect(
+                                b.left.toInt(),
+                                (b.top - b.height).toInt().coerceAtLeast(0),
+                                b.right.toInt(),
+                                b.top.toInt(),
+                            )
+                            controller.captureBarFrost(strip) { bitmap ->
+                                frost = bitmap?.asImageBitmap()
                             }
-                            kotlinx.coroutines.delay(260)
+                        } else if (frost != null) {
+                            frost = null
+                        }
+                    }
+                    // 加载中再低频补两次，让磨砂跟着页面变化
+                    LaunchedEffect(tab?.isLoading, tab?.id) {
+                        if (tab?.isLoading != true) return@LaunchedEffect
+                        repeat(2) {
+                            kotlinx.coroutines.delay(900)
+                            val b = barBounds ?: return@LaunchedEffect
+                            if (overlayActive || chromeAlpha <= 0.05f || b.height <= 1f) return@LaunchedEffect
+                            val strip = android.graphics.Rect(
+                                b.left.toInt(), (b.top - b.height).toInt().coerceAtLeast(0),
+                                b.right.toInt(), b.top.toInt(),
+                            )
+                            controller.captureBarFrost(strip) { bitmap -> frost = bitmap?.asImageBitmap() }
                         }
                     }
                     Surface(
@@ -629,7 +642,8 @@ fun BrowserScreen(
                                     bitmap = bmp,
                                     contentDescription = null,
                                     contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                                    modifier = Modifier.matchParentSize().blur(14.dp),
+                                    // 位图在控制器里已经模糊过；再叠一层 RenderEffect 只会白烧 GPU
+                                    modifier = Modifier.matchParentSize(),
                                 )
                             }
                             Column(

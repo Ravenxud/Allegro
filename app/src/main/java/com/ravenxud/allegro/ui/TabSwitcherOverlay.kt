@@ -674,7 +674,6 @@ private fun TabCard(
                     onClick = onSelect,
                     onLongClick = onLongPress,
                 )
-                .pressScale()
                 .offset { IntOffset(offsetX.roundToInt(), 0) }
                 .pointerInput(Unit) {
                     detectHorizontalDragGestures(
