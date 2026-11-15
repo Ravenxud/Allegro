@@ -24,12 +24,12 @@ import top.yukonga.miuix.kmp.nav.transition.NavTransitions
 /**
  * 转场节奏：沿用 miuix 默认的**视觉**（形状不变），只把时长拉长。
  *
- * 默认时长偏快（进二级页几乎是"闪一下"），这里统一到 420ms 提交、240ms 取消。
+ * 默认时长偏快（进二级页几乎是"闪一下"），这里统一到 560ms 提交、320ms 取消。
  */
 private val SoftMotion = NavMotion(
-    commit = NavSettleSpec.Tween(420, FastOutSlowInEasing),
-    cancel = NavSettleSpec.Tween(240, FastOutLinearInEasing),
-    programmatic = NavSettleSpec.Tween(420, FastOutSlowInEasing),
+    commit = NavSettleSpec.Tween(560, FastOutSlowInEasing),
+    cancel = NavSettleSpec.Tween(320, FastOutLinearInEasing),
+    programmatic = NavSettleSpec.Tween(560, FastOutSlowInEasing),
 )
 
 private val SoftTransition: NavTransition =
