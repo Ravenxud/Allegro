@@ -60,6 +60,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.boundsInWindow
@@ -552,6 +556,25 @@ fun BrowserScreen(
                     )
                     var barBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
                     var frost by remember { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+                    // 进度条：数据 → 单点动画（Luna 也是状态驱动，范围外不做动画）
+                    val progressColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.95f)
+                    val progressTarget = (tab?.progress ?: 0) / 100f
+                    val progressAnim = remember { androidx.compose.animation.core.Animatable(0f) }
+                    LaunchedEffect(progressTarget, tab?.isLoading) {
+                        if (progressTarget >= 1f) {
+                            progressAnim.animateTo(1f, androidx.compose.animation.core.tween(220))
+                            kotlinx.coroutines.delay(380)
+                            progressAnim.animateTo(0f, androidx.compose.animation.core.tween(260))
+                        } else {
+                            progressAnim.animateTo(
+                                progressTarget,
+                                androidx.compose.animation.core.tween(
+                                    durationMillis = 240,
+                                    easing = androidx.compose.animation.core.LinearOutSlowInEasing,
+                                ),
+                            )
+                        }
+                    }
                     // WebView 现在铺到底栏下面：抓「底栏正上方一条」预模糊，当磨砂底
                     LaunchedEffect(overlayActive, chromeAlpha, tab?.url) {
                         while (true) {
@@ -633,35 +656,56 @@ fun BrowserScreen(
                                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    TextField(
-                                        value = field,
-                                        onValueChange = { field = it },
-                                        modifier = Modifier
+                                    Box(
+                                        Modifier
                                             .weight(1f)
-                                            .onFocusChanged { focused = it.isFocused },
-                                        singleLine = true,
-                                        label = stringResource(R.string.address_hint),
-                                        useLabelAsPlaceholder = true,
-                                        cornerRadius = 22.dp,
-                                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-                                        keyboardActions = KeyboardActions(onGo = { submit() }),
-                                        trailingIcon = {
-                                            IconButton(onClick = {
-                                                val clip = (context.getSystemService(Context.CLIPBOARD_SERVICE)
-                                                    as android.content.ClipboardManager).primaryClip
-                                                val text = clip?.takeIf { it.itemCount > 0 }
-                                                    ?.getItemAt(0)?.text?.toString().orEmpty()
-                                                if (text.isBlank()) {
-                                                    Toast.makeText(context, R.string.paste_empty, Toast.LENGTH_SHORT).show()
-                                                } else {
-                                                    field = TextFieldValue(text, TextRange(text.length))
-                                                    submit()
+                                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(22.dp))
+                                            .drawWithContent {
+                                                drawContent()
+                                                val p = progressAnim.value
+                                                if (p > 0.002f) {
+                                                    val inset = 12.dp.toPx()
+                                                    val barH = 3.dp.toPx()
+                                                    val barW = ((size.width - inset * 2) * p).coerceAtLeast(barH)
+                                                    drawRoundRect(
+                                                        color = progressColor,
+                                                        topLeft = androidx.compose.ui.geometry.Offset(inset, size.height - barH - 3.dp.toPx()),
+                                                        size = androidx.compose.ui.geometry.Size(barW, barH),
+                                                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(barH / 2f, barH / 2f),
+                                                    )
                                                 }
-                                            }) {
-                                                Icon(AllegroIcons.Paste, stringResource(R.string.cd_paste_search))
-                                            }
-                                        },
-                                    )
+                                            },
+                                    ) {
+                                        TextField(
+                                            value = field,
+                                            onValueChange = { field = it },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .onFocusChanged { focused = it.isFocused },
+                                            singleLine = true,
+                                            label = stringResource(R.string.address_hint),
+                                            useLabelAsPlaceholder = true,
+                                            cornerRadius = 22.dp,
+                                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                                            keyboardActions = KeyboardActions(onGo = { submit() }),
+                                            trailingIcon = {
+                                                IconButton(onClick = {
+                                                    val clip = (context.getSystemService(Context.CLIPBOARD_SERVICE)
+                                                        as android.content.ClipboardManager).primaryClip
+                                                    val text = clip?.takeIf { it.itemCount > 0 }
+                                                        ?.getItemAt(0)?.text?.toString().orEmpty()
+                                                    if (text.isBlank()) {
+                                                        Toast.makeText(context, R.string.paste_empty, Toast.LENGTH_SHORT).show()
+                                                    } else {
+                                                        field = TextFieldValue(text, TextRange(text.length))
+                                                        submit()
+                                                    }
+                                                }) {
+                                                    Icon(AllegroIcons.Paste, stringResource(R.string.cd_paste_search))
+                                                }
+                                            },
+                                        )
+                                    }
                                     if (isHome) {
                                         // 首页没有「后退」语义，这个位置给书签
                                         IconButton(
@@ -712,12 +756,6 @@ fun BrowserScreen(
                                     ) {
                                         Icon(AllegroIcons.More, stringResource(R.string.app_menu))
                                     }
-                                }
-                                if (tab?.isLoading == true) {
-                                    LinearProgressIndicator(
-                                        progress = (tab?.progress ?: 0) / 100f,
-                                        modifier = Modifier.fillMaxWidth(),
-                                    )
                                 }
                             }
                         }
