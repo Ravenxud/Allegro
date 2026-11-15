@@ -662,17 +662,27 @@ fun BrowserScreen(
                                             }
                                         },
                                     )
-                                    IconButton(
-                                        onClick = {
-                                            if (tab?.canGoBack == true) {
-                                                controller.goBack()
-                                            } else {
-                                                pageToast = "已经是第一页"
-                                            }
-                                        },
-                                        modifier = Modifier.size(40.dp),
-                                    ) {
-                                        Icon(AllegroIcons.Back, stringResource(R.string.cd_back))
+                                    if (isHome) {
+                                        // 首页没有「后退」语义，这个位置给书签
+                                        IconButton(
+                                            onClick = { pushSecondary(SecondaryScreen.BOOKMARKS) },
+                                            modifier = Modifier.size(40.dp),
+                                        ) {
+                                            Icon(AllegroIcons.Favorites, stringResource(R.string.home_section_bookmarks))
+                                        }
+                                    } else {
+                                        IconButton(
+                                            onClick = {
+                                                if (tab?.canGoBack == true) {
+                                                    controller.goBack()
+                                                } else {
+                                                    pageToast = "已经是第一页"
+                                                }
+                                            },
+                                            modifier = Modifier.size(40.dp),
+                                        ) {
+                                            Icon(AllegroIcons.Back, stringResource(R.string.cd_back))
+                                        }
                                     }
                                     if (!layout.isLarge) {
                                         TabCountButton(count = state.tabs.size) {

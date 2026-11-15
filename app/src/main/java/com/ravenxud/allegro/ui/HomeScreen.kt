@@ -7,6 +7,9 @@ import android.net.Uri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -237,11 +240,13 @@ fun HomeScreen(
                     PlaceholderRow(stringResource(R.string.home_ai_artifacts_hint), AllegroIcons.Folder)
                 }
 
-                Spacer(Modifier.height(120.dp))
+                Spacer(Modifier.height(140.dp))
             }
+
         }
     }
 }
+
 
 /* ---------------------------------------------------------------- 文字颜色 */
 
