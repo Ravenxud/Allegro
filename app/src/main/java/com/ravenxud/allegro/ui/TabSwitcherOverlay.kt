@@ -252,11 +252,13 @@ fun TabSwitcherOverlay(
                 .graphicsLayer {
                     val p = pp()
                     alpha = p
-                    // 幅度从 0.82 收到 0.92：整体只做轻微"浮起"，细部交给逐卡错峰
-                    val scale = if (simplify) 1f else (0.92f + 0.08f * p)
+                    // 没有整窗截图（首次启动 / 标签恢复）时，飞行元素不存在，
+                    // 只靠 0.92→1 会像"纯淡入"；这时把网格的入场幅度加大。
+                    val base = if (stub == null) 0.86f else 0.92f
+                    val scale = if (simplify) 1f else (base + (1f - base) * p)
                     scaleX = scale
                     scaleY = scale
-                    translationY = dragOffset
+                    translationY = dragOffset + if (stub == null) (1f - p) * 28f else 0f
                 },
         ) {
             TabGrid(
@@ -705,11 +707,13 @@ private fun TabCard(
                         contentScale = ContentScale.Crop,
                     )
                 } else {
-                    Text(
-                        text = tab.title.take(1).ifBlank { "·" },
-                        fontSize = 28.sp,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        modifier = Modifier.align(Alignment.Center),
+                    // 没有预览（后台标签未挂载 WebView）时给一个安静的占位，
+                    // 不再放一个巨大的首字——那看起来像渲染错误。
+                    Icon(
+                        imageVector = AllegroIcons.Copy,
+                        contentDescription = null,
+                        modifier = Modifier.align(Alignment.Center).size(28.dp),
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.45f),
                     )
                 }
 

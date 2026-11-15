@@ -1158,10 +1158,9 @@ class WebViewBrowserController(
         val window = activity.window ?: return onCaptured(null)
         val decor = window.decorView
         if (decor.width <= 0 || decor.height <= 0) return onCaptured(null)
-        if (activeView()?.visibility != android.view.View.VISIBLE) {
-            android.util.Log.w(TAG, "stub skip: webview not visible")
-            return onCaptured(null)
-        }
+        // 不再要求 WebView 可见：首页（壁纸 + 玻璃卡）时 WebView 是隐藏的，
+        // 但窗口里仍有内容可抓，缺了这张图整页切换器就只能"淡入"。
+
 
         // 整窗截图：地址栏与底栏会一起进入 stub，缩进卡片时控件随之收缩
         val windowRect = android.graphics.Rect(0, 0, decor.width, decor.height)
