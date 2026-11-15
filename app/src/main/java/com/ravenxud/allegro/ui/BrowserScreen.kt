@@ -296,7 +296,8 @@ fun BrowserScreen(
     // 单变量实验（0.37.2）：菜单打开时**不再隐藏 WebView**。
     // 之前的 GONE 会让"透出网页 / 模糊网页"在物理上不可能成立。
     // 标签面板 / 菜单都不再隐藏 WebView：面板有自己的背景与飞行缩略，隐藏只会白闪
-    val overlayActive = isHome || screen != SecondaryScreen.BROWSER
+    // 二级页也不隐藏 WebView：二级页自身不透明，隐藏只会让背景动画"硬切"
+    val overlayActive = isHome
 
     // 面板可见时，网页滚动会节流重抓玻璃底图（否则模糊不跟随滚动）
     // 启动时把已保存的缩放套到所有 WebView

@@ -61,6 +61,15 @@ class SettingsRepository(context: Context) {
         _alwaysDesktop.value = value
     }
 
+    private val _reduceMotion = MutableStateFlow(prefs.getBoolean(KEY_REDUCE_MOTION, false))
+    /** 应用内「减少动画」：与系统设置取或。 */
+    val reduceMotion: StateFlow<Boolean> = _reduceMotion.asStateFlow()
+
+    fun setReduceMotion(value: Boolean) {
+        prefs.edit().putBoolean(KEY_REDUCE_MOTION, value).apply()
+        _reduceMotion.value = value
+    }
+
     private val _textZoom = MutableStateFlow(prefs.getInt(KEY_TEXT_ZOOM, 100))
     /** 页面缩放（百分比，80–140）。 */
     val textZoom: StateFlow<Int> = _textZoom.asStateFlow()
@@ -103,6 +112,7 @@ class SettingsRepository(context: Context) {
         const val KEY_ENGINE = "search_engine"
         const val KEY_HOME_BOOKMARKS = "home_bookmarks"
         const val KEY_TEXT_ZOOM = "text_zoom"
+        const val KEY_REDUCE_MOTION = "reduce_motion"
         const val KEY_UPDATE_REPO = "update_repo"
         const val DEFAULT_UPDATE_REPO = "Ravenxud/Allegro"
         const val KEY_ALWAYS_DESKTOP = "always_desktop"

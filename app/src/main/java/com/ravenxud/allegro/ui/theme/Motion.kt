@@ -82,7 +82,16 @@ object Motion {
      * 系统是否关闭了动画（开发者选项 / 无障碍「移除动画」）。
      * 为 true 时所有位移类动效压到 Instant，只保留透明度变化。
      */
-    fun reduceMotion(context: android.content.Context): Boolean = runCatching {
+    fun reduceMotion(context: android.content.Context): Boolean =
+        appReduceMotion(context) || systemReduceMotion(context)
+
+    /** 应用内开关（设置页「减少动画」）。 */
+    private fun appReduceMotion(context: android.content.Context): Boolean = runCatching {
+        context.getSharedPreferences("simple_browser_settings", android.content.Context.MODE_PRIVATE)
+            .getBoolean("reduce_motion", false)
+    }.getOrDefault(false)
+
+    private fun systemReduceMotion(context: android.content.Context): Boolean = runCatching {
         android.provider.Settings.Global.getFloat(
             context.contentResolver,
             android.provider.Settings.Global.ANIMATOR_DURATION_SCALE,

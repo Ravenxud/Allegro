@@ -70,6 +70,7 @@ fun SettingsScreen(
     val blockedCount by adBlock.blocked.collectAsState()
     val showHomeBookmarks by settings.homeBookmarksEnabled.collectAsState()
     val textZoom by settings.textZoom.collectAsState()
+    val reduceMotion by settings.reduceMotion.collectAsState()
     var showZoomDialog by remember { androidx.compose.runtime.mutableStateOf(false) }
     val alwaysDesktop by settings.alwaysDesktop.collectAsState()
     val desktopUa by settings.desktopUa.collectAsState()
@@ -161,6 +162,13 @@ fun SettingsScreen(
                     checked = showHomeBookmarks,
                     onCheckedChange = { settings.setHomeBookmarksEnabled(it) },
                     title = stringResource(R.string.settings_home_bookmarks),
+                )
+                ComponentDivider()
+                SwitchPreference(
+                    checked = reduceMotion,
+                    onCheckedChange = { settings.setReduceMotion(it) },
+                    title = "减少动画",
+                    summary = "关闭位移类动效，只保留淡入淡出",
                 )
             }
 
