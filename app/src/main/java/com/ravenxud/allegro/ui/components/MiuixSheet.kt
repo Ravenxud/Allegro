@@ -88,6 +88,8 @@ fun MiuixSheet(
     actions: @Composable RowScope.() -> Unit = {},
     /** 内容是否可纵向滚动（网格分页面板传 false）。 */
     scrollable: Boolean = true,
+    /** true = 完全不透明（用于盖住自身界面的场景，如标签面板的溢出菜单）。 */
+    solid: Boolean = false,
     /** 网页滚动位移（px）：玻璃跟着平移，做到零延迟跟手。 */
     scrollOffsetPx: Int = 0,
     content: @Composable ColumnScope.() -> Unit,
@@ -123,9 +125,10 @@ fun MiuixSheet(
                 snapshot = snapshot,
                 showClose = showClose,
                 actions = actions,
-                glassAlpha = 0.72f,
+                glassAlpha = if (solid) 1f else 0.72f,
                 scrollable = scrollable,
                 scrollOffsetPx = scrollOffsetPx,
+                solid = solid,
                 content = content,
             )
         }
@@ -143,6 +146,7 @@ private fun SheetCard(
     glassAlpha: Float,
     scrollable: Boolean,
     scrollOffsetPx: Int,
+    solid: Boolean,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val cardShape = com.ravenxud.allegro.ui.theme.Shapes.Panel
@@ -167,9 +171,11 @@ private fun SheetCard(
                 },
             ),
         shape = cardShape,
-        color = if (backdrop != null || hasWebGlass) Color.Transparent else surfaceColor.copy(alpha = glassAlpha),
+        color = if (solid) surfaceColor
+        else if (backdrop != null || hasWebGlass) Color.Transparent
+        else surfaceColor.copy(alpha = glassAlpha),
     ) {
-        val glassImage = if (backdrop == null && snapshot != null) snapshot.asImageBitmap() else null
+        val glassImage = if (backdrop == null && snapshot != null && !solid) snapshot.asImageBitmap() else null
         Box(
             Modifier
                 .fillMaxWidth()
@@ -293,6 +299,8 @@ fun MiuixSheet(
     backdrop: com.kyant.backdrop.Backdrop? = null,
     snapshot: android.graphics.Bitmap? = null,
     showClose: Boolean = false,
+    scrollable: Boolean = true,
+    solid: Boolean = false,
     actions: @Composable RowScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
@@ -308,6 +316,8 @@ fun MiuixSheet(
         backdrop = backdrop,
         snapshot = snapshot,
         showClose = showClose,
+        scrollable = scrollable,
+        solid = solid,
         actions = actions,
         content = content,
     )
@@ -597,6 +607,7 @@ fun MiuixSheetDialog(
                 glassAlpha = if (blurOn) 0.52f else 0.9f,
                 scrollable = scrollable,
                 scrollOffsetPx = 0,
+                solid = false,
                 content = content,
             )
         }

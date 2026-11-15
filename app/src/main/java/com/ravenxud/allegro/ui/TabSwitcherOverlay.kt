@@ -323,6 +323,7 @@ fun TabSwitcherOverlay(
             visible = showRecent,
             onDismiss = { showRecent = false },
             title = "最近关闭的标签页",
+            solid = true,
         ) {
             if (recentClosed.isEmpty()) {
                 Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
@@ -539,6 +540,7 @@ private fun TabGrid(
             visible = showHeaderMenu,
             onDismiss = { showHeaderMenu = false },
             title = "标签页",
+            solid = true,
         ) {
             SheetRow(
                 icon = AllegroIcons.Recent,
@@ -637,12 +639,13 @@ private fun TabCard(
             )
         }
 
-        Card(
-            onClick = onSelect,
-            onLongPress = onLongPress,
+        Surface(
+            shape = shape,
+            color = MiuixTheme.colorScheme.surfaceVariant,
             modifier = Modifier
                 .fillMaxWidth()
                 .pressScale()
+                .clickable(onClick = onSelect)
                 .pressScale()
                 .offset { IntOffset(offsetX.roundToInt(), 0) }
                 .pointerInput(Unit) {

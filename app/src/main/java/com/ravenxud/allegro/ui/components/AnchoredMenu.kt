@@ -9,7 +9,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,6 +51,12 @@ fun AnchoredMenu(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     if (!expanded) return
+    // 弹出时做一次缩放+淡入，避免"硬弹出"
+    val anim = remember { Animatable(0f) }
+    LaunchedEffect(expanded) {
+        anim.snapTo(0f)
+        anim.animateTo(1f, spring(dampingRatio = 0.9f, stiffness = 480f))
+    }
     val positionProvider = remember { MenuPositionProvider() }
     Popup(
         popupPositionProvider = positionProvider,
@@ -54,7 +64,13 @@ fun AnchoredMenu(
         properties = PopupProperties(focusable = true),
     ) {
         Surface(
-            modifier = modifier.width(232.dp),
+            modifier = modifier
+                .width(232.dp)
+                .graphicsLayer {
+                    scaleX = 0.92f + 0.08f * anim.value
+                    scaleY = 0.92f + 0.08f * anim.value
+                    alpha = anim.value
+                },
             shape = Shapes.FloatingPanel,
             color = MiuixTheme.colorScheme.surface,
             shadowElevation = 12.dp,
