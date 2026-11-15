@@ -1,3 +1,38 @@
+# 0.71.1-beta
+
+修 0.71.0 的回归：**长按不弹菜单** + **卡片出现诡异描边**。同一个原因。
+
+## 原因
+
+0.71.0 为了修正圆角，把 `Card(onClick, onLongPress, …)` 换成了 `Surface(…).clickable(onClick)`。
+
+- `clickable` **只有单击**，长按事件被丢掉了 → 长按无反应
+- 当前标签的蓝框原本画在 **内层缩略图**上；换成 Surface 后内层与外层圆角不再一致，
+  于是边框在角上错位，看起来像"多了一圈奇怪的描边"（截图里那圈粉色/蓝色错位边）
+
+## 改法
+
+```kotlin
+Surface(
+    shape = shape,
+    modifier = Modifier
+        .pressScale()
+        .then(if (active) Modifier.border(2.dp, primary, shape) else Modifier)  // 边框与外层同形状
+        .combinedClickable(onClick = onSelect, onLongClick = onLongPress),      // 长按恢复
+)
+```
+
+同时**删掉内层的 border** —— 边框只能有一处，否则必然错位。
+
+## 请验
+
+1. **长按标签能弹出浮动菜单**（本版核心）
+2. 当前标签的蓝框与卡片圆角**完全贴合**，不再有多余描边
+3. 卡片圆角上下一致
+4. 三点菜单不透明、最近关闭不透明（0.71.0 的修复保持）
+
+---
+
 # 0.71.0-beta
 
 标签面板三个问题，逐个修。

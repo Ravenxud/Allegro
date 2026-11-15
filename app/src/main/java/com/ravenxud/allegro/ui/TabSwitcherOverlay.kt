@@ -7,7 +7,9 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -639,13 +641,18 @@ private fun TabCard(
             )
         }
 
-        Surface(
-            shape = shape,
-            color = MiuixTheme.colorScheme.surfaceVariant,
-            modifier = Modifier
+        // 不用 Surface/Card：它们的默认 elevation 会在卡片外画一圈阴影（截图里的"诡异描边"），
+        // 且 Miuix Surface 不吃 shape 参数，圆角会与缩略图不一致。
+        Box(
+            Modifier
                 .fillMaxWidth()
                 .pressScale()
-                .clickable(onClick = onSelect)
+                .clip(shape)
+                .background(MiuixTheme.colorScheme.surfaceVariant)
+                .combinedClickable(
+                    onClick = onSelect,
+                    onLongClick = onLongPress,
+                )
                 .pressScale()
                 .offset { IntOffset(offsetX.roundToInt(), 0) }
                 .pointerInput(Unit) {
