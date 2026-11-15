@@ -25,8 +25,8 @@ android {
         // 回落一版：Android 16 的行为变更有公开资料可回归；升 37 作为后续独立任务
         targetSdk = 36
         // 编译测试阶段：版本号统一带 beta 后缀（见 README「版本约定」）
-        versionCode = 133
-        versionName = "0.63.1-beta"
+        versionCode = 134
+        versionName = "0.64.0-beta"
     }
 
     signingConfigs {
@@ -56,8 +56,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     buildFeatures {
@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.miuix.preference)
     implementation(libs.miuix.icons)
     implementation(libs.miuix.squircle)
+    implementation(libs.miuix.nav)
 
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
@@ -91,6 +92,6 @@ dependencies {
 
 kotlin {
     compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
     }
 }

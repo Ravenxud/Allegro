@@ -1,3 +1,45 @@
+# 0.64.0-beta
+
+**推翻 0.63.1 的结论：`miuix-nav` 可用。** 之前是我用错了 API。
+
+## 我错在哪
+
+0.63.1 我调用的是 `NavDisplay(backStack, entryProvider = entryProvider { ... })`，
+而 `entryProvider` 与那个重载在源码里都是 `internal`，于是判定"库未公开 API"。
+
+查源码（`miuix-nav/src/commonMain/.../NavDisplay.kt`）后确认：**有三个重载，前两个是 public**：
+
+```kotlin
+@Composable
+fun NavDisplay(backStack: NavBackStack, modifier, onBack, transition, effects,
+               content: NavEntryBuilder.() -> Unit)   // ← 公共，DSL 形式
+```
+
+`entryProvider` 只是它内部的辅助函数，**外部不应调用**。改用 DSL 后编译通过。
+
+## 第二个阻塞的解决
+
+库以 **JVM 21** 编译，工程原来是 17。已装 JDK 21 并把
+`sourceCompatibility / targetCompatibility / jvmTarget` 全部升到 **21**。
+
+## 本版内容
+
+- 新增 `NavPilotScreen`：`NavDisplay` + 两个试点路由，验证转场 / 系统返回 / 边缘手势
+- 设置 → 诊断 →「转场实验（miuix-nav）」进入
+- 依赖：`miuix-nav 0.9.4` 重新接入
+
+**这是试点，不参与生产导航**；验证通过后再把二级页整体迁过去。
+
+## 请验
+
+1. 设置 → 诊断 → 转场实验：能进入
+2. 点「push 一个详情页」：**有转场动画**（不是硬切）
+3. 详情页按系统返回键：能回到试点首页
+4. 从屏幕左缘右滑：观察是否跟手返回
+5. 退出试点后，App 其余功能与 0.63.1 一致
+
+---
+
 # 0.63.1-beta
 
 **miuix-nav 迁移试点：失败，已回滚。** 这版只回滚，功能与 0.63.0 一致。

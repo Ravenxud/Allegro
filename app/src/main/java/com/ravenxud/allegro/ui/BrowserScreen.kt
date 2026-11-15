@@ -789,6 +789,7 @@ fun BrowserScreen(
                     )
                     SecondaryScreen.SHADER_SMOKE -> ShaderSmokeScreen(onBack = back)
                     SecondaryScreen.LICENSES -> com.ravenxud.allegro.ui.screens.LicensesScreen(onBack = back)
+                    SecondaryScreen.NAV_PILOT -> com.ravenxud.allegro.ui.screens.NavPilotScreen(onBack = back)
                     SecondaryScreen.GROUPS -> TabGroupsScreen(
                         controller = controller,
                         onBack = back,
@@ -859,6 +860,7 @@ fun BrowserScreen(
                         onOpenSiteRules = { screen = SecondaryScreen.SITE_RULES },
                         onOpenShaderSmoke = { screen = SecondaryScreen.SHADER_SMOKE },
                     onOpenLicenses = { screen = SecondaryScreen.LICENSES },
+                    onOpenNavPilot = { screen = SecondaryScreen.NAV_PILOT },
                     onTextZoomChange = { pct ->
                         settings.setTextZoom(pct)
                         controller.applyTextZoom(pct)

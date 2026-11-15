@@ -58,6 +58,7 @@ fun SettingsScreen(
     onOpenSiteRules: () -> Unit = {},
     onOpenShaderSmoke: () -> Unit = {},
     onOpenLicenses: () -> Unit = {},
+    onOpenNavPilot: () -> Unit = {},
     onTextZoomChange: (Int) -> Unit = {},
 ) {
     val theme by settings.themeMode.collectAsState()
@@ -337,6 +338,12 @@ fun SettingsScreen(
                             Toast.LENGTH_LONG,
                         ).show()
                     },
+                )
+                ComponentDivider()
+                SettingRow(
+                    title = "转场实验（miuix-nav）",
+                    summary = "验证 NavDisplay 的转场与返回",
+                    onClick = onOpenNavPilot,
                 )
                 ComponentDivider()
                 SettingRow(
