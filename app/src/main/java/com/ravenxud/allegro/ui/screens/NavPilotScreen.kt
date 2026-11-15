@@ -62,12 +62,32 @@ fun NavPilotScreen(onBack: () -> Unit) {
                     fontSize = TypeScale.Secondary,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
+                SectionLabel("栈状态")
+                GroupedCard {
+                    SettingRow(
+                        title = "当前栈深：${backStack.size}",
+                        summary = if (backStack.isEmpty()) "空栈 = 等价于在浏览器主界面" else "栈顶：${backStack.last()}",
+                    ) { }
+                }
                 SectionLabel("操作")
                 GroupedCard {
                     SettingRow(
                         title = "push 一个详情页",
                         summary = "观察转场动画",
                         onClick = { controller.push(PilotDetail) },
+                    )
+                    SettingRow(
+                        title = "replace 成详情页",
+                        summary = "验证二级页之间跳转不叠栈",
+                        onClick = {
+                            if (backStack.isEmpty()) backStack.add(PilotDetail)
+                            else backStack[backStack.lastIndex] = PilotDetail
+                        },
+                    )
+                    SettingRow(
+                        title = "清空栈（空栈）",
+                        summary = "验证 NavDisplay 对空栈不崩、不残留",
+                        onClick = { backStack.clear() },
                     )
                     SettingRow(
                         title = "退出试点",
