@@ -923,7 +923,14 @@ fun BrowserScreen(
             if (navStack.size > 1) {
                 com.ravenxud.allegro.ui.nav.BrowserNavHost(
                     stack = navStack,
-                    onBack = { navStack.popSecondary() },
+                    onBack = {
+                    // 关键：pop 之后必须把 screen 跟着退回去。
+                    // 否则 secondaryVisible 仍为 true → chromeAlpha 卡在 0，
+                    // 顶栏会"透明但占位"，首页顶部出现一条空白（0.68.1 的现象）。
+                    navStack.popSecondary()
+                    screen = navStack.currentSecondary() ?: SecondaryScreen.BROWSER
+                    true
+                },
                     rootContent = { },
                     secondaryContent = { RenderSecondary(it) },
                 )

@@ -1,3 +1,75 @@
+# 0.68.2-beta
+
+修「回到首页时顶栏消失、上方留一条空白」。
+
+## 原因
+
+`NavDisplay` 的返回回调只做了 `navStack.popSecondary()`，**没有同步 `screen`**。
+
+- `secondaryVisible = screen != BROWSER` 仍为 `true`
+- `chromeAlpha` 的目标值停在 0 → 顶栏**透明但占位**
+- 于是首页顶部出现一条 ~215px 的空白带（就是你截图里那块）
+
+也就是说：**栈回去了，状态没回去**。
+
+## 改法
+
+`onBack` 里 pop 之后立即把 `screen` 退到栈顶（或 `BROWSER`）：
+
+```kotlin
+navStack.popSecondary()
+screen = navStack.currentSecondary() ?: SecondaryScreen.BROWSER
+```
+
+## 请验
+
+1. 进二级页 → 返回首页：**顶栏（地址栏）正常显示**，上方不再有空白带
+2. 从二级页用系统返回键退出：同样正常
+3. 首页/网页切换、标签面板、菜单：正常
+4. 冷启动：正常
+
+---
+
+# 0.68.2-beta
+
+修「回到首页时顶栏消失、顶部留一条空白」。
+
+## 原因（链条）
+
+`NavDisplay.onBack` 里我只 pop 了栈，**没有同步 `screen`**：
+
+```
+pop 栈 → 栈空了 → NavDisplay 不渲染页面（首页露出来）
+        → 但 screen 仍是旧二级页 → secondaryVisible = true
+        → chromeAlpha 停在 0 → 顶栏"透明但占位"
+```
+
+于是首页顶部出现一条约 200px 的空白带（截图里正是这个）。
+
+## 改法
+
+`onBack` 里 pop 之后立刻把 `screen` 退到新的栈顶（栈空则 `BROWSER`）：
+
+```kotlin
+navStack.popSecondary()
+screen = navStack.currentSecondary() ?: SecondaryScreen.BROWSER
+true
+```
+
+## 一层反思
+
+这是**双事实源的必然代价**：`screen` 与 `navStack` 都在写，只要有一条路径只更新了其中一个，就会出现这种"状态半更新"的怪象。
+2b2 时会把 `screen` 彻底删掉，只保留栈——那时这类 bug 从结构上消失。
+
+## 请验
+
+1. 进任意二级页 → 返回 → 回首页：**顶栏正常显示**，顶部不再空白
+2. 连续进出 5 次：每次都正常
+3. 二级页之间跳转、返回：语义仍正确
+4. 首页搜索框、最近关闭列表布局正常
+
+---
+
 # 0.68.1-beta
 
 **紧急修复：0.68.0 启动即闪退。**
