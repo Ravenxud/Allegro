@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.ui.screens
 
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -76,7 +77,7 @@ fun SiteSettingsScreen(
                     version++
                     controller.reload()
                 }) {
-                    Icon(MiuixIcons.Close, stringResource(R.string.site_reset))
+                    Icon(AllegroIcons.Close, stringResource(R.string.site_reset))
                 }
             }
         },
@@ -165,7 +166,7 @@ fun SiteSettingsScreen(
 
             if (configured.isEmpty()) {
                 EmptyState(
-                    icon = MiuixIcons.Settings,
+                    icon = AllegroIcons.Settings,
                     title = stringResource(R.string.site_configured_empty),
                     subtitle = stringResource(R.string.site_configured_empty_hint),
                 )
@@ -195,7 +196,7 @@ fun SiteSettingsScreen(
                                 if (site.host == host) controller.reload()
                                 version++
                             }) {
-                                Icon(MiuixIcons.Close, stringResource(R.string.site_reset))
+                                Icon(AllegroIcons.Close, stringResource(R.string.site_reset))
                             }
                         }
                     }

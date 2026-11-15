@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.ui.screens
 
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -52,7 +53,7 @@ fun OfflinePagesScreen(
     ScreenScaffold(title = stringResource(R.string.offline_title), onBack = onBack) { modifier ->
         if (items.isEmpty()) {
             EmptyState(
-                icon = MiuixIcons.Download,
+                icon = AllegroIcons.Download,
                 title = stringResource(R.string.offline_empty),
                 subtitle = stringResource(R.string.offline_empty_hint),
             )
@@ -89,7 +90,7 @@ fun OfflinePagesScreen(
                                 onDelete(entry.id)
                                 version++
                             }) {
-                                Icon(MiuixIcons.Close, null)
+                                Icon(AllegroIcons.Close, null)
                             }
                         }
                     }

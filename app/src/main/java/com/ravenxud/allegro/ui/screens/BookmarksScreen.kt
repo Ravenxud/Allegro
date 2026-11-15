@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.ui.screens
 
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -76,10 +77,10 @@ fun BookmarksScreen(
         onBack = onBack,
         actions = {
             IconButton(onClick = onImport) {
-                Icon(MiuixIcons.Add, stringResource(R.string.bookmark_import))
+                Icon(AllegroIcons.Add, stringResource(R.string.bookmark_import))
             }
             IconButton(onClick = onExport) {
-                Icon(MiuixIcons.Folder, stringResource(R.string.bookmark_export))
+                Icon(AllegroIcons.Folder, stringResource(R.string.bookmark_export))
             }
         },
     ) { modifier ->
@@ -100,7 +101,7 @@ fun BookmarksScreen(
             ) { isEmpty ->
             if (isEmpty) {
                 EmptyState(
-                    icon = MiuixIcons.Folder,
+                    icon = AllegroIcons.Folder,
                     title = stringResource(R.string.empty_bookmarks),
                     subtitle = stringResource(R.string.empty_bookmarks_hint),
                 )
@@ -143,17 +144,17 @@ fun BookmarksScreen(
         title = target?.title,
     ) {
         if (target != null) {
-            SheetRow(MiuixIcons.Folder, stringResource(R.string.bookmark_move_unfiled)) {
+            SheetRow(AllegroIcons.Folder, stringResource(R.string.bookmark_move_unfiled)) {
                 scope.launch { repository.moveToFolder(target.url, null) }
                 menuTarget = null
             }
             folders.forEach { folder ->
-                SheetRow(MiuixIcons.Folder, folder.name) {
+                SheetRow(AllegroIcons.Folder, folder.name) {
                     scope.launch { repository.moveToFolder(target.url, folder.id) }
                     menuTarget = null
                 }
             }
-            SheetRow(MiuixIcons.Delete, stringResource(R.string.bookmark_delete)) {
+            SheetRow(AllegroIcons.Delete, stringResource(R.string.bookmark_delete)) {
                 scope.launch { repository.remove(target.url) }
                 menuTarget = null
             }
@@ -185,7 +186,7 @@ private fun FolderChips(
             Chip(folder.name, selected == folder.id) { onSelect(folder.id) }
         }
         IconButton(onClick = onCreate) {
-            Icon(MiuixIcons.Add, stringResource(R.string.bookmark_new_folder))
+            Icon(AllegroIcons.Add, stringResource(R.string.bookmark_new_folder))
         }
     }
 }
@@ -243,7 +244,7 @@ private fun BookmarkRow(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Icon(MiuixIcons.Folder, contentDescription = null, tint = MiuixTheme.colorScheme.onSurfaceVariantSummary)
+            Icon(AllegroIcons.Folder, contentDescription = null, tint = MiuixTheme.colorScheme.onSurfaceVariantSummary)
         }
     }
 }

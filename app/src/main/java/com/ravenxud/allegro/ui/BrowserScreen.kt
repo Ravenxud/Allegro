@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.ui
 
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import android.app.ActivityManager
 import android.content.Context
 import android.graphics.Bitmap
@@ -402,7 +403,7 @@ fun BrowserScreen(
                                     submit()
                                 }
                             }) {
-                                Icon(MiuixIcons.Paste, stringResource(R.string.cd_paste_search))
+                                Icon(AllegroIcons.Paste, stringResource(R.string.cd_paste_search))
                             }
                         },
                     )
@@ -412,7 +413,7 @@ fun BrowserScreen(
                         if (tab?.isLoading == true) controller.stopLoading() else controller.reload()
                     }) {
                         Icon(
-                            imageVector = MiuixIcons.Refresh,
+                            imageVector = AllegroIcons.Refresh,
                             contentDescription = stringResource(
                                 if (tab?.isLoading == true) R.string.cd_stop_loading else R.string.cd_refresh,
                             ),
@@ -474,14 +475,14 @@ fun BrowserScreen(
                         },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    ToolbarButton(MiuixIcons.Back, stringResource(R.string.cd_back)) {
+                    ToolbarButton(AllegroIcons.Back, stringResource(R.string.cd_back)) {
                         if (tab?.canGoBack == true) {
                             controller.goBack()
                         } else {
                             Toast.makeText(context, R.string.nav_no_back, Toast.LENGTH_SHORT).show()
                         }
                     }
-                    ToolbarButton(MiuixIcons.Forward, stringResource(R.string.cd_forward)) {
+                    ToolbarButton(AllegroIcons.Forward, stringResource(R.string.cd_forward)) {
                         if (tab?.canGoForward == true) {
                             controller.goForward()
                         } else {
@@ -504,7 +505,7 @@ fun BrowserScreen(
                             }
                         }
                     }
-                    ToolbarButton(MiuixIcons.More, stringResource(R.string.app_menu)) {
+                    ToolbarButton(AllegroIcons.More, stringResource(R.string.app_menu)) {
                         if (tab == null || tab.url == "about:blank") {
                             showAppMenu = true
                         } else {
@@ -607,7 +608,7 @@ fun BrowserScreen(
                 if (target != null) {
                     state.groups.forEach { group ->
                         com.ravenxud.allegro.ui.components.SheetRow(
-                            icon = MiuixIcons.Folder,
+                            icon = AllegroIcons.Folder,
                             title = group.name,
                         ) {
                             scope.launch { controller.moveTabToGroup(target, group.id) }
@@ -615,7 +616,7 @@ fun BrowserScreen(
                         }
                     }
                     com.ravenxud.allegro.ui.components.SheetRow(
-                        icon = MiuixIcons.Close,
+                        icon = AllegroIcons.Close,
                         title = resources.getString(R.string.move_to_group_none),
                     ) {
                         scope.launch { controller.moveTabToGroup(target, null) }

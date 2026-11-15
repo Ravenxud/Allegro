@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.action
 
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import com.ravenxud.allegro.R
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Add
@@ -11,7 +12,7 @@ import top.yukonga.miuix.kmp.icon.extended.Share
 object OpenInNewTabAction : BrowserAction {
     override val id = "open_new_tab"
     override val titleRes = R.string.menu_new_tab
-    override val icon = MiuixIcons.Add
+    override val icon = AllegroIcons.Add
     override val groups = setOf(ActionGroup.LINK, ActionGroup.IMAGE)
     override fun execute(context: ActionContext) = context.controller.openTab(context.url).let { }
 }
@@ -19,7 +20,7 @@ object OpenInNewTabAction : BrowserAction {
 object OpenInBackgroundAction : BrowserAction {
     override val id = "open_background_tab"
     override val titleRes = R.string.menu_background_tab
-    override val icon = MiuixIcons.Add
+    override val icon = AllegroIcons.Add
     override val groups = setOf(ActionGroup.LINK)
     override fun execute(context: ActionContext) {
         context.controller.openTab(context.url, background = true)
@@ -29,7 +30,7 @@ object OpenInBackgroundAction : BrowserAction {
 object CopyLinkAction : BrowserAction {
     override val id = "copy_link"
     override val titleRes = R.string.menu_copy_link
-    override val icon = MiuixIcons.Copy
+    override val icon = AllegroIcons.Copy
     override val groups = setOf(ActionGroup.LINK)
     override fun execute(context: ActionContext) = context.controller.copyToClipboard(context.url)
 }
@@ -37,7 +38,7 @@ object CopyLinkAction : BrowserAction {
 object CopyImageAction : BrowserAction {
     override val id = "copy_image"
     override val titleRes = R.string.menu_copy_image
-    override val icon = MiuixIcons.Copy
+    override val icon = AllegroIcons.Copy
     override val groups = setOf(ActionGroup.IMAGE)
     override fun execute(context: ActionContext) = context.controller.copyToClipboard(context.url)
 }
@@ -45,7 +46,7 @@ object CopyImageAction : BrowserAction {
 object DownloadLinkAction : BrowserAction {
     override val id = "download_link"
     override val titleRes = R.string.menu_download_link
-    override val icon = MiuixIcons.Download
+    override val icon = AllegroIcons.Download
     override val groups = setOf(ActionGroup.LINK)
     override fun execute(context: ActionContext) = context.controller.download(context.url)
 }
@@ -53,7 +54,7 @@ object DownloadLinkAction : BrowserAction {
 object SaveImageAction : BrowserAction {
     override val id = "save_image"
     override val titleRes = R.string.menu_save_image
-    override val icon = MiuixIcons.Download
+    override val icon = AllegroIcons.Download
     override val groups = setOf(ActionGroup.IMAGE)
     override fun execute(context: ActionContext) = context.controller.download(context.url)
 }
@@ -61,7 +62,7 @@ object SaveImageAction : BrowserAction {
 object ShareAction : BrowserAction {
     override val id = "share"
     override val titleRes = R.string.menu_share
-    override val icon = MiuixIcons.Share
+    override val icon = AllegroIcons.Share
     override val groups = setOf(ActionGroup.LINK)
     override fun execute(context: ActionContext) = context.controller.share(context.url)
 }

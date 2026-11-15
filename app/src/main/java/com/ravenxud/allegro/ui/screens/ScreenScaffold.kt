@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.ui.screens
 
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -66,7 +67,7 @@ fun ScreenScaffold(
                     title = title,
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(MiuixIcons.Back, stringResource(R.string.cd_back))
+                            Icon(AllegroIcons.Back, stringResource(R.string.cd_back))
                         }
                     },
                     actions = actions,
@@ -102,7 +103,7 @@ fun ScreenScaffold(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CircleIconButton(
-                icon = MiuixIcons.Back,
+                icon = AllegroIcons.Back,
                 onClick = onBack,
                 contentDescription = stringResource(R.string.cd_back),
             )

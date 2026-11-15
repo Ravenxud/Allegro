@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.ui
 
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -73,7 +74,7 @@ fun TabsRail(
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
                 IconButton(onClick = onNew) {
-                    Icon(MiuixIcons.AddCircle, stringResource(R.string.rail_new_tab), Modifier.size(22.dp))
+                    Icon(AllegroIcons.AddCircle, stringResource(R.string.rail_new_tab), Modifier.size(22.dp))
                 }
             }
 
@@ -107,16 +108,16 @@ fun TabsRail(
             }
 
             Spacer(Modifier.height(8.dp))
-            RailEntry(MiuixIcons.Folder, stringResource(R.string.screen_bookmarks)) {
+            RailEntry(AllegroIcons.Folder, stringResource(R.string.screen_bookmarks)) {
                 onNavigate(SecondaryScreen.BOOKMARKS)
             }
-            RailEntry(MiuixIcons.Refresh, stringResource(R.string.screen_history)) {
+            RailEntry(AllegroIcons.Refresh, stringResource(R.string.screen_history)) {
                 onNavigate(SecondaryScreen.HISTORY)
             }
-            RailEntry(MiuixIcons.Download, stringResource(R.string.screen_downloads)) {
+            RailEntry(AllegroIcons.Download, stringResource(R.string.screen_downloads)) {
                 onNavigate(SecondaryScreen.DOWNLOADS)
             }
-            RailEntry(MiuixIcons.Settings, stringResource(R.string.screen_settings)) {
+            RailEntry(AllegroIcons.Settings, stringResource(R.string.screen_settings)) {
                 onNavigate(SecondaryScreen.SETTINGS)
             }
         }
@@ -188,7 +189,7 @@ private fun TabRow(
             )
         }
         IconButton(onClick = onClose) {
-            Icon(MiuixIcons.Close, stringResource(R.string.cd_close_tab), Modifier.size(16.dp))
+            Icon(AllegroIcons.Close, stringResource(R.string.cd_close_tab), Modifier.size(16.dp))
         }
     }
 }

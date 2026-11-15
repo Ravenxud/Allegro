@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.ui.components
 
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.spring
@@ -237,7 +238,7 @@ private fun SheetCard(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         if (showClose) {
-                            SheetCircleButton(icon = MiuixIcons.Close, onClick = onDismiss)
+                            SheetCircleButton(icon = AllegroIcons.Close, onClick = onDismiss)
                         }
                         title?.let {
                             Text(

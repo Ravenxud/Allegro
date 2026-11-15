@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.ui.screens
 
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -60,14 +61,14 @@ fun HistoryScreen(
         actions = {
             if (items.isNotEmpty()) {
                 IconButton(onClick = { scope.launch { repository.clear() } }) {
-                    Icon(MiuixIcons.Close, stringResource(R.string.clear_history))
+                    Icon(AllegroIcons.Close, stringResource(R.string.clear_history))
                 }
             }
         },
     ) { modifier ->
         if (items.isEmpty()) {
             EmptyState(
-                icon = MiuixIcons.Refresh,
+                icon = AllegroIcons.Refresh,
                 title = stringResource(R.string.empty_history),
                 subtitle = stringResource(R.string.empty_history_hint),
             )
@@ -138,7 +139,7 @@ private fun HistoryRow(entry: HistoryEntity, onOpen: () -> Unit, onDelete: () ->
                 modifier = Modifier.padding(horizontal = Spacing.s),
             )
             IconButton(onClick = onDelete) {
-                Icon(MiuixIcons.Close, null)
+                Icon(AllegroIcons.Close, null)
             }
         }
     }

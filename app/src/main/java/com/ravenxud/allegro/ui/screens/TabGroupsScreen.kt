@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.ui.screens
 
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -115,7 +116,7 @@ fun TabGroupsScreen(
 
             if (groups.isEmpty()) {
                 EmptyState(
-                    icon = MiuixIcons.Folder,
+                    icon = AllegroIcons.Folder,
                     title = stringResource(R.string.groups_empty),
                     subtitle = stringResource(R.string.groups_empty_hint),
                 )
@@ -154,7 +155,7 @@ fun TabGroupsScreen(
                             IconButton(onClick = {
                                 scope.launch { controller.deleteTabGroup(group.id) }
                             }) {
-                                Icon(MiuixIcons.Close, stringResource(R.string.groups_delete))
+                                Icon(AllegroIcons.Close, stringResource(R.string.groups_delete))
                             }
                         }
                     }

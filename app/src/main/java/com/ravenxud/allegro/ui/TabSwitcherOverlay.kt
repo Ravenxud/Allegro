@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.ui
 
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import android.graphics.Bitmap
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateFloat
@@ -330,7 +331,7 @@ fun TabSwitcherOverlay(
             } else {
                 recentClosed.forEach { entity ->
                     SheetRow(
-                        icon = MiuixIcons.Recent,
+                        icon = AllegroIcons.Recent,
                         title = entity.title.ifBlank { entity.url },
                         value = runCatching { java.net.URI(entity.url).host }.getOrNull(),
                         onClick = {
@@ -419,13 +420,13 @@ private fun TabGrid(
                 Spacer(Modifier.weight(1f))
                 // 头部只留一个溢出按钮：最近关闭 / 排序 收进菜单（与设置页、菜单页的规范一致）
                 com.ravenxud.allegro.ui.components.CircleIconButton(
-                    icon = MiuixIcons.More,
+                    icon = AllegroIcons.More,
                     onClick = { showHeaderMenu = true },
                     contentDescription = "更多",
                 )
                 Spacer(Modifier.width(8.dp))
                 com.ravenxud.allegro.ui.components.CircleIconButton(
-                    icon = MiuixIcons.Close,
+                    icon = AllegroIcons.Close,
                     onClick = onDismiss,
                     contentDescription = stringResource(R.string.cd_close),
                 )
@@ -500,7 +501,7 @@ private fun TabGrid(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 com.ravenxud.allegro.ui.components.CircleIconButton(
-                    icon = MiuixIcons.Add,
+                    icon = AllegroIcons.Add,
                     onClick = onNew,
                     contentDescription = stringResource(R.string.tabs_new),
                     size = 52.dp,
@@ -523,7 +524,7 @@ private fun TabGrid(
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        MiuixIcons.Ok,
+                        AllegroIcons.Ok,
                         contentDescription = stringResource(R.string.action_done),
                         tint = MiuixTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(24.dp),
@@ -540,7 +541,7 @@ private fun TabGrid(
             title = "标签页",
         ) {
             SheetRow(
-                icon = MiuixIcons.Recent,
+                icon = AllegroIcons.Recent,
                 title = "最近关闭的标签页",
                 onClick = {
                     showHeaderMenu = false
@@ -548,7 +549,7 @@ private fun TabGrid(
                 },
             )
             SheetRow(
-                icon = MiuixIcons.Sort,
+                icon = AllegroIcons.Sort,
                 title = "排列方式",
                 value = sort.label,
                 onClick = onCycleSort,
@@ -629,7 +630,7 @@ private fun TabCard(
             contentAlignment = Alignment.CenterEnd,
         ) {
             Icon(
-                MiuixIcons.Delete,
+                AllegroIcons.Delete,
                 contentDescription = stringResource(R.string.cd_close),
                 modifier = Modifier.padding(end = 20.dp),
                 tint = MiuixTheme.colorScheme.error,
@@ -720,7 +721,7 @@ private fun TabCard(
                     )
                     IconButton(onClick = onClose, modifier = Modifier.size(32.dp)) {
                         Icon(
-                            MiuixIcons.Close,
+                            AllegroIcons.Close,
                             stringResource(R.string.cd_close),
                             modifier = Modifier.size(16.dp),
                         )
@@ -735,12 +736,12 @@ private fun TabCard(
             onDismiss = onMenuDismiss,
         ) {
             com.ravenxud.allegro.ui.components.MenuActionRow(
-                icon = MiuixIcons.Close,
+                icon = AllegroIcons.Close,
                 label = stringResource(R.string.tabs_close_others),
                 onClick = onMenuCloseOthers,
             )
             com.ravenxud.allegro.ui.components.MenuActionRow(
-                icon = MiuixIcons.Folder,
+                icon = AllegroIcons.Folder,
                 label = stringResource(R.string.move_to_group),
                 onClick = onMenuMoveToGroup,
             )
@@ -753,7 +754,7 @@ private fun TabCard(
                 }
             }
             com.ravenxud.allegro.ui.components.MenuActionRow(
-                icon = if (copied) MiuixIcons.Ok else MiuixIcons.Copy,
+                icon = if (copied) AllegroIcons.Ok else AllegroIcons.Copy,
                 label = if (copied) "已复制" else stringResource(R.string.tabs_copy_link),
                 onClick = {
                     if (!copied) {
@@ -763,7 +764,7 @@ private fun TabCard(
                 },
             )
             com.ravenxud.allegro.ui.components.MenuActionRow(
-                icon = MiuixIcons.Delete,
+                icon = AllegroIcons.Delete,
                 label = stringResource(R.string.tabs_close_tab),
                 onClick = onMenuClose,
             )

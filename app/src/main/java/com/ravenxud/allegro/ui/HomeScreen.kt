@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.ui
 
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -136,7 +137,7 @@ fun HomeScreen(
                     label = stringResource(R.string.home_search_hint),
                     useLabelAsPlaceholder = true,
                     cornerRadius = Radius.field,
-                    leadingIcon = { Icon(MiuixIcons.Search, contentDescription = null) },
+                    leadingIcon = { Icon(AllegroIcons.Search, contentDescription = null) },
                     colors = TextFieldDefaults.textFieldColors(
                         backgroundColor = Color.Transparent,
                     ),
@@ -157,7 +158,7 @@ fun HomeScreen(
                             BasicComponent(
                                 title = item.title.ifBlank { item.url },
                                 summary = item.url,
-                                startAction = { Icon(MiuixIcons.Refresh, contentDescription = null) },
+                                startAction = { Icon(AllegroIcons.Refresh, contentDescription = null) },
                                 onClick = { controller.openTab(item.url) },
                             )
                         }
@@ -172,7 +173,7 @@ fun HomeScreen(
                             BasicComponent(
                                 title = item.title.ifBlank { item.url },
                                 summary = item.url,
-                                startAction = { Icon(MiuixIcons.Folder, contentDescription = null) },
+                                startAction = { Icon(AllegroIcons.Folder, contentDescription = null) },
                                 onClick = { controller.openTab(item.url) },
                             )
                         }

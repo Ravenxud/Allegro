@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.ui.screens
 
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import android.annotation.SuppressLint
 import android.view.ViewGroup
 import android.webkit.WebView
@@ -82,7 +83,7 @@ fun ReaderScreen(
                 title = title.ifBlank { stringResource(R.string.reader_title) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(MiuixIcons.Back, stringResource(R.string.cd_back))
+                        Icon(AllegroIcons.Back, stringResource(R.string.cd_back))
                     }
                 },
                 actions = {
@@ -109,7 +110,7 @@ fun ReaderScreen(
                         }
                     }) {
                         Icon(
-                            if (speaking) MiuixIcons.Pause else MiuixIcons.Play,
+                            if (speaking) AllegroIcons.Pause else AllegroIcons.Play,
                             stringResource(R.string.reader_speak),
                         )
                     }

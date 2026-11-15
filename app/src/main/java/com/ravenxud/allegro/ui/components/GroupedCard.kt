@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.ui.components
 
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -101,7 +102,7 @@ fun SettingRow(
         }
         Spacer(Modifier.width(4.dp))
         Icon(
-            MiuixIcons.ChevronForward,
+            AllegroIcons.ChevronForward,
             contentDescription = null,
             modifier = Modifier.size(18.dp),
         )

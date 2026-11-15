@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.ui.screens
 
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -65,7 +66,7 @@ fun DownloadsScreen(
     ScreenScaffold(title = stringResource(R.string.screen_downloads), onBack = onBack) { modifier ->
         if (items.isEmpty()) {
             EmptyState(
-                icon = MiuixIcons.Download,
+                icon = AllegroIcons.Download,
                 title = stringResource(R.string.empty_downloads),
                 subtitle = stringResource(R.string.empty_downloads_hint),
             )
@@ -196,30 +197,30 @@ private fun DownloadCard(
                 when {
                     running -> {
                         IconButton(onClick = onPause) {
-                            Icon(MiuixIcons.Pause, stringResource(R.string.download_pause))
+                            Icon(AllegroIcons.Pause, stringResource(R.string.download_pause))
                         }
                         IconButton(onClick = onDelete) {
-                            Icon(MiuixIcons.Close, stringResource(R.string.download_cancel))
+                            Icon(AllegroIcons.Close, stringResource(R.string.download_cancel))
                         }
                     }
                     item.status == DownloadStatus.PAUSED -> {
                         IconButton(onClick = onResume) {
-                            Icon(MiuixIcons.Play, stringResource(R.string.download_resume))
+                            Icon(AllegroIcons.Play, stringResource(R.string.download_resume))
                         }
                         IconButton(onClick = onDelete) {
-                            Icon(MiuixIcons.Close, stringResource(R.string.download_cancel))
+                            Icon(AllegroIcons.Close, stringResource(R.string.download_cancel))
                         }
                     }
                     item.status == DownloadStatus.FAILED -> {
                         IconButton(onClick = onRetry) {
-                            Icon(MiuixIcons.Refresh, stringResource(R.string.download_retry))
+                            Icon(AllegroIcons.Refresh, stringResource(R.string.download_retry))
                         }
                         IconButton(onClick = onDelete) {
-                            Icon(MiuixIcons.Close, null)
+                            Icon(AllegroIcons.Close, null)
                         }
                     }
                     else -> IconButton(onClick = onDelete) {
-                        Icon(MiuixIcons.Close, null)
+                        Icon(AllegroIcons.Close, null)
                     }
                 }
             }

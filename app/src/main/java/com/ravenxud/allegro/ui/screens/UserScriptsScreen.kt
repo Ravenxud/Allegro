@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.ui.screens
 
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -67,13 +68,13 @@ fun UserScriptsScreen(
         onBack = onBack,
         actions = {
             IconButton(onClick = { showInstall = true }) {
-                Icon(MiuixIcons.Add, stringResource(R.string.userscript_install))
+                Icon(AllegroIcons.Add, stringResource(R.string.userscript_install))
             }
         },
     ) { modifier ->
         if (scripts.isEmpty()) {
             EmptyState(
-                icon = MiuixIcons.Folder,
+                icon = AllegroIcons.Folder,
                 title = stringResource(R.string.userscript_empty),
                 subtitle = stringResource(R.string.userscript_empty_hint),
             )
@@ -157,7 +158,7 @@ private fun ScriptRow(script: UserScript, onToggle: (Boolean) -> Unit, onDelete:
             }
             Switch(checked = script.enabled, onCheckedChange = onToggle)
             IconButton(onClick = onDelete) {
-                Icon(MiuixIcons.Delete, null)
+                Icon(AllegroIcons.Delete, null)
             }
         }
     }

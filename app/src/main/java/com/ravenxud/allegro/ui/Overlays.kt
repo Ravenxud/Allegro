@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.ui
 
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -140,52 +141,52 @@ fun AppMenu(
     scrollOffsetPx: Int = 0,
 ) {
     val barActions: @Composable RowScope.() -> Unit = {
-        SheetCircleButton(MiuixIcons.Settings) { onNavigate(SecondaryScreen.SETTINGS) }
+        SheetCircleButton(AllegroIcons.Settings) { onNavigate(SecondaryScreen.SETTINGS) }
     }
     val body: @Composable ColumnScope.() -> Unit = {
         SheetPagedGrid(
             listOf(
-                SheetItem(MiuixIcons.Search, stringResource(R.string.menu_reader), onClick = onReader),
-                SheetItem(MiuixIcons.Play, stringResource(R.string.menu_read_aloud), onClick = onReadAloud),
-                SheetItem(MiuixIcons.Download, stringResource(R.string.menu_save_offline), onClick = onSaveOffline),
-                SheetItem(MiuixIcons.Share, stringResource(R.string.menu_share_page), onClick = onSharePage),
-                SheetItem(MiuixIcons.Folder, stringResource(R.string.menu_offline_pages), onClick = onOfflinePages),
-                SheetItem(MiuixIcons.Edit, stringResource(R.string.userscript_title), onClick = onUserScripts),
-                SheetItem(MiuixIcons.Settings, stringResource(R.string.menu_site_settings), onClick = onSiteSettings),
-                SheetItem(MiuixIcons.Hide, stringResource(R.string.menu_pick_element), onClick = onPickElement),
-                SheetItem(MiuixIcons.Blocklist, stringResource(R.string.menu_privacy_report), onClick = onPrivacyReport),
-                SheetItem(MiuixIcons.Home, stringResource(R.string.menu_home), onClick = onHome),
-                SheetItem(MiuixIcons.Favorites, stringResource(R.string.app_menu_bookmark), onClick = onBookmark),
-                SheetItem(MiuixIcons.ListView, stringResource(R.string.screen_bookmarks)) {
+                SheetItem(AllegroIcons.Search, stringResource(R.string.menu_reader), onClick = onReader),
+                SheetItem(AllegroIcons.Play, stringResource(R.string.menu_read_aloud), onClick = onReadAloud),
+                SheetItem(AllegroIcons.Download, stringResource(R.string.menu_save_offline), onClick = onSaveOffline),
+                SheetItem(AllegroIcons.Share, stringResource(R.string.menu_share_page), onClick = onSharePage),
+                SheetItem(AllegroIcons.Folder, stringResource(R.string.menu_offline_pages), onClick = onOfflinePages),
+                SheetItem(AllegroIcons.Edit, stringResource(R.string.userscript_title), onClick = onUserScripts),
+                SheetItem(AllegroIcons.Settings, stringResource(R.string.menu_site_settings), onClick = onSiteSettings),
+                SheetItem(AllegroIcons.Hide, stringResource(R.string.menu_pick_element), onClick = onPickElement),
+                SheetItem(AllegroIcons.Blocklist, stringResource(R.string.menu_privacy_report), onClick = onPrivacyReport),
+                SheetItem(AllegroIcons.Home, stringResource(R.string.menu_home), onClick = onHome),
+                SheetItem(AllegroIcons.Favorites, stringResource(R.string.app_menu_bookmark), onClick = onBookmark),
+                SheetItem(AllegroIcons.ListView, stringResource(R.string.screen_bookmarks)) {
                     onNavigate(SecondaryScreen.BOOKMARKS)
                 },
-                SheetItem(MiuixIcons.GridView, stringResource(R.string.menu_tab_groups), onClick = onTabGroups),
-                SheetItem(MiuixIcons.Recent, stringResource(R.string.screen_history)) {
+                SheetItem(AllegroIcons.GridView, stringResource(R.string.menu_tab_groups), onClick = onTabGroups),
+                SheetItem(AllegroIcons.Recent, stringResource(R.string.screen_history)) {
                     onNavigate(SecondaryScreen.HISTORY)
                 },
-                SheetItem(MiuixIcons.Download, stringResource(R.string.screen_downloads)) {
+                SheetItem(AllegroIcons.Download, stringResource(R.string.screen_downloads)) {
                     onNavigate(SecondaryScreen.DOWNLOADS)
                 },
                 SheetItem(
-                    MiuixIcons.Theme,
+                    AllegroIcons.Theme,
                     stringResource(R.string.menu_desktop_site),
                     active = desktopSite,
                     onClick = onToggleDesktopSite,
                 ),
                 SheetItem(
-                    MiuixIcons.Blocklist,
+                    AllegroIcons.Blocklist,
                     stringResource(R.string.menu_adblock_site),
                     active = !adBlockPaused,
                     onClick = onToggleAdBlockSite,
                 ),
                 SheetItem(
-                    MiuixIcons.Theme,
+                    AllegroIcons.Theme,
                     stringResource(R.string.settings_theme),
                     active = true,
                     onClick = onCycleTheme,
                 ),
                 SheetItem(
-                    MiuixIcons.Background,
+                    AllegroIcons.Background,
                     stringResource(R.string.menu_page_dark),
                     active = pageDark,
                     onClick = onTogglePageDark,

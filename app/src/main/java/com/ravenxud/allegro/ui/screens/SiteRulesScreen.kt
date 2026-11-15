@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.ui.screens
 
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -110,7 +111,7 @@ fun SiteRulesScreen(
 
             if (configured.isEmpty()) {
                 EmptyState(
-                    icon = MiuixIcons.Settings,
+                    icon = AllegroIcons.Settings,
                     title = stringResource(R.string.rules_empty),
                     subtitle = stringResource(R.string.rules_empty_hint),
                 )
@@ -147,7 +148,7 @@ fun SiteRulesScreen(
                                 adBlock.setSiteAllowed(site.host, false)
                                 version++
                             }) {
-                                Icon(MiuixIcons.Close, stringResource(R.string.site_reset))
+                                Icon(AllegroIcons.Close, stringResource(R.string.site_reset))
                             }
                         }
                     }
@@ -178,7 +179,7 @@ fun SiteRulesScreen(
                                 adBlock.setSiteAllowed(host, false)
                                 version++
                             }) {
-                                Icon(MiuixIcons.Close, stringResource(R.string.site_reset))
+                                Icon(AllegroIcons.Close, stringResource(R.string.site_reset))
                             }
                         }
                     }

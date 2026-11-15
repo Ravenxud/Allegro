@@ -1,5 +1,6 @@
 package com.ravenxud.allegro.ui.screens
 
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -70,7 +71,7 @@ fun PrivacyReportScreen(
                     adBlock.resetStats()
                     version++
                 }) {
-                    Icon(MiuixIcons.Delete, stringResource(R.string.privacy_clear_stats))
+                    Icon(AllegroIcons.Delete, stringResource(R.string.privacy_clear_stats))
                 }
             }
         },
@@ -164,7 +165,7 @@ fun PrivacyReportScreen(
             if (rules.isEmpty()) {
                 item {
                     EmptyState(
-                        icon = MiuixIcons.Blocklist,
+                        icon = AllegroIcons.Blocklist,
                         title = stringResource(R.string.picker_rules_empty),
                         subtitle = stringResource(R.string.picker_rules_empty_hint),
                     )
@@ -192,7 +193,7 @@ fun PrivacyReportScreen(
                                 adBlock.removeLocalCosmeticRule(rule)
                                 version++
                             }) {
-                                Icon(MiuixIcons.Close, stringResource(R.string.picker_remove_rule))
+                                Icon(AllegroIcons.Close, stringResource(R.string.picker_remove_rule))
                             }
                         }
                     }
