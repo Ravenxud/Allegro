@@ -664,15 +664,44 @@ fun BrowserScreen(
                                                 drawContent()
                                                 val p = progressAnim.value
                                                 if (p > 0.002f) {
-                                                    val inset = 12.dp.toPx()
-                                                    val barH = 3.dp.toPx()
-                                                    val barW = ((size.width - inset * 2) * p).coerceAtLeast(barH)
-                                                    drawRoundRect(
-                                                        color = progressColor,
-                                                        topLeft = androidx.compose.ui.geometry.Offset(inset, size.height - barH - 3.dp.toPx()),
-                                                        size = androidx.compose.ui.geometry.Size(barW, barH),
-                                                        cornerRadius = androidx.compose.ui.geometry.CornerRadius(barH / 2f, barH / 2f),
-                                                    )
+                                                    // 沿胶囊内圈描边：进度 = 圆角矩形周长的一段
+                                                    val stroke = 2.5.dp.toPx()
+                                                    val inset = 1.dp.toPx() + stroke / 2f
+                                                    val path = androidx.compose.ui.graphics.Path().apply {
+                                                        addRoundRect(
+                                                            androidx.compose.ui.geometry.RoundRect(
+                                                                left = inset,
+                                                                top = inset,
+                                                                right = size.width - inset,
+                                                                bottom = size.height - inset,
+                                                                radiusX = (size.height - inset * 2) / 2f,
+                                                                radiusY = (size.height - inset * 2) / 2f,
+                                                            ),
+                                                        )
+                                                    }
+                                                    val measure = androidx.compose.ui.graphics.PathMeasure().apply {
+                                                        setPath(path, false)
+                                                    }
+                                                    val total = measure.length
+                                                    if (total > 0f) {
+                                                        val start = total * 0.62f // 从左下角附近起画，顺时针
+                                                        val end = start + total * p
+                                                        val slice = androidx.compose.ui.graphics.Path()
+                                                        if (end <= total) {
+                                                            measure.getSegment(start, end, slice, true)
+                                                        } else {
+                                                            measure.getSegment(start, total, slice, true)
+                                                            measure.getSegment(0f, end - total, slice, true)
+                                                        }
+                                                        drawPath(
+                                                            path = slice,
+                                                            color = progressColor,
+                                                            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                                                                width = stroke,
+                                                                cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                                                            ),
+                                                        )
+                                                    }
                                                 }
                                             },
                                     ) {
