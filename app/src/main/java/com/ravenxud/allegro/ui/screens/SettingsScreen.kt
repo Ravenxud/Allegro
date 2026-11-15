@@ -309,32 +309,41 @@ fun SettingsScreen(
                 )
                 ComponentDivider()
                 SettingRow(
-                    title = stringResource(R.string.settings_diag_log),
-                    summary = stringResource(R.string.settings_diag_log_summary),
+                    title = "分享日志文件",
+                    summary = "发送到其他应用（系统分享面板）",
+                    onClick = { shareLog(context, resources, fileExists = true) },
+                )
+                ComponentDivider()
+                SettingRow(
+                    title = "复制日志到剪贴板",
+                    summary = "分享面板没有可用目标时用这条",
                     onClick = {
-                        val file = com.ravenxud.allegro.util.DiagLog.currentFile()
-                        if (file == null) {
-                            Toast.makeText(context, R.string.settings_diag_empty, Toast.LENGTH_SHORT).show()
+                        if (com.ravenxud.allegro.util.LogExporter.copyToClipboard(context)) {
+                            Toast.makeText(context, "已复制日志", Toast.LENGTH_SHORT).show()
                         } else {
-                            runCatching {
-                                val uri = androidx.core.content.FileProvider.getUriForFile(
-                                    context,
-                                    "${context.packageName}.fileprovider",
-                                    file,
-                                )
-                                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                    type = "text/plain"
-                                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
-                                    putExtra(android.content.Intent.EXTRA_SUBJECT, "Allegro 诊断日志")
-                                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                }
-                                context.startActivity(
-                                    android.content.Intent.createChooser(intent, resources.getString(R.string.settings_diag_log)),
-                                )
-                            }.onFailure {
-                                Toast.makeText(context, R.string.settings_diag_empty, Toast.LENGTH_SHORT).show()
-                            }
+                            Toast.makeText(context, R.string.settings_diag_empty, Toast.LENGTH_SHORT).show()
                         }
+                    },
+                )
+                ComponentDivider()
+                SettingRow(
+                    title = "保存到「下载」目录",
+                    summary = "生成 allegro-diag-*.log 文件",
+                    onClick = {
+                        val name = com.ravenxud.allegro.util.LogExporter.saveToDownloads(context)
+                        Toast.makeText(
+                            context,
+                            if (name != null) "已保存到下载：$name" else resources.getString(R.string.settings_diag_empty),
+                            Toast.LENGTH_LONG,
+                        ).show()
+                    },
+                )
+                ComponentDivider()
+                SettingRow(
+                    title = "清空日志",
+                    onClick = {
+                        com.ravenxud.allegro.util.LogExporter.clear()
+                        Toast.makeText(context, "已清空诊断日志", Toast.LENGTH_SHORT).show()
                     },
                 )
             }
@@ -383,4 +392,44 @@ private fun ThemeMode.labelRes(): Int = when (this) {
     ThemeMode.LIGHT -> R.string.settings_theme_light
     ThemeMode.DARK -> R.string.settings_theme_dark
     ThemeMode.SYSTEM -> R.string.settings_theme_system
+}
+
+/**
+ * 通过系统分享面板发送 diag.log。
+ * 若没有可用接收方（精简 ROM 常见），退化为"复制到剪贴板"，保证日志一定拿得出来。
+ */
+private fun shareLog(
+    context: android.content.Context,
+    resources: android.content.res.Resources,
+    fileExists: Boolean,
+) {
+    val file = com.ravenxud.allegro.util.DiagLog.currentFile()
+    if (file == null || !fileExists) {
+        com.ravenxud.allegro.util.LogExporter.copyToClipboard(context)
+        Toast.makeText(context, resources.getString(R.string.settings_diag_empty), Toast.LENGTH_SHORT).show()
+        return
+    }
+    val ok = runCatching {
+        val uri = androidx.core.content.FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file,
+        )
+        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+            putExtra(android.content.Intent.EXTRA_SUBJECT, "Allegro 诊断日志")
+            clipData = android.content.ClipData.newRawUri("diag.log", uri)
+            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(
+            android.content.Intent.createChooser(intent, resources.getString(R.string.settings_diag_log)),
+        )
+        true
+    }.getOrDefault(false)
+
+    if (!ok) {
+        com.ravenxud.allegro.util.LogExporter.copyToClipboard(context)
+        Toast.makeText(context, "无法调起分享，已复制日志到剪贴板", Toast.LENGTH_LONG).show()
+    }
 }

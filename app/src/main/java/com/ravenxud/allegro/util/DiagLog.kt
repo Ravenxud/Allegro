@@ -46,4 +46,11 @@ object DiagLog {
     }
 
     fun currentFile(): File? = file?.takeIf { it.exists() }
+
+    /** 清空日志（导出后或排障前使用）。 */
+    fun clear() {
+        synchronized(lock) {
+            runCatching { file?.writeText("") }
+        }
+    }
 }
