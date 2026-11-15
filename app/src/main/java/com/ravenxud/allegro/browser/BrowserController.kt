@@ -28,6 +28,9 @@ interface BrowserController {
     /** 为当前标签生成缩略图（打开标签面板前调用）。 */
     fun refreshPreview()
 
+    /** 为**所有**标签补缩略图：缺图的、或 URL 变了的才重抓，避免每次开面板全量重绘。 */
+    fun refreshPreviews()
+
     /** 抓一张当前页面的位图，作为切换器动画的 Stub（异步，主线程回调）。 */
     fun captureStub(onCaptured: (android.graphics.Bitmap?) -> Unit)
 

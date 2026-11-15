@@ -781,7 +781,7 @@ fun BrowserScreen(
                                             count = state.tabs.size,
                                             modifier = Modifier.height(40.dp).width(btnWidth).graphicsLayer { alpha = btnAlpha },
                                         ) {
-                                            controller.refreshPreview()
+                                            controller.refreshPreviews()
                                             if (lowRam) {
                                                 tabsStub = null
                                                 tabsMounted = true

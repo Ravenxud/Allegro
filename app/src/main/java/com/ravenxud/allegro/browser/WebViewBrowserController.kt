@@ -1388,6 +1388,16 @@ class WebViewBrowserController(
         capturePreview(_state.value.activeTabId)
     }
 
+    override fun refreshPreviews() {
+        val tabs = _state.value.tabs
+        val activeId = _state.value.activeTabId
+        tabs.forEach { tab ->
+            // 当前标签每次重抓（内容最新）；其余只在缺图时补，避免打开面板瞬间做 N 次全量重绘
+            val need = tab.id == activeId || tab.preview == null
+            if (need) capturePreview(tab.id)
+        }
+    }
+
     private fun capturePreview(tabId: String?) {
         val id = tabId ?: return
         val view = pool.peek(id) ?: return

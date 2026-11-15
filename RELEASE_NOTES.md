@@ -1,3 +1,34 @@
+# 0.79.3-beta
+
+**标签页重做第三步：打开面板前给所有标签补缩略图（只补缺的）。**
+
+## 之前
+
+`refreshPreview()` 只抓**当前**标签，其它标签的 `preview` 要么是空的（灰块），
+要么是很久以前抓的旧图。所以网格里除了当前页之外，看起来「没内容是空的」。
+
+## 现在
+
+```kotlin
+override fun refreshPreviews() {
+    tabs.forEach { tab ->
+        val need = tab.id == activeId || tab.preview == null
+        if (need) capturePreview(tab.id)
+    }
+}
+```
+
+- 当前标签：每次重抓（内容最新）
+- 其它标签：**只在缺图时补**，避免每次开面板都做 N 次全量重绘
+- `capturePreview` 走的是 `WebView.draw(Canvas)` 到 360 宽位图，比 PixelCopy 便宜得多
+
+打开面板时调用 `refreshPreviews()` 而不是 `refreshPreview()`。
+
+## 仍然存在的限制
+
+- 其它标签的缩略图只在「首次打开面板」时补齐；页面在后台继续变化（视频、轮播）不会实时更新
+- 后台标签的 WebView 若被系统回收（`pool.peek` 为空），依旧只能显示占位块
+
 # 0.79.2-beta
 
 **缩略图飞行途中的圆角改为「跟随卡片」，并整体放慢。**
