@@ -564,6 +564,20 @@ fun BrowserScreen(
                     var frost by remember { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
                     // 进度条：数据 → 单点动画（Luna 也是状态驱动，范围外不做动画）
                     val progressColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.95f)
+                    // 进度条上的"流光"：0→1 循环，用作高光在已加载弧段上的位置
+                    val shimmer = androidx.compose.animation.core.rememberInfiniteTransition(label = "pillShimmer")
+                        .animateFloat(
+                            initialValue = 0f,
+                            targetValue = 1f,
+                            animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+                                animation = androidx.compose.animation.core.tween(
+                                    durationMillis = 1400,
+                                    easing = androidx.compose.animation.core.LinearEasing,
+                                ),
+                                repeatMode = androidx.compose.animation.core.RepeatMode.Restart,
+                            ),
+                            label = "shimmerPos",
+                        )
                     // 键盘真的在的时候才算「展开」：系统返回键收键盘后，焦点可能还留在输入框上
                     val imeVisible = androidx.compose.foundation.layout.WindowInsets.ime
                         .getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
@@ -707,7 +721,6 @@ fun BrowserScreen(
                                                                 top = inset,
                                                                 right = size.width - inset,
                                                                 bottom = size.height - inset,
-                                                                // 胶囊圆角是 22dp；按"高度的一半"算会变成跑道形，和栏对不上
                                                                 radiusX = 22.dp.toPx() - inset,
                                                                 radiusY = 22.dp.toPx() - inset,
                                                             ),
@@ -718,23 +731,36 @@ fun BrowserScreen(
                                                     }
                                                     val total = measure.length
                                                     if (total > 0f) {
-                                                        val start = total * 0.62f // 从左下角附近起画，顺时针
-                                                        val end = start + total * p
-                                                        val slice = androidx.compose.ui.graphics.Path()
-                                                        if (end <= total) {
-                                                            measure.getSegment(start, end, slice, true)
-                                                        } else {
-                                                            measure.getSegment(start, total, slice, true)
-                                                            measure.getSegment(0f, end - total, slice, true)
-                                                        }
-                                                        drawPath(
-                                                            path = slice,
-                                                            color = progressColor,
-                                                            style = androidx.compose.ui.graphics.drawscope.Stroke(
-                                                                width = stroke,
-                                                                cap = androidx.compose.ui.graphics.StrokeCap.Round,
-                                                            ),
+                                                        val start = total * 0.62f
+                                                        val arcStyle = androidx.compose.ui.graphics.drawscope.Stroke(
+                                                            width = stroke,
+                                                            cap = androidx.compose.ui.graphics.StrokeCap.Round,
                                                         )
+                                                        // 画一段弧（越过起点时拆成两段，保证闭合）
+                                                        fun arc(from: Float, len: Float, color: androidx.compose.ui.graphics.Color) {
+                                                            val to = from + len
+                                                            val slice = androidx.compose.ui.graphics.Path()
+                                                            if (to <= total) {
+                                                                measure.getSegment(from, to, slice, true)
+                                                            } else {
+                                                                measure.getSegment(from, total, slice, true)
+                                                                measure.getSegment(0f, to - total, slice, true)
+                                                            }
+                                                            drawPath(slice, color, style = arcStyle)
+                                                        }
+                                                        val span = total * p
+                                                        arc(start, span, progressColor)
+
+                                                        // 流动光效：一段更亮的高光沿已加载的弧来回扫
+                                                        val hl = (span * 0.32f).coerceAtMost(span)
+                                                        if (hl > 1f) {
+                                                            val t = shimmer.value
+                                                            arc(
+                                                                from = start + (span - hl) * t,
+                                                                len = hl,
+                                                                color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.62f),
+                                                            )
+                                                        }
                                                     }
                                                 }
                                             },

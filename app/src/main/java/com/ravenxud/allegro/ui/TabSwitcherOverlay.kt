@@ -146,6 +146,8 @@ fun TabSwitcherOverlay(
     var sort by remember { mutableStateOf(TabSort.RECENT) }
     var lockedIndex by remember { mutableStateOf(0) }
     var menuTab by remember { mutableStateOf<TabState?>(null) }
+    // 关闭动画：先标记 closing，卡片自己缩掉/淡出后再真正移除（否则是"啪"一下消失）
+    val closingIds = remember { androidx.compose.runtime.mutableStateListOf<String>() }
     var dismissed by remember { mutableStateOf(true) }
     var openedAt by remember { mutableLongStateOf(0L) }
     var dragOffset by remember { mutableFloatStateOf(0f) }
@@ -280,7 +282,17 @@ fun TabSwitcherOverlay(
                 cardHeightPx = cardHeightPx,
                 onMove = onMove,
                 onSelect = onSelect,
-                onClose = onClose,
+                onClose = { id ->
+                    if (!closingIds.contains(id)) {
+                        closingIds.add(id)
+                        scope.launch {
+                            kotlinx.coroutines.delay(200)
+                            onClose(id)
+                            closingIds.remove(id)
+                        }
+                    }
+                },
+                closingIds = closingIds,
                 menuTabId = menuTab?.id,
                 onMenuDismiss = { menuTab = null },
                 onMenuCloseOthers = { menuTab?.let { onCloseOthers(it.id) }; menuTab = null },
@@ -416,6 +428,7 @@ private fun TabGrid(
     gridState: LazyGridState,
     cardWidthPx: Float,
     cardHeightPx: Float,
+    closingIds: List<String> = emptyList(),
     menuTabId: String?,
     onMenuDismiss: () -> Unit,
     onMenuCloseOthers: () -> Unit,
@@ -479,6 +492,8 @@ private fun TabGrid(
                     val shown = state.tabs.bySort(sort)
                     itemsIndexed(shown, key = { _, it -> it.id }) { index, item ->
                         TabCard(
+                            // 增删/重排交给 LazyGrid 自己做位移动画
+                            modifier = Modifier.animateItem(),
                             // 20ms/张的错峰：在绘制层折算，组合期不读进度
                             cardIndex = index,
                             progressProvider = progressProvider,
@@ -489,6 +504,7 @@ private fun TabGrid(
                             onMenuCopyLink = onMenuCopyLink,
                             onMenuClose = onMenuClose,
                             tab = item,
+                            closing = closingIds.contains(item.id),
                             active = item.id == state.activeTabId,
                             dragging = dragId == item.id,
                             dragOffset = if (dragId == item.id) dragOffset else Offset.Zero,
@@ -602,6 +618,7 @@ private fun TabCard(
     onMenuClose: () -> Unit,
     tab: TabState,
     active: Boolean,
+    closing: Boolean = false,
     dragging: Boolean,
     dragOffset: Offset,
     onSelect: () -> Unit,
@@ -614,6 +631,11 @@ private fun TabCard(
 ) {
     val shape = com.ravenxud.allegro.ui.theme.Shapes.Tile
     var offsetX by remember { mutableFloatStateOf(0f) }
+    val closingProgress by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (closing) 1f else 0f,
+        animationSpec = androidx.compose.animation.core.tween(180),
+        label = "closing",
+    )
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val dismissWidth = with(density) { 120.dp.toPx() }
@@ -627,10 +649,12 @@ private fun TabCard(
                 val stagger = (cardIndex.coerceAtMost(6)) * 0.05f
                 val raw = ((progressProvider() - stagger) / 0.62f).coerceIn(0f, 1f)
                 val fade = smoothstep(raw)
-                alpha = fade
+                val closeFade = 1f - closingProgress
+                alpha = fade * closeFade
                 translationX = dragOffset.x
                 translationY = dragOffset.y + (1f - fade) * 28f
-                val s = if (dragging) 1.04f else (0.92f + 0.08f * easeOutBack(raw))
+                val s0 = if (dragging) 1.04f else (0.92f + 0.08f * easeOutBack(raw))
+                val s = s0 * (1f - 0.12f * closingProgress)
                 scaleX = s
                 scaleY = s
             }
