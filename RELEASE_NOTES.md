@@ -1,3 +1,35 @@
+# 0.68.0-beta
+
+**A/2b1 落地：二级页容器换成 `NavDisplay`。**
+
+## 结构性改动
+
+| 之前 | 现在 |
+|---|---|
+| `AnimatedVisibility(visibleState = secondaryState)` + 内联 `when (lastScreen) { … }` | `BrowserNavHost`（`NavDisplay`）+ 局部函数 `RenderSecondary(routeScreen)` |
+| 转场由我们手写 `slide + fade` | 转场、系统返回、边缘滑动、转场期输入拦截由 `miuix-nav` 接管 |
+| `lastScreen` 记录上一页 | 删除；导航栈（`[Root, …]`）承载 |
+
+实现要点：
+- `when` 分支体**原样**搬进 `RenderSecondary`（用括号配对脚本定位，未改逻辑）
+- 栈由 `screen` **单向、幂等**镜像（`LaunchedEffect(screen)`），不引入第二个可写事实源
+- 栈深 ≤ 1 时不挂载 `NavDisplay`（Root entry 暂为空壳，浏览器 UI 仍在外面）
+
+## 已知取舍（2b2 再补）
+
+- **浏览器 → 二级页的进场动画**暂时没有（NavDisplay 是挂载即出现）；二级页**之间**的转场已由库提供
+- Root entry 目前是空壳；2b2 把浏览器 UI（顶栏 + WebView + 底栏）搬进去后，才能做到"一个 NavDisplay 管所有页面"
+
+## 请验
+
+1. 设置 → 开源许可 → 返回：回设置（2a 的语义保留）
+2. 二级页之间跳转：**有库自带转场**，不是硬切
+3. 二级页里按系统返回键：能回上一页 / 回浏览器
+4. 转场期间快速点击：不应穿透到 WebView 或地址栏
+5. 其余功能与 0.67.0 一致
+
+---
+
 # 0.67.0-beta
 
 A/2a：**修好二级页的返回语义**（在不换容器的前提下）。

@@ -1,4 +1,10 @@
 package com.ravenxud.allegro.ui
+import com.ravenxud.allegro.ui.nav.BrowserNavHost
+import com.ravenxud.allegro.ui.nav.SecondaryRoute
+import com.ravenxud.allegro.ui.nav.currentSecondary
+import com.ravenxud.allegro.ui.nav.popSecondary
+import com.ravenxud.allegro.ui.nav.pushSecondary
+import com.ravenxud.allegro.ui.nav.rememberBrowserStack
 
 import com.ravenxud.allegro.ui.theme.AllegroIcons
 import android.app.ActivityManager
@@ -172,6 +178,16 @@ fun BrowserScreen(
     var tabsStub by remember { mutableStateOf<Bitmap?>(null) }
     var showAppMenu by remember { mutableStateOf(false) }
     var screen by remember { mutableStateOf(SecondaryScreen.BROWSER) }
+    // 2b1：栈驱动容器。screen 仍是页面选择的事实源，单向、幂等地镜像到栈（栈底恒为 Root）
+    val navStack = rememberBrowserStack()
+    LaunchedEffect(screen) {
+        val route = SecondaryRoute(screen)
+        if (screen == SecondaryScreen.BROWSER) {
+            while (navStack.size > 1) navStack.removeAt(navStack.lastIndex)
+        } else if (navStack.lastOrNull() != route) {
+            if (navStack.size > 1) navStack[navStack.lastIndex] = route else navStack.add(route)
+        }
+    }
     // 2a：二级页之间的导航历史。从浏览器进入不记录；页内跳转记录来源，
     // 返回时逐层回退（修「设置 → 许可证 → 返回直接回网页」）
     val screenHistory = remember { androidx.compose.runtime.mutableStateListOf<SecondaryScreen>() }
@@ -788,17 +804,15 @@ fun BrowserScreen(
             // C6 宿主：整页浮层，必须在根 Box 内、且不在任何 Column 里
             com.ravenxud.allegro.ui.components.PageToastHost(message = pageToast)
 
-            AnimatedVisibility(
-                visibleState = secondaryState,
-                enter = fadeIn(Motion.enter(Motion.Duration.Emphasized)) + slideInHorizontally(Motion.slide(Motion.Duration.Long)) { it / 7 },
-                exit = fadeOut(Motion.exit(Motion.Duration.Quick)) + slideOutHorizontally(Motion.slide(Motion.Duration.Emphasized)) { it / 9 },
-            ) {
+            // 2b1：二级页渲染提取为局部函数（捕获所需状态，逻辑未改），供 NavDisplay 调用
+            @Composable
+            fun RenderSecondary(routeScreen: SecondaryScreen) {
                 val back: () -> Unit = { backOnce() }
                 val openAndBack: (String) -> Unit = {
-                    screen = SecondaryScreen.BROWSER
+                    while (navStack.popSecondary()) { }
                     controller.openTab(it)
                 }
-                when (lastScreen) {
+                when (routeScreen) {
                     SecondaryScreen.BOOKMARKS -> BookmarksScreen(
                         repository = bookmarks,
                         onOpen = openAndBack,
@@ -900,7 +914,16 @@ fun BrowserScreen(
                         },
                     )
                     else -> Unit
-                }
+                                }
+            }
+
+            if (navStack.size > 1) {
+                com.ravenxud.allegro.ui.nav.BrowserNavHost(
+                    stack = navStack,
+                    onBack = { navStack.popSecondary() },
+                    rootContent = { },
+                    secondaryContent = { RenderSecondary(it) },
+                )
             }
     }
 }
