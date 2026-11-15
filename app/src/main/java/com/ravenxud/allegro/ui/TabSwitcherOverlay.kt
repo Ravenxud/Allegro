@@ -83,6 +83,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Sort
 import top.yukonga.miuix.kmp.icon.extended.Add
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.icon.extended.Close
@@ -97,6 +98,21 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
  * 动画由 `updateTransition` 驱动：首帧拿到尺寸、被打断时自动反向，
  * 不依赖 Animatable 的手动 snap，避免"硬切"。
  */
+/** 标签页展示排序：只影响展示顺序，不改底层 tabs 顺序与 WebView 池索引。 */
+enum class TabSort(val label: String) {
+    RECENT("按打开时间"),
+    TITLE("按标题"),
+    SITE("按网站"),
+}
+
+private fun List<TabState>.bySort(sort: TabSort): List<TabState> = when (sort) {
+    TabSort.RECENT -> this
+    TabSort.TITLE -> sortedBy { it.title.lowercase() }
+    TabSort.SITE -> sortedBy {
+        runCatching { java.net.URI(it.url).host }.getOrNull().orEmpty().lowercase()
+    }
+}
+
 @Composable
 fun TabSwitcherOverlay(
     visible: Boolean,
@@ -116,6 +132,7 @@ fun TabSwitcherOverlay(
     onMove: (Int, Int) -> Unit,
     simplify: Boolean = false,
 ) {
+    var sort by remember { mutableStateOf(TabSort.RECENT) }
     var lockedIndex by remember { mutableStateOf(0) }
     var menuTab by remember { mutableStateOf<TabState?>(null) }
     var dismissed by remember { mutableStateOf(true) }
@@ -230,6 +247,14 @@ fun TabSwitcherOverlay(
         ) {
             TabGrid(
                 progressProvider = pp,
+                sort = sort,
+                onCycleSort = {
+                    sort = when (sort) {
+                        TabSort.RECENT -> TabSort.TITLE
+                        TabSort.TITLE -> TabSort.SITE
+                        TabSort.SITE -> TabSort.RECENT
+                    }
+                },
                 state = state,
                 gridState = gridState,
                 cardWidthPx = cardWidthPx,
@@ -324,6 +349,8 @@ private fun lerpRect(start: Rect, end: Rect, t: Float): Rect = Rect(
 @Composable
 private fun TabGrid(
     progressProvider: () -> Float,
+    sort: TabSort,
+    onCycleSort: () -> Unit,
     state: BrowserState,
     gridState: LazyGridState,
     cardWidthPx: Float,
@@ -356,6 +383,13 @@ private fun TabGrid(
             ) {
                 Text(stringResource(R.string.tabs_title, state.tabs.size), fontSize = 20.sp)
                 Spacer(Modifier.weight(1f))
+                // 排序：点击循环 时间 → 标题 → 网站（非「按打开时间」时禁用拖拽重排）
+                com.ravenxud.allegro.ui.components.PillButton(
+                    label = sort.label,
+                    onClick = onCycleSort,
+                    icon = MiuixIcons.Sort,
+                )
+                Spacer(Modifier.width(8.dp))
                 IconButton(onClick = onDismiss) {
                     Icon(MiuixIcons.Close, stringResource(R.string.cd_close))
                 }
@@ -376,7 +410,8 @@ private fun TabGrid(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    itemsIndexed(state.tabs, key = { _, it -> it.id }) { index, item ->
+                    val shown = state.tabs.bySort(sort)
+                    itemsIndexed(shown, key = { _, it -> it.id }) { index, item ->
                         TabCard(
                             modifier = Modifier.animateItem(),
                             // 20ms/张的错峰：在绘制层折算，组合期不读进度
@@ -394,6 +429,7 @@ private fun TabGrid(
                             dragOffset = if (dragId == item.id) dragOffset else Offset.Zero,
                             onSelect = { onSelect(item.id) },
                             onClose = { onClose(item.id) },
+                            draggable = sort == TabSort.RECENT,
                             onLongPress = { onLongPress(item) },
                             onDragStart = {
                                 dragId = item.id
@@ -480,6 +516,7 @@ private fun TabCard(
     dragOffset: Offset,
     onSelect: () -> Unit,
     onClose: () -> Unit,
+    draggable: Boolean,
     onLongPress: () -> Unit,
     onDragStart: () -> Unit,
     onDrag: (Offset) -> Unit,
@@ -512,7 +549,8 @@ private fun TabCard(
                 scaleX = s
                 scaleY = s
             }
-            .pointerInput(tab.id) {
+            .pointerInput(tab.id, draggable) {
+                if (!draggable) return@pointerInput
                 detectDragGesturesAfterLongPress(
                     onDragStart = { onDragStart() },
                     onDrag = { change, amount ->
@@ -544,6 +582,7 @@ private fun TabCard(
             onLongPress = onLongPress,
             modifier = Modifier
                 .fillMaxWidth()
+                .pressScale()
                 .pressScale()
                 .offset { IntOffset(offsetX.roundToInt(), 0) }
                 .pointerInput(Unit) {
