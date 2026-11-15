@@ -68,6 +68,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             val mode by ServiceLocator.settingsRepository.themeMode.collectAsState()
             BrowserTheme(mode = mode) {
+                // 全局启用超椭圆（squircle）圆角：Miuix 组件（Card/Surface/Sheet）自动生效
+                androidx.compose.runtime.CompositionLocalProvider(
+                    top.yukonga.miuix.kmp.squircle.LocalSquircleEnabled provides true,
+                ) {
                 BrowserScreen(
                     controller = controller,
                     settings = ServiceLocator.settingsRepository,
@@ -81,6 +85,7 @@ class MainActivity : ComponentActivity() {
                     onCycleTheme = { ServiceLocator.settingsRepository.cycleTheme() },
                     backProgress = backProgress.floatValue,
                 )
+                }
             }
         }
 

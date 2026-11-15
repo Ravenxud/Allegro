@@ -1,3 +1,67 @@
+# 0.62.0-beta
+
+外观统一第一刀：**超椭圆圆角**（用 `miuix-squircle`，不再手写圆角曲线）。
+
+## 改动
+
+| 项 | 之前 | 现在 |
+|---|---|---|
+| 圆角形状 | `RoundedCornerShape(24/20/28dp)`（标准圆弧） | **超椭圆（squircle）**：由 `LocalSquircleEnabled` 全局开启，Miuix 的 `Card` / `Surface` / `Sheet` 自动生效 |
+| 行高 | 52dp（SheetRow）与 60dp（SettingRow）并存 | 统一 **60dp**（`Dimens.RowHeight`） |
+
+超椭圆和普通圆角的差别在**拐角的曲率过渡**：普通圆弧在切点处曲率突变，看起来"方一点"；
+squircle 的曲率连续，观感更接近 Luna / iOS。这是 4dp 级别的差别，但整屏一起看很明显。
+
+## 实现方式
+
+```kotlin
+CompositionLocalProvider(LocalSquircleEnabled provides true) { BrowserScreen(...) }
+```
+
+一个组合局部量，全 App 生效；不需要在每个 `Modifier.clip()` 处改形状。
+
+## 请验
+
+1. 设置页卡片、菜单面板、标签卡：**拐角是否更"饱满"**（不是标准圆弧）
+2. 菜单/长按面板：行高变高一点（52 → 60），点击区域更大
+3. 全局无视觉错位（超椭圆可能导致 1px 级边缘差异，若某处圆角看起来"缺角"请告我具体页面）
+
+---
+
+# 0.62.0-beta
+
+外观统一第一步：**全局超椭圆圆角** + 行高收敛。
+
+## 1. 超椭圆（squircle）
+
+引入 `miuix-squircle`，在 `MainActivity` 的根组合处：
+
+```kotlin
+CompositionLocalProvider(LocalSquircleEnabled provides true) { ... }
+```
+
+这一个局部量让 **Miuix 的 Card / Surface / Sheet / Dialog 全部改用超椭圆圆角** ——
+比我们之前逐个 `RoundedCornerShape(24.dp)` 更接近 Luna 的形状手感（直角过渡更"整"）。
+
+## 2. 行高收敛
+
+`SheetRow` 的 52dp → **60dp**（`Dimens.RowHeight`），与设置页 `SettingRow` 一致。
+此前全项目并存 52 / 60 / 64 三套行高，是"规范不统一"的直接来源之一。
+
+## 3. 说明
+
+- 我们自己用 `Shapes.Card/Tile/Panel` 裁切的容器（如 `GroupedCard`、标签卡）**不会自动变超椭圆**，
+  下一版再逐处换成 Miuix `Surface(shape=…)` 或 `SquircleBackground`，避免一次改动过大。
+- 图标集统一（Tabler）尚未做：需要 20+ 文件的映射替换，单独一版。
+
+## 请验
+
+1. 设置页卡片、菜单面板、对话框的圆角：**应比之前更"方中带圆"**（超椭圆特征）
+2. 菜单/列表面板行高比之前略高，文字更透气
+3. 其余功能与 0.61.0 一致
+
+---
+
 # 0.61.0-beta
 
 **验证性版本**：接入 `miuix-nav` 依赖，不改任何界面。目的是先确认"能不能用"，再谈"怎么用"。

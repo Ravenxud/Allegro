@@ -501,7 +501,7 @@ fun SheetRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
+            .height(com.ravenxud.allegro.ui.theme.Dimens.RowHeight)
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
