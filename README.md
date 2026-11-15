@@ -2,7 +2,7 @@
 
 轻量、安静、数据留在本机的 Android 浏览器。
 
-- **小**：release 包约 1.9 MB，无统计 SDK、无账号体系、无推送
+- **小**：release 包约 3.6 MB，无统计 SDK、无账号体系、无推送
 - **快**：标签页 WebView 池化复用，切换不重载
 - **安静**：广告过滤（内置规则 + 可订阅）、隐私报告、元素选择器
 - **能读**：阅读模式、系统 TTS 朗读、离线页（自包含单文件 HTML，断网可看）
@@ -13,7 +13,7 @@
 
 从 [Releases](https://github.com/Ravenxud/Allegro/releases) 下载最新 APK 直接安装。
 
-- 系统要求：Android 8.0+（minSdk 26）
+- 系统要求：Android 13+（minSdk 33）
 - 当前为 beta，使用 debug 或自签名包，覆盖安装会保留数据
 - 包名：`com.ravenxud.allegro`
 
@@ -22,8 +22,8 @@
 ```bash
 # 环境：JDK 17 + Gradle 9.9.1 + AGP 9.5.1 + compileSdk 37
 ./gradlew assembleDebug          # 13 MB，可调试
-./gradlew assembleRelease        # 1.9 MB，R8 + 资源收缩
-./gradlew testDebugUnitTest      # 67 条单测
+./gradlew assembleRelease        # 3.6 MB，R8 + 资源收缩
+./gradlew testDebugUnitTest      # 107 个用例
 ./gradlew lintDebug              # 0 error 才能合并
 ```
 

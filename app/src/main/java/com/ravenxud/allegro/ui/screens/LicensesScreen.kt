@@ -20,6 +20,7 @@ import com.ravenxud.allegro.ui.components.GroupDivider
 import com.ravenxud.allegro.ui.components.GroupedCard
 import com.ravenxud.allegro.ui.components.SectionLabel
 import com.ravenxud.allegro.ui.components.SettingRow
+import com.ravenxud.allegro.ui.legal.EntryStatus
 import com.ravenxud.allegro.ui.legal.ThirdPartyRegistry
 import com.ravenxud.allegro.ui.theme.Dimens
 import com.ravenxud.allegro.ui.theme.TypeScale
@@ -54,7 +55,7 @@ fun LicensesScreen(onBack: () -> Unit) {
             // 复用源码的组件单独一组，观感上更醒目
             val vendored = ThirdPartyRegistry.vendoredEntries
             if (vendored.isNotEmpty()) {
-                SectionLabel("本工程直接复用了以下项目的源码")
+                SectionLabel("复用源码")
                 GroupedCard {
                     vendored.forEachIndexed { index, entry ->
                         if (index > 0) GroupDivider()
@@ -66,10 +67,21 @@ fun LicensesScreen(onBack: () -> Unit) {
                 }
             }
 
+            SectionLabel("参考致谢")
+            GroupedCard {
+                ThirdPartyRegistry.referenceEntries.forEachIndexed { index, entry ->
+                    if (index > 0) GroupDivider()
+                    SettingRow(
+                        title = entry.name,
+                        summary = "${entry.license} · ${entry.usage}",
+                    ) { openUrl(context, entry.url) }
+                }
+            }
+
             SectionLabel("依赖库")
             GroupedCard {
                 ThirdPartyRegistry.entries
-                    .filterNot { it.vendored }
+                    .filter { it.status == EntryStatus.DEPENDENCY }
                     .forEachIndexed { index, entry ->
                         if (index > 0) GroupDivider()
                         SettingRow(

@@ -9,6 +9,16 @@ package com.ravenxud.allegro.ui.legal
  * 本项目自身以 GPL-3.0 发布（见仓库根目录 LICENSE）。引入 GPL-3.0 代码后必须保持该许可，
  * 并在此列出出处；引入 Apache-2.0 / MIT 代码需保留其版权与许可声明。
  */
+/** 与项目的实际关系，避免「参考过」被写成「复用了」。 */
+enum class EntryStatus(val label: String) {
+    /** 直接复制了源码。 */
+    VENDORED("复用源码"),
+    /** 阅读/借鉴了实现思路，未复制代码。 */
+    REFERENCE("参考致谢"),
+    /** 作为依赖库引入。 */
+    DEPENDENCY("依赖库"),
+}
+
 data class ThirdPartyEntry(
     /** 组件名或项目名。 */
     val name: String,
@@ -20,8 +30,8 @@ data class ThirdPartyEntry(
     val url: String,
     /** 在本工程中的用途，一句话。 */
     val usage: String,
-    /** 是否为「直接复用其源码」。 */
-    val vendored: Boolean = false,
+    /** 与项目的实际关系。 */
+    val status: EntryStatus = EntryStatus.DEPENDENCY,
 )
 
 object ThirdPartyRegistry {
@@ -37,8 +47,8 @@ object ThirdPartyRegistry {
             author = "chenaizhang",
             license = "GPL-3.0",
             url = "https://github.com/chenaizhang/KernelSU-Style-UI-Kit",
-            usage = "部分 UI 组件与工具（详见每处文件头的出处注释）",
-            vendored = true,
+            usage = "设计规范与组件实现思路参考（当前未复制任何文件）",
+            status = EntryStatus.REFERENCE,
         ),
         ThirdPartyEntry(
             name = "KernelSU",
@@ -46,7 +56,7 @@ object ThirdPartyRegistry {
             license = "GPL-3.0",
             url = "https://github.com/tiann/KernelSU",
             usage = "上述 UI Kit 的上游；其组件设计源自 KernelSU Manager",
-            vendored = true,
+            status = EntryStatus.REFERENCE,
         ),
 
         // ---------- 依赖库 ----------
@@ -94,6 +104,11 @@ object ThirdPartyRegistry {
         ),
     )
 
-    /** 仅「复用源码」的条目，用于关于页的醒目致谢。 */
-    val vendoredEntries: List<ThirdPartyEntry> get() = entries.filter { it.vendored }
+    /** 复用源码的条目（合规上最需要显式声明）。 */
+    val vendoredEntries: List<ThirdPartyEntry>
+        get() = entries.filter { it.status == EntryStatus.VENDORED }
+
+    /** 参考致谢的条目。 */
+    val referenceEntries: List<ThirdPartyEntry>
+        get() = entries.filter { it.status == EntryStatus.REFERENCE }
 }
