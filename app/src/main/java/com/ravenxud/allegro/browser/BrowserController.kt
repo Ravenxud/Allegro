@@ -32,6 +32,12 @@ interface BrowserController {
     fun captureStub(onCaptured: (android.graphics.Bitmap?) -> Unit)
 
     /**
+     * 切换器用的**清晰**缩略图：降采样到 720 宽、不做模糊。
+     * 预模糊的 Stub 只适合当背景，拿去当卡片会显糊。
+     */
+    fun captureThumb(onCaptured: (android.graphics.Bitmap?) -> Unit)
+
+    /**
      * 面板玻璃底图：在打开面板**之前**调用（此时 WebView 仍可见）。
      * 传入 [onReady] 时，等快照落地后再执行（保证底图是当前页面）。
      */

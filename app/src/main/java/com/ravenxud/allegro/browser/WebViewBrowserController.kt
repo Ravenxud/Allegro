@@ -1205,6 +1205,21 @@ class WebViewBrowserController(
         }
     }
 
+    override fun captureThumb(onCaptured: (Bitmap?) -> Unit) {
+        val activity = context as? android.app.Activity ?: return onCaptured(null)
+        val window = activity.window ?: return onCaptured(null)
+        val decor = window.decorView
+        if (decor.width <= 0 || decor.height <= 0) return onCaptured(null)
+        requestCopy(window, android.graphics.Rect(0, 0, decor.width, decor.height)) { bitmap ->
+            if (bitmap == null) return@requestCopy onCaptured(null)
+            val w = minOf(bitmap.width, 720)
+            val h = (bitmap.height.toFloat() / bitmap.width * w).toInt().coerceAtLeast(1)
+            val scaled = runCatching { Bitmap.createScaledBitmap(bitmap, w, h, true) }.getOrNull()
+            if (scaled != null && scaled !== bitmap) bitmap.recycle()
+            onCaptured(scaled)
+        }
+    }
+
     private fun requestCopy(
         window: android.view.Window,
         rect: android.graphics.Rect,

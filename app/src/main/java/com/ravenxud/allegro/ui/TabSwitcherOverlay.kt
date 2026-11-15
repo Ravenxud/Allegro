@@ -122,6 +122,8 @@ private fun List<TabState>.bySort(sort: TabSort): List<TabState> = when (sort) {
 fun TabSwitcherOverlay(
     visible: Boolean,
     stub: Bitmap?,
+    /** 清晰缩略图（720 宽、无模糊）：卡片用它，背景仍用预模糊的 [stub]。 */
+    thumb: Bitmap? = null,
     progressProvider: () -> Float,
     state: BrowserState,
     onSelect: (String) -> Unit,
@@ -312,7 +314,7 @@ fun TabSwitcherOverlay(
                     },
             ) {
                 Image(
-                    bitmap = stub.asImageBitmap(),
+                    bitmap = (thumb ?: stub).asImageBitmap(),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
