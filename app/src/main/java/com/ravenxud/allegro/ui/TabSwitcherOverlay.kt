@@ -316,6 +316,30 @@ fun TabSwitcherOverlay(
             }
         }
 
+        // 最近关闭面板：必须在外层 Box（不能进 Column，否则 fillMaxSize 会压垮网格）
+        MiuixSheet(
+            visible = showRecent,
+            onDismiss = { showRecent = false },
+            title = "最近关闭的标签页",
+        ) {
+            if (recentClosed.isEmpty()) {
+                Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
+                    Text("没有最近关闭的标签", color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
+                }
+            } else {
+                recentClosed.forEach { entity ->
+                    SheetRow(
+                        icon = MiuixIcons.Recent,
+                        title = entity.title.ifBlank { entity.url },
+                        value = runCatching { java.net.URI(entity.url).host }.getOrNull(),
+                        onClick = {
+                            onRestoreClosed(entity)
+                            showRecent = false
+                        },
+                    )
+                }
+            }
+        }
     }
 }
 

@@ -306,7 +306,10 @@ fun BrowserScreen(
     // 面板可见时，网页滚动会节流重抓玻璃底图（否则模糊不跟随滚动）
     LaunchedEffect(showTabs) {
         if (showTabs) {
-            recentClosed = runCatching { controller.recentClosed(5) }.getOrDefault(emptyList())
+            recentClosed = runCatching { controller.recentClosed(10) }
+                .getOrDefault(emptyList())
+                .filter { it.url != "about:blank" }
+                .take(5)
         }
     }
 
@@ -743,6 +746,7 @@ fun BrowserScreen(
         onReopen = { controller.restoreLastClosed(); showTabs = false },
         recentClosed = recentClosed,
         onRestoreClosed = { entity ->
+            com.ravenxud.allegro.util.DiagLog.log("restore-closed", entity.url)
             controller.openTab(entity.url)
             showTabs = false
         },
