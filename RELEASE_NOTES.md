@@ -1,3 +1,46 @@
+# 0.66.1-beta
+
+修试点页「清空栈」崩溃，并把库的硬约束写进决策记录。
+
+## 崩溃原因（日志实证）
+
+```
+java.lang.IllegalArgumentException: NavDisplay back stack cannot be empty
+    at NavDisplayKt.NavDisplay(NavDisplay.kt:1032)
+```
+
+`NavDisplay` **不允许空栈**。我原方案里「空栈 = 在浏览器主界面」的假设是错的。
+
+## 这一条同时解释了你说的第二件事
+
+「设置里的二级页返回会直接回到网页」——因为现在是 `replace` 语义，栈里始终只有一页，
+返回没有“上一页”可回。改成 `push` 后：Settings → 开源许可 → 返回**回到 Settings**。
+
+## 本版改动
+
+- 试点页去掉「清空栈」，改为「弹回栈底（保留 Root）」
+- `ADR-17` 写入 `DECISIONS.md`：导航栈结构定为 `[浏览器 Root, (二级页…)]`，Root 恒在栈底，任何代码不得 `clear()`
+- 导航语义确定：进二级页 `push`；二级页之间 `push`；返回 `pop`；栈深为 1 时交给 Activity（网页后退 / 双击退出）
+
+## 结算：A 方案的完整结构（下一步实施）
+
+`BrowserScreen` 要改成 **NavDisplay 的 Root entry**：
+
+| 现状 | 重写后 |
+|---|---|
+| 一个大 Box：顶栏 + WebView + 底栏 + 二级页浮层 | `NavDisplay(stack)` 的 Root entry = 顶栏 + WebView + 底栏 |
+| 二级页用 `when(screen)` + `AnimatedVisibility` | 二级页是 push 进来的 entry，转场/返回/输入拦截由库管 |
+| `screen` 变量是事实源 | `backStack` 是唯一事实源，`screen` 从栈顶派生 |
+| 旧 `BackHandler(enabled = screen != BROWSER)` | 删除，返回交给 `NavDisplay.onBack` |
+
+## 请验
+
+1. 试点页点「弹回栈底」：不崩溃，回到 Root
+2. Settings → 开源许可 → 返回：**目前仍回网页**（旧行为未改，A 方案实施后才变）
+3. 其它功能与 0.66.0 一致
+
+---
+
 # 0.66.0-beta
 
 NavDisplay 重写 **第 1 步：在试点页验证契约**（不动生产导航）。

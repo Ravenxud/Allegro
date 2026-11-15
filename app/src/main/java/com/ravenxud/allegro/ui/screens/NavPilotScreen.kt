@@ -66,7 +66,7 @@ fun NavPilotScreen(onBack: () -> Unit) {
                 GroupedCard {
                     SettingRow(
                         title = "当前栈深：${backStack.size}",
-                        summary = if (backStack.isEmpty()) "空栈 = 等价于在浏览器主界面" else "栈顶：${backStack.last()}",
+                        summary = "栈顶：${backStack.last()}（栈底恒为 Root）",
                     ) { }
                 }
                 SectionLabel("操作")
@@ -85,9 +85,11 @@ fun NavPilotScreen(onBack: () -> Unit) {
                         },
                     )
                     SettingRow(
-                        title = "清空栈（空栈）",
-                        summary = "验证 NavDisplay 对空栈不崩、不残留",
-                        onClick = { backStack.clear() },
+                        title = "弹回栈底（保留 Root）",
+                        summary = "NavDisplay 不允许空栈：栈底必须是 Root",
+                        onClick = {
+                            while (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
+                        },
                     )
                     SettingRow(
                         title = "退出试点",

@@ -152,3 +152,25 @@
 先后造成"面板压垮网格"与"面板被误删"。
 
 **决策**：对同一文件的第三次修补起，改为重写相关函数整体，不做字符串手术；删除区间必须用语义锚点（函数边界）而非文本片段。
+
+---
+
+## ADR-17 `NavDisplay` 的栈**不允许为空**（空栈直接抛异常）
+
+**证据**：试点页点「清空栈」后真机崩溃：
+```
+java.lang.IllegalArgumentException: NavDisplay back stack cannot be empty
+    at NavDisplayKt.NavDisplay(NavDisplay.kt:1032)
+```
+
+**决策**：导航栈采用 `[浏览器 Root, (二级页…)]` 结构——**Root 永远在栈底**。
+
+| 动作 | 语义 |
+|---|---|
+| 进二级页 | `push` |
+| 二级页之间（Settings → Licenses） | `push`（返回回到上一页，符合用户预期） |
+| 返回 | `pop`；栈深为 1 时交给 Activity（网页后退 / 双击退出） |
+| 空栈 | **不可出现**，任何代码都不得 `clear()` |
+
+**后果**：浏览器主界面必须作为 Root 进入导航栈（否则栈会为空）；这也意味着
+`BrowserScreen` 的顶栏/WebView/底栏要作为 Root entry 存在，而不是留在 NavDisplay 外层。
