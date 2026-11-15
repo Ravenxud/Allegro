@@ -66,8 +66,8 @@ import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.boundsInWindow
@@ -895,14 +895,12 @@ fun BrowserScreen(
                         enter = fadeIn(Motion.enter()) + slideInVertically(Motion.slide()) { it / 24 },
                         exit = fadeOut(Motion.exit()),
                     ) {
-                        // 二级页期间保持「组合但跳过绘制」：图层不被重录（省掉转场每帧的首页重绘），
-                        // 又不销毁首页状态，返回时玻璃能正常采样。
-                        val homeDraw = remember { mutableStateOf(true) }
-                        LaunchedEffect(secondaryVisible) { homeDraw.value = !secondaryVisible }
+                        // 注意：这里**不能**在二级页出现时跳过绘制。
+                        // 转场期间首页必须一直在下面，否则就是"点下去首页瞬间消失、只剩动画"。
+                        // （这条跳过绘制是 0.80.7 为省重绘加的，实际是那次卡顿感的真凶。）
                         androidx.compose.foundation.layout.Box(
                             Modifier
                                 .fillMaxSize()
-                                .drawWithContent { if (homeDraw.value) drawContent() }
                                 .layerBackdrop(homeBackdrop),
                         ) {
                             HomeScreen(

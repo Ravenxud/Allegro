@@ -33,11 +33,12 @@ private val SoftMotion = NavMotion(
 )
 
 /**
- * 用 miuix 的 Modal 形状（新页整片覆盖、被压住的页不淡出），再套我们的时长。
- * 之前用 MiuixDefault：点设置的那一瞬间首页会先淡掉，观感像"首页消失后才开始播动画"。
+ * 沿用 miuix 默认的推入形状（和"二级页内再进一层"完全一致），只覆盖时长。
+ *
+ * 之前那版换成 Modal 是错的：那不是"页内再进一层"的效果。
  */
 private val SoftTransition: NavTransition =
-    object : NavTransition by NavTransitions.Modal {
+    object : NavTransition by NavTransitions.MiuixDefault {
         override val motion: NavMotion get() = SoftMotion
     }
 

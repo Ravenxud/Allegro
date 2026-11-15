@@ -1,3 +1,32 @@
+# 0.81.3-beta
+
+**回退 Modal；找到「点设置瞬间首页消失」的真凶 —— 是我 0.80.7 加的"跳过首页绘制"。**
+
+## 真凶
+
+0.80.7 为了省转场重绘，写了：
+
+```kotlin
+LaunchedEffect(secondaryVisible) { homeDraw.value = !secondaryVisible }
+...
+.drawWithContent { if (homeDraw.value) drawContent() }
+```
+
+`secondaryVisible` 在**点击的同一帧**就变 true —— 于是首页立刻停止绘制，
+下面变成空白，只剩二级页自己的动画在播。这就是"首页先消失、然后才开始"。
+
+功能上没错（不是崩溃），但观感完全相反：用户要的是**首页被盖住**，而不是先消失。
+
+## 修复
+
+- 删掉「跳过绘制」，转场期间首页始终在下面
+- 转场形状回退到 `NavTransitions.MiuixDefault`（和"二级页内再进一层"同一套推入），
+  时长保留 560ms / 取消 320ms
+
+## 教训
+
+为了 1–2 帧的绘制省事，破坏的是"谁在谁下面"的空间语义 —— 这类"优化"必须先确认视觉语义再动手。
+
 # 0.81.2-beta
 
 **二级页改为「整片覆盖」的转场形状（miuix Modal），时长沿用 560ms。**
