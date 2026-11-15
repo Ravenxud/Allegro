@@ -747,7 +747,6 @@ fun BrowserScreen(
                         ) {
                             HomeScreen(
                                 controller = controller,
-                                searchEngine = searchEngine,
                                 bookmarks = bookmarks,
                                 history = history,
                                 blockedCount = blockedCount,

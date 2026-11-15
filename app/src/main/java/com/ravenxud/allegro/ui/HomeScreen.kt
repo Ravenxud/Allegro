@@ -22,8 +22,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,11 +29,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -44,32 +43,26 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ravenxud.allegro.R
 import com.ravenxud.allegro.browser.BrowserController
-import com.ravenxud.allegro.browser.UrlParser
 import com.ravenxud.allegro.data.BingWallpaper
 import com.ravenxud.allegro.data.entity.ClosedTabEntity
 import com.ravenxud.allegro.data.model.WallpaperSource
-import com.ravenxud.allegro.data.model.SearchEngine
 import com.ravenxud.allegro.data.repo.BookmarkRepository
 import com.ravenxud.allegro.data.repo.HistoryRepository
 import com.ravenxud.allegro.ui.theme.AllegroIcons
 import com.ravenxud.allegro.ui.theme.Spacing
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TextFieldDefaults
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
@@ -79,10 +72,24 @@ import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.material.GlassStyles
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-/** 壁纸上文字的主色：白字 + 深浅两档透明度。 */
+/** 卡片内的文字：浅色壁纸下用深字，深色壁纸下用白字。 */
+@Composable
+private fun cardText(): Color = if (isSystemInDarkTheme()) Color.White else Color(0xFF141414)
+
+@Composable
+private fun cardTextDim(): Color = cardText().copy(alpha = 0.62f)
+
+/** 壁纸上（卡片外）的文字：白字 + 阴影，靠压暗层保底。 */
 private val OnWallpaper = Color.White
 private val OnWallpaperDim = Color.White.copy(alpha = 0.72f)
 private val OnWallpaperFaint = Color.White.copy(alpha = 0.55f)
+
+/** 壁纸上的文字阴影：浅色壁纸没有它基本读不清。 */
+private val WallpaperShadow = Shadow(
+    color = Color.Black.copy(alpha = 0.45f),
+    offset = Offset(0f, 1.5f),
+    blurRadius = 8f,
+)
 
 /**
  * 新标签页（Luna 形态）：
@@ -94,7 +101,6 @@ private val OnWallpaperFaint = Color.White.copy(alpha = 0.55f)
 @Composable
 fun HomeScreen(
     controller: BrowserController,
-    searchEngine: SearchEngine,
     bookmarks: BookmarkRepository,
     history: HistoryRepository? = null,
     blockedCount: Int = 0,
@@ -105,9 +111,6 @@ fun HomeScreen(
     onOpenHistory: () -> Unit = {},
     onOpenBookmarks: () -> Unit = {},
 ) {
-    val focusManager = LocalFocusManager.current
-    val scope = rememberCoroutineScope()
-    var query by remember { mutableStateOf(TextFieldValue("")) }
     var recent by remember { mutableStateOf<List<ClosedTabEntity>>(emptyList()) }
 
     val bookmarkList by bookmarks.observeAll().collectAsState(initial = emptyList())
@@ -144,19 +147,7 @@ fun HomeScreen(
         ) {
             Spacer(Modifier.height(Spacing.m))
 
-            SearchPill(
-                query = query,
-                onQueryChange = { query = it },
-                backdrop = backdrop,
-                onGo = {
-                    controller.openTab(UrlParser.toUrl(query.text, searchEngine.queryUrl))
-                    query = TextFieldValue("")
-                    focusManager.clearFocus()
-                },
-            )
-
-            run {
-                SectionHeader(title = stringResource(R.string.home_privacy_title), onAction = onOpenPrivacy)
+            SectionHeader(title = stringResource(R.string.home_privacy_title), onAction = onOpenPrivacy)
                 GlassCard(backdrop = backdrop) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
@@ -166,25 +157,24 @@ fun HomeScreen(
                             imageVector = AllegroIcons.Blocklist,
                             contentDescription = null,
                             modifier = Modifier.height(28.dp).width(28.dp),
-                            tint = OnWallpaper,
+                            tint = cardText(),
                         )
                         Spacer(Modifier.width(12.dp))
                         Text(
                             text = stringResource(R.string.home_privacy_summary, blockedCount),
                             modifier = Modifier.weight(1f),
                             fontSize = 14.sp,
-                            color = OnWallpaper,
+                            color = cardText(),
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
                         Icon(
                             imageVector = AllegroIcons.ChevronForward,
                             contentDescription = null,
-                            tint = OnWallpaperFaint,
+                            tint = cardTextDim(),
                         )
                     }
                 }
-            }
 
             if (frequent.isNotEmpty()) {
                 SectionHeader(title = stringResource(R.string.home_section_frequent), onAction = onOpenHistory)
@@ -248,35 +238,6 @@ fun HomeScreen(
     }
 }
 
-/** 顶部搜索：玻璃药丸，高度 52dp。 */
-@Composable
-private fun SearchPill(
-    query: TextFieldValue,
-    onQueryChange: (TextFieldValue) -> Unit,
-    backdrop: Backdrop,
-    onGo: () -> Unit,
-) {
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .glassPill(backdrop = backdrop, corner = 26.dp),
-    ) {
-        TextField(
-            value = query,
-            onValueChange = onQueryChange,
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            label = stringResource(R.string.home_search_hint),
-            useLabelAsPlaceholder = true,
-            cornerRadius = 26.dp,
-            leadingIcon = { Icon(AllegroIcons.Search, contentDescription = null) },
-            colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Transparent),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-            keyboardActions = KeyboardActions(onGo = { onGo() }),
-        )
-    }
-}
-
 /** 二级标题：19sp 半粗白字，右侧可带一个动作。 */
 @Composable
 private fun SectionHeader(title: String, onAction: (() -> Unit)? = null) {
@@ -290,6 +251,7 @@ private fun SectionHeader(title: String, onAction: (() -> Unit)? = null) {
             fontSize = 19.sp,
             fontWeight = FontWeight.SemiBold,
             color = OnWallpaper,
+            style = TextStyle(shadow = WallpaperShadow),
         )
         if (onAction != null) {
             Row(
@@ -322,12 +284,14 @@ private fun GlassCard(
     corner: androidx.compose.ui.unit.Dp = 24.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .glassPill(backdrop = backdrop, corner = corner),
-        content = content,
-    )
+    Box(Modifier.fillMaxWidth().glassPill(backdrop = backdrop, corner = corner)) {
+        Box(
+            Modifier
+                .matchParentSize()
+                .background(Color.Black.copy(alpha = if (isSystemInDarkTheme()) 0.22f else 0.14f)),
+        )
+        Column(content = content)
+    }
 }
 
 /** 一行的站点：标题 + 域名。 */
@@ -347,6 +311,7 @@ private fun SiteRow(title: String, subtitle: String, onClick: () -> Unit) {
                 text = title,
                 fontSize = 15.sp,
                 color = OnWallpaper,
+                style = TextStyle(shadow = WallpaperShadow),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -362,7 +327,7 @@ private fun SiteRow(title: String, subtitle: String, onClick: () -> Unit) {
             imageVector = AllegroIcons.ChevronForward,
             contentDescription = null,
             modifier = Modifier.height(16.dp).width(16.dp),
-            tint = OnWallpaperFaint,
+            tint = cardTextDim(),
         )
     }
 }
@@ -378,10 +343,10 @@ private fun PlaceholderRow(text: String, icon: androidx.compose.ui.graphics.vect
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.height(20.dp).width(20.dp),
-            tint = OnWallpaperFaint,
+            tint = cardTextDim(),
         )
         Spacer(Modifier.width(12.dp))
-        Text(text = text, fontSize = 14.sp, color = OnWallpaperDim)
+        Text(text = text, fontSize = 14.sp, color = cardTextDim())
     }
 }
 
@@ -392,22 +357,30 @@ private fun CardDivider() {
             .fillMaxWidth()
             .padding(start = 16.dp)
             .height(1.dp)
-            .background(Color.White.copy(alpha = 0.10f)),
+            .background(cardText().copy(alpha = 0.10f)),
     )
 }
 
 /** miuix 玻璃：圆角 + 内容裁剪，材质跟随深色模式。 */
 @Composable
-private fun Modifier.glassPill(backdrop: Backdrop, corner: androidx.compose.ui.unit.Dp): Modifier =
-    this
+private fun Modifier.glassPill(backdrop: Backdrop, corner: androidx.compose.ui.unit.Dp): Modifier {
+    val dark = isSystemInDarkTheme()
+    // 壁纸可能是浅色，纯折射会让字糊掉；卡片内部再压一层磨砂打底
+    val frost = if (dark) Color.Black.copy(alpha = 0.42f) else Color.White.copy(alpha = 0.55f)
+    val radius = with(androidx.compose.ui.platform.LocalDensity.current) { corner.toPx() }
+    return this
         .glass(
             backdrop = backdrop,
             shape = GlassShape(cornerRadius = corner),
             style = GlassStyles.CommonMediumRegularLowLight,
-            material = GlassMaterials.puredThinGlass(isSystemInDarkTheme()),
+            material = GlassMaterials.puredThinGlass(dark),
             shading = false,
         )
+        .drawBehind {
+            drawRoundRect(color = frost, cornerRadius = CornerRadius(radius, radius))
+        }
         .clip(RoundedCornerShape(corner))
+}
 
 private fun Modifier.clickableNoIndication(onClick: () -> Unit): Modifier =
     this.clickable(onClick = onClick)
@@ -475,10 +448,10 @@ private fun Scrim() {
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    0.00f to Color.Black.copy(alpha = 0.38f),
-                    0.35f to Color.Black.copy(alpha = 0.16f),
-                    0.75f to Color.Black.copy(alpha = 0.24f),
-                    1.00f to Color.Black.copy(alpha = 0.42f),
+                    0.00f to Color.Black.copy(alpha = 0.46f),
+                    0.35f to Color.Black.copy(alpha = 0.34f),
+                    0.75f to Color.Black.copy(alpha = 0.38f),
+                    1.00f to Color.Black.copy(alpha = 0.52f),
                 ),
             ),
     )
