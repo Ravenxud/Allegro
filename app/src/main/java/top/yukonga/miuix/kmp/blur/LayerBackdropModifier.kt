@@ -21,6 +21,9 @@ import top.yukonga.miuix.kmp.blur.internal.recordLayer
  */
 fun Modifier.layerBackdrop(backdrop: LayerBackdrop): Modifier = this then LayerBackdropElement(backdrop)
 
+/** 录制节流间隔（毫秒）：120ms ≈ 8fps，玻璃条看不出滞后。 */
+private const val RECORD_INTERVAL_MS = 120L
+
 private class LayerBackdropElement(
     val backdrop: LayerBackdrop,
 ) : ModifierNodeElement<LayerBackdropNode>() {
@@ -55,9 +58,19 @@ private class LayerBackdropNode(
     DrawModifierNode,
     GlobalPositionAwareModifierNode {
 
+    private var lastRecordAt = 0L
+
     override fun ContentDrawScope.draw() {
         drawContent()
-        recordLayer(backdrop.graphicsLayer) { backdrop.onDraw(this@draw) }
+        // 性能：把「整页录进图层」从每帧一次降到约 8 次/秒。
+        // 设置页这种长列表滚动时，每帧重录整页是进入二级页卡顿的主因；
+        // 玻璃条本身只有 48dp，滞后 120ms 肉眼看不出来。
+        val now = android.os.SystemClock.uptimeMillis()
+        val empty = backdrop.graphicsLayer.size.width == 0
+        if (empty || now - lastRecordAt >= RECORD_INTERVAL_MS) {
+            lastRecordAt = now
+            recordLayer(backdrop.graphicsLayer) { backdrop.onDraw(this@draw) }
+        }
     }
 
     override fun onGloballyPositioned(coordinates: LayoutCoordinates) {

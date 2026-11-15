@@ -1,3 +1,38 @@
+# 0.80.5-beta
+
+**二级页卡顿主因：每帧把整页重录进图层。降到约 8 次/秒。**
+
+## 卡在哪
+
+`Modifier.layerBackdrop` 的实现是：
+
+```kotlin
+override fun ContentDrawScope.draw() {
+    drawContent()
+    recordLayer(backdrop.graphicsLayer) { backdrop.onDraw(this@draw) }   // 每帧
+}
+```
+
+设置页是一个很长的 `verticalScroll` + 玻璃顶栏。**每滚动一帧，就把整页内容重新录进一个硬件图层**，
+再让顶栏的着色器去采样 —— 页越长、越重，代价越高。这就是"进设置页明显卡"的来源。
+
+## 改法
+
+录制加节流：
+
+```kotlin
+if (empty || now - lastRecordAt >= 120) {   // ≈ 8fps
+    lastRecordAt = now
+    recordLayer(...)
+}
+```
+
+- 首帧（图层为空）必录，不会出现空白玻璃
+- 之后最多 8 次/秒；玻璃条只有 48dp 高，滞后 120ms 肉眼看不出来
+- 静止时几乎不录（内容不变就没有重绘）
+
+首页、设置页、所有二级页共用这个 modifier，所以是一处改动、全局受益。
+
 # 0.80.4-beta
 
 **性能优化：去掉常驻的 GPU 回读与两处全屏 RenderEffect，功能不变。**
