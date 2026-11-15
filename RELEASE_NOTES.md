@@ -1,3 +1,24 @@
+# 0.81.2-beta
+
+**二级页改为「整片覆盖」的转场形状（miuix Modal），时长沿用 560ms。**
+
+## 之前的问题
+
+用 `MiuixDefault` 时，点下去的第一帧首页就开始淡出 —— 观感是"首页先消失，然后动画才开始"。
+
+`NavTransitions.Modal` 的 `opaqueDepth` 是 2（覆盖两层），被压住的页保持不动，
+新页整片盖上来 —— 正是「像二级页内部再进一层」的那种感觉。
+
+## 改动
+
+```kotlin
+object : NavTransition by NavTransitions.Modal {
+    override val motion get() = SoftMotion   // 560ms / 取消 320ms
+}
+```
+
+只换形状、不改时长；返回手势、边缘滑动仍由库处理。
+
 # 0.81.1-beta
 
 **转场再放慢：420ms → 560ms（取消 240 → 320ms）。**

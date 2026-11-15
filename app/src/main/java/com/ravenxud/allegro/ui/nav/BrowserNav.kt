@@ -32,8 +32,12 @@ private val SoftMotion = NavMotion(
     programmatic = NavSettleSpec.Tween(560, FastOutSlowInEasing),
 )
 
+/**
+ * 用 miuix 的 Modal 形状（新页整片覆盖、被压住的页不淡出），再套我们的时长。
+ * 之前用 MiuixDefault：点设置的那一瞬间首页会先淡掉，观感像"首页消失后才开始播动画"。
+ */
 private val SoftTransition: NavTransition =
-    object : NavTransition by NavTransitions.MiuixDefault {
+    object : NavTransition by NavTransitions.Modal {
         override val motion: NavMotion get() = SoftMotion
     }
 
