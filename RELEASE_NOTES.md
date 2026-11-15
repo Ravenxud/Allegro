@@ -1,3 +1,33 @@
+# 0.81.0-beta
+
+**二级页转场放慢到能看清过程（420ms / 取消 240ms），视觉形状保持 miuix 默认。**
+
+## 做法
+
+`NavDisplay` 支持传 `NavTransition`。这里用 Kotlin 委托继承 `NavTransitions.MiuixDefault`，
+**只覆盖 `motion`**：
+
+```kotlin
+object : NavTransition by NavTransitions.MiuixDefault {
+    override val motion get() = NavMotion(
+        commit = NavSettleSpec.Tween(420, FastOutSlowInEasing),
+        cancel = NavSettleSpec.Tween(240, FastOutLinearInEasing),
+        programmatic = NavSettleSpec.Tween(420, FastOutSlowInEasing),
+    )
+}
+```
+
+好处：曲线形状、返回手势、边缘滑动、输入拦截全部沿用库的实现，只有时长变了 ——
+不会因为我自己写 transform 而破坏预测性返回或滑动手势。
+
+## 还没动的地方（需要你确认方向）
+
+你说返回时像「安卓原生从下向上浮现」。那是库默认转场的形状，要改形状必须自己写
+`navGraphicsTransition { ... }` 的 transform（淡入 + 缩放取代位移）。
+
+这一步风险高于改时长：预测性返回、边缘滑动、转场期输入拦截都挂在这套 transform 上，
+写错会出现"滑动返回白屏"或"手势失效"。所以我先只改节奏，形状等你验完这版再决定。
+
 # 0.80.7-beta
 
 **修 0.80.6 的回归（返回首页玻璃异常）；转场卡顿改为「保持组合、跳过绘制」。**

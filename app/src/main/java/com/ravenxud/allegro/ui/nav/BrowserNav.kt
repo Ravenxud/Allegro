@@ -5,8 +5,14 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.ravenxud.allegro.ui.SecondaryScreen
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavKey
+import top.yukonga.miuix.kmp.nav.transition.NavMotion
+import top.yukonga.miuix.kmp.nav.transition.NavSettleSpec
+import top.yukonga.miuix.kmp.nav.transition.NavTransition
+import top.yukonga.miuix.kmp.nav.transition.NavTransitions
 
 /**
  * 浏览器根路由。
@@ -15,6 +21,22 @@ import top.yukonga.miuix.kmp.nav.core.NavKey
  * `IllegalArgumentException: NavDisplay back stack cannot be empty`）。
  * 所以栈结构恒为 `[BrowserRoot, (二级页…)]`。
  */
+/**
+ * 转场节奏：沿用 miuix 默认的**视觉**（形状不变），只把时长拉长。
+ *
+ * 默认时长偏快（进二级页几乎是"闪一下"），这里统一到 420ms 提交、240ms 取消。
+ */
+private val SoftMotion = NavMotion(
+    commit = NavSettleSpec.Tween(420, FastOutSlowInEasing),
+    cancel = NavSettleSpec.Tween(240, FastOutLinearInEasing),
+    programmatic = NavSettleSpec.Tween(420, FastOutSlowInEasing),
+)
+
+private val SoftTransition: NavTransition =
+    object : NavTransition by NavTransitions.MiuixDefault {
+        override val motion: NavMotion get() = SoftMotion
+    }
+
 data object BrowserRoot : NavKey
 
 /** 导航栈：唯一事实源。栈底恒为 [BrowserRoot]。 */
@@ -62,6 +84,7 @@ fun BrowserNavHost(
     NavDisplay(
         backStack = stack,
         onBack = { onBack() },
+        transition = SoftTransition,
     ) {
         entry<BrowserRoot> {
             rootContent()
