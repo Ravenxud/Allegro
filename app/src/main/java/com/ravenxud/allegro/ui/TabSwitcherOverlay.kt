@@ -135,6 +135,7 @@ fun TabSwitcherOverlay(
     onMove: (Int, Int) -> Unit,
     simplify: Boolean = false,
 ) {
+    var showRecent by remember { mutableStateOf(false) }
     var sort by remember { mutableStateOf(TabSort.RECENT) }
     var lockedIndex by remember { mutableStateOf(0) }
     var menuTab by remember { mutableStateOf<TabState?>(null) }
@@ -145,6 +146,7 @@ fun TabSwitcherOverlay(
 
     LaunchedEffect(visible) {
         if (visible) {
+            runCatching { gridState.scrollToItem(0) }
             dismissed = false
             lockedIndex = state.tabs.indexOfFirst { it.id == state.activeTabId }.coerceAtLeast(0)
         }
@@ -251,6 +253,7 @@ fun TabSwitcherOverlay(
             TabGrid(
                 progressProvider = pp,
                 sort = sort,
+                onOpenRecent = { showRecent = true },
                 onCycleSort = {
                     sort = when (sort) {
                         TabSort.RECENT -> TabSort.TITLE
@@ -274,8 +277,6 @@ fun TabSwitcherOverlay(
                 onNew = onNew,
                 onNewIncognito = onNewIncognito,
                 onReopen = onReopen,
-                recentClosed = recentClosed,
-                onRestoreClosed = onRestoreClosed,
                 onDismiss = onDismiss,
                 onLongPress = { menuTab = it },
             )
@@ -372,12 +373,10 @@ private fun TabGrid(
     onNew: () -> Unit,
     onNewIncognito: () -> Unit,
     onReopen: () -> Unit,
-    recentClosed: List<com.ravenxud.allegro.data.entity.ClosedTabEntity> = emptyList(),
-    onRestoreClosed: (com.ravenxud.allegro.data.entity.ClosedTabEntity) -> Unit = {},
+    onOpenRecent: () -> Unit = {},
     onDismiss: () -> Unit,
     onLongPress: (TabState) -> Unit,
 ) {
-    var showRecent by remember { mutableStateOf(false) }
     var dragId by remember { mutableStateOf<String?>(null) }
     var dragOffset by remember { mutableStateOf(Offset.Zero) }
     val spacingPx = with(LocalDensity.current) { 8.dp.toPx() }
@@ -394,7 +393,7 @@ private fun TabGrid(
                 // 排序：点击循环 时间 → 标题 → 网站（非「按打开时间」时禁用拖拽重排）
                 com.ravenxud.allegro.ui.components.PillButton(
                     label = "最近关闭",
-                    onClick = { showRecent = true },
+                    onClick = onOpenRecent,
                     icon = MiuixIcons.Recent,
                 )
                 Spacer(Modifier.width(8.dp))
@@ -404,9 +403,11 @@ private fun TabGrid(
                     icon = MiuixIcons.Sort,
                 )
                 Spacer(Modifier.width(8.dp))
-                IconButton(onClick = onDismiss) {
-                    Icon(MiuixIcons.Close, stringResource(R.string.cd_close))
-                }
+                com.ravenxud.allegro.ui.components.CircleIconButton(
+                    icon = MiuixIcons.Close,
+                    onClick = onDismiss,
+                    contentDescription = stringResource(R.string.cd_close),
+                )
             }
 
             if (state.tabs.isEmpty()) {
@@ -427,7 +428,6 @@ private fun TabGrid(
                     val shown = state.tabs.bySort(sort)
                     itemsIndexed(shown, key = { _, it -> it.id }) { index, item ->
                         TabCard(
-                            modifier = Modifier.animateItem(),
                             // 20ms/张的错峰：在绘制层折算，组合期不读进度
                             cardIndex = index,
                             progressProvider = progressProvider,
@@ -510,26 +510,6 @@ private fun TabGrid(
                 }
             }
 
-            // 最近关闭：独立面板（列表形式，点一条即在新标签打开）
-            MiuixSheet(visible = showRecent, onDismiss = { showRecent = false }, title = "最近关闭的标签页") {
-                if (recentClosed.isEmpty()) {
-                    Box(Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
-                        Text("没有最近关闭的标签", color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
-                    }
-                } else {
-                    recentClosed.forEach { entity ->
-                        SheetRow(
-                            icon = MiuixIcons.Recent,
-                            title = entity.title.ifBlank { entity.url },
-                            value = runCatching { java.net.URI(entity.url).host }.getOrNull(),
-                            onClick = {
-                                onRestoreClosed(entity)
-                                showRecent = false
-                            },
-                        )
-                    }
-                }
-            }
         }
     }
 }
