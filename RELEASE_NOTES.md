@@ -1,3 +1,39 @@
+# 0.61.0-beta
+
+**验证性版本**：接入 `miuix-nav` 依赖，不改任何界面。目的是先确认"能不能用"，再谈"怎么用"。
+
+## 验证结论（三条都过）
+
+| 项 | 结果 |
+|---|---|
+| 依赖可解析 | ✅ `top.yukonga.miuix.kmp:miuix-nav:0.9.4` |
+| 与现有 Compose 冲突 | ✅ 无。它依赖 **JetBrains Compose**（`org.jetbrains.compose.foundation`），与本工程用的 `org.jetbrains.compose` 插件同族；`navigationevent` 统一到 1.1.2 |
+| 编译 | ✅ `compileDebugKotlin` 通过（依赖已在 classpath，未调用） |
+
+## 它到底提供什么（读 AAR 得到）
+
+| 包 | 内容 |
+|---|---|
+| `nav.core` | `NavController`、`NavBackStack`、`NavDisplay`、`LocalNavTransitionScope` |
+| `nav.gesture` | **`NavSwipeDismiss`**（边缘滑动返回）、**`NavPredictiveBackDriver`**（预测性返回驱动）、`NavSwipeArbitrator`（手势仲裁） |
+| `nav.transition` | 页面转场（与 miuix 动效令牌一致） |
+
+## 这意味着什么
+
+它不是"零散小组件"，而是**自成一套的导航容器**：`NavController + NavDisplay`。
+接入方式只有一种：**把我们现在手写的 `screen` 状态机换成 `NavDisplay`**，才能同时拿到
+转场、滑动返回、预测性返回、转场期输入拦截（`blockInput`）。
+
+本版只装了依赖，**没有替换任何页面**，所以功能与 0.60.0 完全一致。
+
+## 请验
+
+1. App 能正常启动、各页面可用（应当与 0.60.0 无差别）
+2. 设置 → 开源许可：`miuix` 条目仍在（依赖清单未变）
+3. 若启动异常，说明依赖引入影响了运行时——请把 diag.log 发我
+
+---
+
 # 0.60.0-beta
 
 头部收敛 + 动画专项收尾（能做的都做了）。
