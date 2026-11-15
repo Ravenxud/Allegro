@@ -109,8 +109,9 @@ fun SettingsScreen(
         androidx.compose.foundation.layout.Box(
             Modifier
                 .fillMaxSize()
-                .background(MiuixTheme.colorScheme.background)
-                .layerBackdrop(topBarBackdrop),
+                // 顺序要紧：layerBackdrop 在前，背景色才被录进层里；反过来玻璃采样到透明，会渲染成灰板
+                .layerBackdrop(topBarBackdrop)
+                .background(MiuixTheme.colorScheme.background),
         ) {
         Column(
             modifier = Modifier

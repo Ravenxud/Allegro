@@ -84,21 +84,14 @@ fun AllegroTopBar(
         Modifier
     }
     Column(modifier.fillMaxWidth().then(glassMod).windowInsetsPadding(WindowInsets.statusBars)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(Dimens.TopBar)
-                .padding(horizontal = Dimens.PagePadding),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (onBack != null) {
-                AllegroIconButton(AllegroIcons.Back, onClick = onBack)
-            } else {
-                Spacer(Modifier.width(Dimens.CircleButton))
-            }
+        // 标题按整屏宽度居中：先铺满再居中，避免被左侧返回钮挤偏半个按钮宽
+        Box(Modifier.fillMaxWidth().height(Dimens.TopBar)) {
             Text(
                 text = title,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.CircleButton + Dimens.PagePadding),
                 textAlign = TextAlign.Center,
                 fontSize = TypeScale.Title,
                 fontWeight = FontWeight.SemiBold,
@@ -106,9 +99,24 @@ fun AllegroTopBar(
                 overflow = TextOverflow.Ellipsis,
                 color = MiuixTheme.colorScheme.onSurface,
             )
-            Row(verticalAlignment = Alignment.CenterVertically, content = actions)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(Dimens.TopBar)
+                    .padding(horizontal = Dimens.PagePadding),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (onBack != null) {
+                    AllegroIconButton(AllegroIcons.Back, onClick = onBack)
+                } else {
+                    Spacer(Modifier.width(Dimens.CircleButton))
+                }
+                Spacer(Modifier.weight(1f))
+                Row(verticalAlignment = Alignment.CenterVertically, content = actions)
+            }
         }
-        if (hairline) {
+        // 玻璃自带边缘受光，再画发丝线会出现两道线
+        if (hairline && backdrop == null) {
             Box(
                 Modifier
                     .fillMaxWidth()
