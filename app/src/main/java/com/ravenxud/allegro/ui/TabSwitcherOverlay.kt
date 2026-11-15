@@ -193,24 +193,26 @@ fun TabSwitcherOverlay(
         val padPx = 12f * density.density
         val gapPx = 8f * density.density
         val cardWidthPx = (screenWidth - padPx * 2 - gapPx) / 2f
-        val cardHeightPx = cardWidthPx / 0.62f + 44f * density.density
+        val cardHeightPx = cardWidthPx / 0.72f + 26f * density.density
 
-        // 1) 背景：截图铺满并模糊，随进度压暗
-        if (stub != null && screenWidth > 0f) {
-            Image(
-                bitmap = stub.asImageBitmap(),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        // 背景图已预模糊，这里只做透明度/缩放，不再跑 RenderEffect
-                        alpha = 1f - 0.12f * pp()
-                        val bs = 0.99f + 0.01f * pp()
-                        scaleX = bs
-                        scaleY = bs
-                    },
-            )
+        // 1) 背景：主题底色打底 + 一张低透明度的模糊截图（Luna 的标签页底也是"浅底 + 淡截图"，
+        //    直接用整屏截图当背景会让整页和首页壁纸抢戏，和 Design System 的浅色面不统一）
+        Box(Modifier.fillMaxSize().background(MiuixTheme.colorScheme.surface)) {
+            if (stub != null && screenWidth > 0f) {
+                Image(
+                    bitmap = stub.asImageBitmap(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            alpha = 0.22f * pp()
+                            val bs = 0.99f + 0.01f * pp()
+                            scaleX = bs
+                            scaleY = bs
+                        },
+                )
+            }
         }
 
         // 2) 遮罩（alpha 在 drawBehind 里算：组合期读进度会导致每帧重组）
@@ -372,9 +374,9 @@ private fun gridCardRect(
     val pad = 12f * density
     val spacing = 8f * density
     val header = (56f + 12f) * density
-    val textArea = 44f * density
+    val textArea = 26f * density
     val cardWidth = (width - pad * 2 - spacing) / 2f
-    val cardHeight = cardWidth / 0.62f + textArea
+    val cardHeight = cardWidth / 0.72f + textArea
     val row = index / 2
     val col = index % 2
     val left = pad + col * (cardWidth + spacing)
@@ -686,58 +688,77 @@ private fun TabCard(
                     )
                 },
         ) {
-            // Luna 形态：预览铺满 + 标题条**叠在预览底部**（不是卡片下方）
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(0.62f)
-                    .clip(shape)
-                    .background(MiuixTheme.colorScheme.surfaceVariant)
-                    .then(
-                        if (active) Modifier.border(2.dp, MiuixTheme.colorScheme.primary, shape)
-                        else Modifier
-                    ),
-            ) {
-                val preview = tab.preview
-                if (preview != null) {
-                    Image(
-                        bitmap = preview.asImageBitmap(),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                    )
-                } else {
-                    // 没有预览（后台标签未挂载 WebView）时给一个安静的占位，
-                    // 不再放一个巨大的首字——那看起来像渲染错误。
-                    Icon(
-                        imageVector = AllegroIcons.Copy,
-                        contentDescription = null,
-                        modifier = Modifier.align(Alignment.Center).size(28.dp),
-                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.45f),
-                    )
+            // Luna 形态：卡面只有预览，标题与关闭放到卡外/卡角，避免一屏只放得下两张
+            Column {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(0.72f)
+                        .clip(shape)
+                        .background(MiuixTheme.colorScheme.surfaceVariant),
+                ) {
+                    val preview = tab.preview
+                    if (preview != null) {
+                        Image(
+                            bitmap = preview.asImageBitmap(),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                        )
+                    } else {
+                        Icon(
+                            imageVector = AllegroIcons.Copy,
+                            contentDescription = null,
+                            modifier = Modifier.align(Alignment.Center).size(26.dp),
+                            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.40f),
+                        )
+                    }
+
+                    // 右上角关闭：半透明圆底，和 Luna 一致
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp)
+                            .size(26.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(MiuixTheme.colorScheme.surface.copy(alpha = 0.82f))
+                            .clickable(onClick = onClose),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            AllegroIcons.Close,
+                            stringResource(R.string.cd_close),
+                            modifier = Modifier.size(13.dp),
+                        )
+                    }
+
+                    // 选中态：内圈细描边，不用蓝色粗框
+                    if (active) {
+                        Box(
+                            Modifier
+                                .matchParentSize()
+                                .border(
+                                    1.5.dp,
+                                    MiuixTheme.colorScheme.primary.copy(alpha = 0.45f),
+                                    shape,
+                                ),
+                        )
+                    }
                 }
 
-                // 底部标题条：40dp、半透明面、上边一条发丝线
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .height(40.dp)
-                        .background(MiuixTheme.colorScheme.surface.copy(alpha = 0.86f))
-                        .padding(start = 10.dp, end = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    val blank = tab.url == "about:blank"
+                Spacer(Modifier.height(6.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     tab.favicon?.let {
                         Image(
                             bitmap = it.asImageBitmap(),
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(15.dp),
                         )
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(6.dp))
                     }
                     Text(
-                        text = if (blank) stringResource(R.string.tab_new_page)
+                        text = if (tab.url == "about:blank") stringResource(R.string.tab_new_page)
                         else tab.title.ifBlank { tab.url },
                         modifier = Modifier.weight(1f),
                         maxLines = 1,
@@ -746,13 +767,6 @@ private fun TabCard(
                         color = if (active) MiuixTheme.colorScheme.primary
                         else MiuixTheme.colorScheme.onSurface,
                     )
-                    IconButton(onClick = onClose, modifier = Modifier.size(32.dp)) {
-                        Icon(
-                            AllegroIcons.Close,
-                            stringResource(R.string.cd_close),
-                            modifier = Modifier.size(16.dp),
-                        )
-                    }
                 }
             }
         }
