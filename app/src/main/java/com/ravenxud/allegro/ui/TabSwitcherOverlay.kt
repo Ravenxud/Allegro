@@ -371,6 +371,13 @@ private fun gridCardRect(
     return Rect(left, top, left + cardWidth, top + cardHeight)
 }
 
+private fun easeOutBack(t: Float): Float {
+    val c1 = 1.28f
+    val c3 = c1 + 1f
+    val x = t - 1f
+    return 1f + c3 * x * x * x + c1 * x * x
+}
+
 private fun smoothstep(x: Float): Float {
     val t = x.coerceIn(0f, 1f)
     return t * t * (3f - 2f * t)
@@ -589,29 +596,24 @@ private fun TabCard(
     onDragEnd: () -> Unit,
 ) {
     val shape = com.ravenxud.allegro.ui.theme.Shapes.Tile
-    var appeared by remember { mutableStateOf(false) }
     var offsetX by remember { mutableFloatStateOf(0f) }
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val dismissWidth = with(density) { 120.dp.toPx() }
-
-    LaunchedEffect(Unit) {
-        delay(40)
-        appeared = true
-    }
 
     Box(
         modifier
             .fillMaxWidth()
             .zIndex(if (dragging) 1f else 0f)
             .graphicsLayer {
-                // 单卡：0.9 → 1 浮起 + 淡入（错峰在这里折算）
-                val e = ((progressProvider() - cardIndex * 0.045f) / 0.55f)
-                    .coerceIn(0f, 1f)
-                alpha = e
+                // 入场：按索引错峰（前 6 张，步长 0.05），alpha 走 smoothstep、scale 带回弹
+                val stagger = (cardIndex.coerceAtMost(6)) * 0.05f
+                val raw = ((progressProvider() - stagger) / 0.5f).coerceIn(0f, 1f)
+                val fade = smoothstep(raw)
+                alpha = fade
                 translationX = dragOffset.x
-                translationY = dragOffset.y + (1f - e) * 24f
-                val s = if (dragging) 1.04f else (0.9f + 0.1f * e)
+                translationY = dragOffset.y + (1f - fade) * 28f
+                val s = if (dragging) 1.04f else (0.92f + 0.08f * easeOutBack(raw))
                 scaleX = s
                 scaleY = s
             }
