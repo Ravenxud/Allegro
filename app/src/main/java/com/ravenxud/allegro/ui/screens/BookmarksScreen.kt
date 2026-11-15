@@ -199,8 +199,8 @@ private fun FolderChips(
 private fun Chip(text: String, active: Boolean, onClick: () -> Unit) {
     Button(
         onClick = onClick,
-        modifier = Modifier.height(32.dp),
-        cornerRadius = 16.dp,
+        modifier = Modifier.height(36.dp),
+        cornerRadius = 18.dp,
     ) {
         Text(
             text = text,

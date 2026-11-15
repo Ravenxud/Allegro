@@ -638,7 +638,6 @@ fun BrowserScreen(
                                         onValueChange = { field = it },
                                         modifier = Modifier
                                             .weight(1f)
-                                            .height(44.dp)
                                             .onFocusChanged { focused = it.isFocused },
                                         singleLine = true,
                                         label = stringResource(R.string.address_hint),
