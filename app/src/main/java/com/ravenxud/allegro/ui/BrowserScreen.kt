@@ -344,7 +344,7 @@ fun BrowserScreen(
     val reduceMotion = com.ravenxud.allegro.ui.theme.Motion.reduceMotion(context)
     val tabsProgress by tabsTransition.animateFloat(
         transitionSpec = {
-            if (reduceMotion) tween(0) else spring(dampingRatio = 1f, stiffness = 180f)
+            if (reduceMotion) tween(0) else spring(dampingRatio = 1f, stiffness = 115f)
         },
         label = "tabsProgress",
     ) { if (it) 1f else 0f }

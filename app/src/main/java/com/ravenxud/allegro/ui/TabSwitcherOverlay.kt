@@ -310,7 +310,10 @@ fun TabSwitcherOverlay(
                         alpha = 1f - ((e - 0.72f) / 0.28f).coerceIn(0f, 1f)
                         shadowElevation = 10.dp.toPx()
                         clip = true
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp * e)
+                        // 圆角只在贴近卡片的那 30% 行程里收放，中途始终等于卡片圆角（Shapes.Tile = 20dp），
+                        // 否则飞行途中的圆角比网格卡片小，看起来「方了」。
+                        val rf = smoothstep((e / 0.3f).coerceIn(0f, 1f))
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp * rf)
                     },
             ) {
                 Image(
@@ -608,7 +611,7 @@ private fun TabCard(
             .graphicsLayer {
                 // 入场：按索引错峰（前 6 张，步长 0.05），alpha 走 smoothstep、scale 带回弹
                 val stagger = (cardIndex.coerceAtMost(6)) * 0.05f
-                val raw = ((progressProvider() - stagger) / 0.5f).coerceIn(0f, 1f)
+                val raw = ((progressProvider() - stagger) / 0.62f).coerceIn(0f, 1f)
                 val fade = smoothstep(raw)
                 alpha = fade
                 translationX = dragOffset.x
