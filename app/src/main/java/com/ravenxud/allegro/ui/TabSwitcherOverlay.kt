@@ -123,6 +123,8 @@ private fun List<TabState>.bySort(sort: TabSort): List<TabState> = when (sort) {
 fun TabSwitcherOverlay(
     visible: Boolean,
     stub: Bitmap?,
+    /** 清晰缩略图（720 宽、无模糊）：卡片用它，背景仍用预模糊的 [stub]。 */
+    thumb: Bitmap? = null,
     progressProvider: () -> Float,
     state: BrowserState,
     onSelect: (String) -> Unit,
@@ -252,12 +254,13 @@ fun TabSwitcherOverlay(
                 .graphicsLayer {
                     val p = pp()
                     alpha = p
-                    // 不再做整窗飞行：只让网格整体轻微放大 + 上浮（Luna 的标签页也是纯卡片缩放）
-                    val base = 0.86f
+                    // 没有整窗截图（首次启动 / 标签恢复）时，飞行元素不存在，
+                    // 只靠 0.92→1 会像"纯淡入"；这时把网格的入场幅度加大。
+                    val base = if (stub == null) 0.86f else 0.92f
                     val scale = if (simplify) 1f else (base + (1f - base) * p)
                     scaleX = scale
                     scaleY = scale
-                    translationY = dragOffset + (1f - p) * 28f
+                    translationY = dragOffset + if (stub == null) (1f - p) * 28f else 0f
                 },
         ) {
             TabGrid(
@@ -293,6 +296,43 @@ fun TabSwitcherOverlay(
                     if (android.os.SystemClock.uptimeMillis() - openedAt > 300L) menuTab = tab
                 },
             )
+        }
+
+        // 4) 页面缩略：截图 → 卡片矩形（共享元素）
+        // 注意：所有随进度变化的量都必须在 graphicsLayer 里算，
+        // 在组合期算会让整棵树每帧重组（之前卡顿的根因）。
+        if (stub != null && screenWidth > 0f) {
+            Box(
+                modifier = Modifier
+                    .size(
+                        with(density) { start.width.toDp() },
+                        with(density) { start.height.toDp() },
+                    )
+                    .graphicsLayer {
+                        val p = pp().coerceIn(0f, 1f)
+                        val e = if (simplify) p else smoothstep(p)
+                        val rect = lerpRect(start, target, e)
+                        transformOrigin = TransformOrigin(0f, 0f)
+                        translationX = rect.left
+                        translationY = rect.top
+                        scaleX = rect.width / start.width.coerceAtLeast(1f)
+                        scaleY = rect.height / start.height.coerceAtLeast(1f)
+                        alpha = 1f - ((e - 0.82f) / 0.18f).coerceIn(0f, 1f)
+                        shadowElevation = 10.dp.toPx()
+                        clip = true
+                        // 圆角只在贴近卡片的那 30% 行程里收放，中途始终等于卡片圆角（Shapes.Tile = 20dp），
+                        // 否则飞行途中的圆角比网格卡片小，看起来「方了」。
+                        val rf = smoothstep((e / 0.3f).coerceIn(0f, 1f))
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp * rf)
+                    },
+            ) {
+                Image(
+                    bitmap = (thumb ?: stub).asImageBitmap(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         }
 
         // 最近关闭面板：必须在外层 Box（不能进 Column，否则 fillMaxSize 会压垮网格）
