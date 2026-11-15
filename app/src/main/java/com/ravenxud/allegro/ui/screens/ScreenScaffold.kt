@@ -27,11 +27,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.ravenxud.allegro.R
 import com.ravenxud.allegro.ui.glass.GlassSpec
 import com.ravenxud.allegro.ui.components.CircleIconButton
+import com.ravenxud.allegro.ui.design.AllegroTopBar
 import com.ravenxud.allegro.ui.theme.Dimens
 import com.ravenxud.allegro.ui.theme.TypeScale
 import com.ravenxud.allegro.ui.glass.appGlass
@@ -42,6 +41,8 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -79,47 +80,32 @@ fun ScreenScaffold(
         return
     }
 
-    // Luna 形态：内容从屏幕顶部开始（穿透到栏下），顶部只浮一条 56dp 的栏。
-    // 注意：这里必须自己铺一层不透明底色 —— 二级页是叠在首页之上的浮层，
-    // 少了这层就会透出下层（0.44 的回归 bug）。
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(MiuixTheme.colorScheme.background),
-    ) {
-        content(
+    // Luna 形态：内容从屏幕顶部开始（穿透到栏下），顶部只浮一条玻璃栏。
+    // 注意 1：必须自己铺一层不透明底色 —— 二级页是叠在首页之上的浮层，
+    //         少了这层就会透出下层（0.44 的回归 bug）。
+    // 注意 2：layerBackdrop 必须写在 background 外层，底色才会被录进玻璃层。
+    val backdrop = rememberLayerBackdrop()
+    Box(Modifier.fillMaxSize()) {
+        Box(
             Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .padding(top = Dimens.TopBar),
-        )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .height(Dimens.TopBar)
-                .padding(horizontal = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .layerBackdrop(backdrop)
+                .background(MiuixTheme.colorScheme.background),
         ) {
-            CircleIconButton(
-                icon = AllegroIcons.Back,
-                onClick = onBack,
-                contentDescription = stringResource(R.string.cd_back),
+            content(
+                Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .padding(top = Dimens.TopBar),
             )
-            Text(
-                text = title,
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Center,
-                fontSize = TypeScale.Title,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = MiuixTheme.colorScheme.onSurface,
-            )
-            // 右侧 actions（在 RowScope 内调用；无 action 时不占位）
-            Row(verticalAlignment = Alignment.CenterVertically, content = actions)
         }
+
+        AllegroTopBar(
+            title = title,
+            onBack = onBack,
+            backdrop = backdrop,
+            actions = actions,
+        )
     }
 }
 

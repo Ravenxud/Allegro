@@ -1,3 +1,33 @@
+# 0.73.3-beta
+
+**玻璃铺开到全部二级页：改一处 `ScreenScaffold`，13 个页面同时生效。**
+
+## 改了什么
+
+| 项 | 之前 | 现在 |
+|---|---|---|
+| 二级页顶栏 | `ScreenScaffold` 里手写的 Row + 标题 | `AllegroTopBar(backdrop = …)`，玻璃 + 整栏居中标题 |
+| 页面内容层 | 只铺底色 | `layerBackdrop(backdrop).background(底色)`，底色被录进玻璃层 |
+| 受影响页面 | — | 书签/历史/下载/站点规则/WebDAV/离线页/标签组/用户脚本/许可/隐私报告/NavPilot 等 13 处 |
+
+## 顺带修掉
+
+- `ScreenScaffold` 里同时 import 了 Kyant 与 Miuix 两套 `rememberLayerBackdrop`，
+  编译期重载歧义（0.73.2 之前未触发，是因为该文件还没调用它）
+- 二级页标题此前同样偏右半个按钮宽（与设置页同一个 `weight(1f)` 原因），已统一
+
+## 回退
+
+- 单页回退：`ScreenScaffold(floating = false)`（走旧 `SmallTopAppBar`）
+- 全局回退：`AllegroTopBar(backdrop = null)`
+
+## 待办：浏览器地址栏
+
+浏览器页顶栏是地址栏（TextField + 按钮），底下是 `AndroidView` 里的 WebView。
+**WebView 不在 Compose 的绘制层里，`layerBackdrop` 录不到它** —— 玻璃只会采到 Compose 底色。
+要在这里做玻璃，得走 Luna 的路：用 `PixelCopy` 定时抓 WebView 快照当 backdrop，
+成本与节流策略需要单独评估，不放进本版。
+
 # 0.73.2-beta
 
 **修 0.73.1 反馈：玻璃渲染成灰板、标题被挤偏、玻璃和发丝线叠成双线。**
