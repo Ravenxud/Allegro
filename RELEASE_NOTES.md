@@ -1,3 +1,46 @@
+# 0.63.1-beta
+
+**miuix-nav 迁移试点：失败，已回滚。** 这版只回滚，功能与 0.63.0 一致。
+
+## 试了什么
+
+写了一个独立试点页（`NavPilotScreen`，两个假路由），用 `NavDisplay + NavController`
+验证转场与返回，然后编译。
+
+## 两个否决性阻塞
+
+1. **API 是 internal**
+   ```
+   Cannot access 'fun entryProvider(...)': it is internal in file
+   Cannot access 'fun NavDisplay(backStack, entryProvider, ...)': it is internal in file
+   ```
+   javap 里看着是 `public`，但 Kotlin 侧标了 `internal` —— **库方尚未公开对外 API**。
+   能用的只有 `NavController` / `NavKey` 这类数据层，`NavDisplay` 这个渲染入口拿不到。
+
+2. **JVM target 不兼容**
+   ```
+   Cannot inline bytecode built with JVM target 21 into bytecode built with JVM target 17
+   ```
+   该库用 **JVM 21** 编译，本工程是 **JVM 17**。
+
+## 结论
+
+`miuix-nav 0.9.4` 目前**不可用**：要么等它公开 API，要么我们升到 JDK 21 + jvmTarget 21
+（仍解决不了 internal 问题，所以升级也没有意义）。
+
+已回滚：删除试点页、移除依赖与路由入口。
+
+## 保留的成果
+
+- `miuix-squircle`（0.62 已生效，继续保留）
+- `AllegroIcons` 单一图标入口（0.63 已生效）
+
+## 请验
+
+本版应与 0.63.0 **完全一致**（无功能变更）。
+
+---
+
 # 0.63.0-beta
 
 图标体系收敛：**全站唯一图标入口 `AllegroIcons`**。
