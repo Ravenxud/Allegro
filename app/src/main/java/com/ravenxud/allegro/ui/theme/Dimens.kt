@@ -34,6 +34,13 @@ object Dimens {
     /** 图标标准尺寸。 */
     val Icon = 24.dp
 
+    /** 间距令牌（四档起步）：4 / 8 / 12 / 16。 */
+    val SpacingXS = 4.dp
+    val SpacingS = 8.dp
+    val SpacingM = 12.dp
+    val SpacingL = 16.dp
+    val SpacingXL = 20.dp
+
     /** 悬浮顶栏高度。 */
     val TopBar = 56.dp
 
@@ -46,8 +53,11 @@ object TypeScale {
     /** 页面标题。 */
     val Title = 20.sp
 
-    /** 行主文案。 */
-    val Row = 16.sp
+    /** 行主文案（设计系统 v1 命名；Row 为历史别名）。 */
+    val Body = 16.sp
+
+    /** @deprecated 用 [Body]。 */
+    val Row = Body
 
     /** 行副文案 / 说明。 */
     val Secondary = 13.sp

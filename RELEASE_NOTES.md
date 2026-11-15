@@ -1,3 +1,36 @@
+# 0.72.0-beta
+
+**S1：设计系统组件层（只建组件，未改任何页面）。**
+
+按 `docs/DESIGN_SYSTEM.md` 方案 B（内容穿透顶栏）落地第一层。
+
+## 新增 `ui/design/AllegroComponents.kt`
+
+| 组件 | 规格 |
+|---|---|
+| `AllegroTopBar` | 56dp 高、透明背景、**底部发丝线**、左 44dp 圆钮 + 居中 20sp 标题 + 右侧 actions；内容可滚到栏下 |
+| `AllegroIconButton` | 44dp 圆钮，图标 20dp，自带 `pressScale()` |
+| `AllegroCard` | 24dp squircle 卡片 + 可选组标题 |
+| `AllegroRow` | 60dp 行、16sp/13sp、可选前置图标 / 右侧值 / chevron；**点击与长按都由组件提供** |
+| `AllegroDivider` | 1dp 发丝线，左右缩进与文案对齐 |
+| `Modifier.allegroContentPadding()` | 页面内容统一内边距（顶部让出栏高 + 状态栏） |
+
+## 令牌补充
+
+- `TypeScale.Body = 16.sp`（`Row` 作为历史别名保留）
+- `Dimens.SpacingXS/S/M/L/XL = 4/8/12/16/20`
+
+## 为什么先只建组件
+
+`solid`/`glass`、`AllegroSheet`、`AllegroPillButton`、`AllegroEmptyState` 还没建；
+页面仍在用旧组件，**功能与 0.71.1 完全一致**（本版不改变任何界面）。
+
+## 请验
+
+只需确认 App 正常（无界面变化）：启动、标签面板、二级页返回。
+
+---
+
 # 0.71.1-beta
 
 修 0.71.0 的回归：**长按不弹菜单** + **卡片出现诡异描边**。同一个原因。
