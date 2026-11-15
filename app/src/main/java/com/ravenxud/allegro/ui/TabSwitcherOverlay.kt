@@ -298,7 +298,11 @@ fun TabSwitcherOverlay(
             )
         }
 
-        // 4) 页面缩略：截图 → 卡片矩形（共享元素）
+        // 4) 页面缩略：预览图 → 卡片矩形（共享元素）
+        // 关键：这张图必须和卡片最终画的是**同一张**（tab.preview），
+        // 否则飞行结束时会"换成缩略图"，露出一次跳变。
+        val activePreview = state.tabs.firstOrNull { it.id == state.activeTabId }?.preview
+
         // 注意：所有随进度变化的量都必须在 graphicsLayer 里算，
         // 在组合期算会让整棵树每帧重组（之前卡顿的根因）。
         if (stub != null && screenWidth > 0f) {
@@ -327,7 +331,7 @@ fun TabSwitcherOverlay(
                     },
             ) {
                 Image(
-                    bitmap = (thumb ?: stub).asImageBitmap(),
+                    bitmap = (activePreview ?: thumb ?: stub).asImageBitmap(),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
