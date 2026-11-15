@@ -30,6 +30,8 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.border
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +41,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -77,6 +80,7 @@ import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
@@ -559,9 +563,14 @@ fun BrowserScreen(
                     var frost by remember { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
                     // 进度条：数据 → 单点动画（Luna 也是状态驱动，范围外不做动画）
                     val progressColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.95f)
-                    // 聚焦（键盘弹出）时右侧按钮横向收掉，地址栏随之撑开
+                    // 键盘真的在的时候才算「展开」：系统返回键收键盘后，焦点可能还留在输入框上
+                    val imeVisible = androidx.compose.foundation.layout.WindowInsets.ime
+                        .getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
+                    LaunchedEffect(imeVisible) {
+                        if (!imeVisible && focused) focusManager.clearFocus()
+                    }
                     val expand by animateFloatAsState(
-                        targetValue = if (focused) 1f else 0f,
+                        targetValue = if (focused && imeVisible) 1f else 0f,
                         animationSpec = spring(stiffness = 520f, dampingRatio = 0.9f),
                         label = "barExpand",
                     )
@@ -835,6 +844,18 @@ fun BrowserScreen(
                             },
                     )
         
+                    // 编辑中：点页面空白处先收键盘（WebView 是真实 View，收不到 Compose 的点击）
+                    if (focused) {
+                        Box(
+                            Modifier
+                                .fillMaxSize()
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                ) { focusManager.clearFocus() },
+                        )
+                    }
+
                     // A1/A2：随二级页进度压暗背景（8%）；alpha 在 drawBehind 内读，避免每帧重组
                     Box(
                         Modifier
