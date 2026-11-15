@@ -1,3 +1,35 @@
+# 0.70.0-beta
+
+**A/2b3：浏览器 UI 成为 `NavDisplay` 的 Root entry —— A 方案完成。**
+
+## 结构性改动
+
+| 之前 | 现在 |
+|---|---|
+| `Scaffold(...)` 与 `NavDisplay` 是兄弟，各自渲染 | `Scaffold` 整体提取为局部 `BrowserRootView()`，作为 `NavDisplay` 的 **Root entry** |
+| `NavDisplay` 仅在栈深 > 1 时挂载，栈深 ≤ 1 时不渲染 | **始终挂载**：Root entry 渲染浏览器 UI，二级页 push 进来 |
+| 浏览器 ↔ 二级页：挂载即出现（无转场） | 由库提供转场 |
+
+具体做法（避免 500 行缩进出错）：
+- 用**括号配对**取到完整的 `Scaffold( ... ) { ... }` 表达式（含 trailing lambda）
+- 整体包进局部 `@Composable fun BrowserRootView()`（捕获原有状态，逻辑一行未改）
+- `BrowserNavHost(rootContent = { BrowserRootView() })`
+
+## 请优先验这些（这是全项目结构改动最大的一版）
+
+1. **冷启动**：首页正常、地址栏可用
+2. **进入网页 → 滚动 → 下拉刷新**
+3. 菜单 → 二级页：**有转场**；返回回网页
+4. 设置 → 开源许可 → 返回：回设置
+5. 标签面板开合、标签切换
+6. 大屏/折叠屏：侧栏 padding 是否正常
+7. 输入地址时键盘弹出，页面是否被正确顶起（`imePadding`）
+8. 转场期间快速连点：不穿透
+
+**任一条异常请立刻回滚到 0.69.0**（分支 `refactor/navdisplay-rewrite` 上 0.69.0 的提交是 `08ea43b`）。
+
+---
+
 # 0.69.0-beta
 
 **A/2b2：`screen` 删除，导航栈成为唯一事实源。**

@@ -389,369 +389,7 @@ fun BrowserScreen(
             },
         )
     }
-    Scaffold(
-        modifier = Modifier
-            .padding(start = railWidth.dp)
-            .graphicsLayer {
-            val p = backProgress.coerceIn(0f, 1f)
-            scaleX = 1f - 0.06f * p
-            scaleY = 1f - 0.06f * p
-            alpha = 1f - 0.25f * p
-        },
-        topBar = {
-            Column(
-                Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .graphicsLayer {
-                        alpha = chromeAlpha * (1f - tabsProgress)
-                        translationY = -32.dp.toPx() * (tabsProgress + (1f - chromeAlpha))
-                    },
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    TextField(
-                        value = field,
-                        onValueChange = { field = it },
-                        modifier = Modifier.weight(1f).onFocusChanged { focused = it.isFocused },
-                        singleLine = true,
-                        label = stringResource(R.string.address_hint),
-                        useLabelAsPlaceholder = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-                        keyboardActions = KeyboardActions(onGo = { submit() }),
-                        trailingIcon = {
-                            IconButton(onClick = {
-                                val clip = (context.getSystemService(Context.CLIPBOARD_SERVICE)
-                                    as android.content.ClipboardManager).primaryClip
-                                val text = clip?.takeIf { it.itemCount > 0 }
-                                    ?.getItemAt(0)?.text?.toString().orEmpty()
-                                if (text.isBlank()) {
-                                    Toast.makeText(context, R.string.paste_empty, Toast.LENGTH_SHORT).show()
-                                } else {
-                                    field = TextFieldValue(text, TextRange(text.length))
-                                    submit()
-                                }
-                            }) {
-                                Icon(AllegroIcons.Paste, stringResource(R.string.cd_paste_search))
-                            }
-                        },
-                    )
-                    // 之前加载中会变成 ✕，容易被当成"关闭标签页"；统一用刷新图标，
-                    // 加载中点击=停止加载（行为不变，语义变清楚）
-                    IconButton(onClick = {
-                        if (tab?.isLoading == true) controller.stopLoading() else controller.reload()
-                    }) {
-                        Icon(
-                            imageVector = AllegroIcons.Refresh,
-                            contentDescription = stringResource(
-                                if (tab?.isLoading == true) R.string.cd_stop_loading else R.string.cd_refresh,
-                            ),
-                        )
-                    }
-                }
-                if (tab?.isLoading == true) {
-                    LinearProgressIndicator(
-                        progress = (tab?.progress ?: 0) / 100f,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-        },
-        bottomBar = {
-            val barColor by animateColorAsState(
-                targetValue = MiuixTheme.colorScheme.surface,
-                animationSpec = Motion.color(),
-                label = "bottomBar",
-            )
-            Surface(
-                // 透明底 + 渐变 scrim：网页可见时底栏不再是一块死色，同时保证图标可读
-                color = Color.Transparent,
-                modifier = Modifier.graphicsLayer {
-                    alpha = chromeAlpha * (1f - tabsProgress)
-                    translationY = 32.dp.toPx() * (tabsProgress + (1f - chromeAlpha))
-                },
-            ) {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .background(
-                            androidx.compose.ui.graphics.Brush.verticalGradient(
-                                0f to barColor.copy(alpha = 0.55f),
-                                0.45f to barColor.copy(alpha = 0.92f),
-                                1f to barColor,
-                            ),
-                        ),
-                ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .height(56.dp)
-                        .pointerInput(Unit) {
-                            var accumulated = 0f
-                            detectHorizontalDragGestures(
-                                onDragStart = { accumulated = 0f },
-                                onHorizontalDrag = { change, amount ->
-                                    change.consume()
-                                    accumulated += amount
-                                    val threshold = 72.dp.toPx()
-                                    if (kotlin.math.abs(accumulated) > threshold) {
-                                        controller.switchTab(if (accumulated > 0) -1 else 1)
-                                        accumulated = 0f
-                                    }
-                                },
-                            )
-                        },
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    ToolbarButton(AllegroIcons.Back, stringResource(R.string.cd_back)) {
-                        if (tab?.canGoBack == true) {
-                            controller.goBack()
-                        } else {
-                            pageToast = "已经是第一页"
-                        }
-                    }
-                    ToolbarButton(AllegroIcons.Forward, stringResource(R.string.cd_forward)) {
-                        if (tab?.canGoForward == true) {
-                            controller.goForward()
-                        } else {
-                            pageToast = "没有可前进的页面"
-                        }
-                    }
-                    if (!layout.isLarge) TabCountButton(count = state.tabs.size) {
-                        controller.refreshPreview()
-                        if (lowRam) {
-                            // 低端机不做截图，直接用占位块 + 短动画
-                            tabsStub = null
-                            tabsMounted = true
-                            showTabs = true
-                        } else {
-                            // 先截图再开面板：PixelCopy 异步返回后再上动画
-                            controller.captureStub { bitmap ->
-                                tabsStub = bitmap
-                                tabsMounted = true
-                                showTabs = true
-                            }
-                        }
-                    }
-                    ToolbarButton(AllegroIcons.More, stringResource(R.string.app_menu)) {
-                        if (tab == null || tab.url == "about:blank") {
-                            showAppMenu = true
-                        } else {
-                            // 每次打开都现场抓：缓存快照会因滚动/换页而过期，显示成"无关模糊"
-                            controller.captureForSheet { showAppMenu = true }
-                        }
-                    }
-                }
-                }
-            }
-        },
-    ) { innerPadding ->
-        Box(Modifier.padding(innerPadding).fillMaxSize()) {
-            val swipe = remember { mutableStateOf<PullRefreshLayout?>(null) }
-            AndroidView(
-                factory = { ctx ->
-                    val container = FrameLayout(ctx)
-                    PullRefreshLayout(ctx).apply {
-                        addView(
-                            container,
-                            android.view.ViewGroup.LayoutParams(
-                                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                            ),
-                        )
-                        onRefresh = { controller.reload() }
-                        atTopProvider = { controller.isActiveTabAtTop() }
-                        swipe.value = this
-                        controller.attachHost(container)
-                    }
-                },
-                update = { view -> view.visibility = if (overlayActive) View.GONE else View.VISIBLE },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        // A1/A2：二级页打开时背景轻微后缩（1 → 0.94），返回时回弹
-                        val p = secondaryProgress.value
-                        val s2 = 1f - 0.06f * p
-                        scaleX = s2
-                        scaleY = s2
-                    },
-            )
 
-            // A1/A2：随二级页进度压暗背景（8%）；alpha 在 drawBehind 内读，避免每帧重组
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .drawBehind {
-                        val p = secondaryProgress.value
-                        if (p > 0.001f) drawRect(Color.Black.copy(alpha = 0.08f * p))
-                    },
-            )
-
-            LaunchedEffect(tab?.isLoading) {
-                if (tab?.isLoading == false) swipe.value?.isRefreshing = false
-            }
-
-            AnimatedVisibility(
-                visible = isHome,
-                enter = fadeIn(Motion.enter()) + slideInVertically(Motion.slide()) { it / 24 },
-                exit = fadeOut(Motion.exit()),
-            ) {
-                androidx.compose.foundation.layout.Box(
-                    Modifier
-                        .fillMaxSize()
-                        .layerBackdrop(homeBackdrop),
-                ) {
-                    HomeScreen(
-                        controller = controller,
-                        searchEngine = searchEngine,
-                        bookmarks = bookmarks,
-                        showBookmarks = showHomeBookmarks,
-                    )
-                }
-            }
-
-            AnimatedVisibility(
-                visibleState = contextMenuState,
-                enter = fadeIn(Motion.enter(Motion.Duration.Quick)) + slideInVertically(Motion.slide()) { it / 4 },
-                exit = fadeOut(Motion.exit()) + slideOutVertically(Motion.exit()) { it / 4 },
-            ) {
-                lastMenu?.let { request ->
-                    ContextMenu(
-                        visibleState = contextMenuState,
-                        request = request,
-                        controller = controller,
-                        backdrop = if (isHome) homeBackdrop else null,
-                        snapshot = if (isHome) null else sheetSnapshot,
-                        onDismiss = { controller.dismissMenu() },
-                    )
-                }
-            }
-
-            com.ravenxud.allegro.ui.components.MiuixSheet(
-                visible = moveTabId != null,
-                onDismiss = { moveTabId = null },
-                title = resources.getString(R.string.move_to_group),
-            ) {
-                val target = moveTabId
-                if (target != null) {
-                    state.groups.forEach { group ->
-                        com.ravenxud.allegro.ui.components.SheetRow(
-                            icon = AllegroIcons.Folder,
-                            title = group.name,
-                        ) {
-                            scope.launch { controller.moveTabToGroup(target, group.id) }
-                            moveTabId = null
-                        }
-                    }
-                    com.ravenxud.allegro.ui.components.SheetRow(
-                        icon = AllegroIcons.Close,
-                        title = resources.getString(R.string.move_to_group_none),
-                    ) {
-                        scope.launch { controller.moveTabToGroup(target, null) }
-                        moveTabId = null
-                    }
-                }
-            }
-
-            AnimatedVisibility(
-                visibleState = appMenuState,
-                enter = fadeIn(Motion.enter(Motion.Duration.Quick)) + slideInVertically(Motion.slide()) { it / 4 },
-                exit = fadeOut(Motion.exit()) + slideOutVertically(Motion.exit()) { it / 4 },
-            ) {
-                AppMenu(
-                    visibleState = appMenuState,
-                    themeMode = themeMode,
-                    pageDark = tab?.pageDarkEnabled == true,
-                    onDismiss = { showAppMenu = false },
-                    onHome = {
-                        controller.openTab("about:blank")
-                        showAppMenu = false
-                    },
-                    onNavigate = { target ->
-                        showAppMenu = false
-                        pushSecondary(target)
-                    },
-                    onBookmark = {
-                        val current = controller.state.value.activeTab
-                        if (current != null) {
-                            scope.launch { bookmarks.add(current.title, current.url) }
-                            Toast.makeText(context, R.string.app_menu_bookmark_added, Toast.LENGTH_SHORT).show()
-                        }
-                        showAppMenu = false
-                    },
-                    onCycleTheme = onCycleTheme,
-                    onTogglePageDark = { controller.togglePageDark() },
-                    onReader = {
-                        showAppMenu = false
-                        controller.openReader { html ->
-                            if (html == null) {
-                                Toast.makeText(context, R.string.reader_not_article, Toast.LENGTH_SHORT).show()
-                            } else {
-                                readerTitle = controller.state.value.activeTab?.title.orEmpty()
-                                readerHtml = html
-                            }
-                        }
-                    },
-                    onReadAloud = {
-                        showAppMenu = false
-                        controller.readPageText { text ->
-                            if (text.isBlank()) {
-                                Toast.makeText(context, R.string.reader_not_article, Toast.LENGTH_SHORT).show()
-                            } else {
-                                readAloud.init()
-                                readAloud.speak(text)
-                            }
-                        }
-                    },
-                    onSaveOffline = {
-                        showAppMenu = false
-                        controller.saveOfflinePage()
-                    },
-                    onSharePage = {
-                        showAppMenu = false
-                        controller.sharePage()
-                    },
-                    onOfflinePages = {
-                        showAppMenu = false
-                        pushSecondary(SecondaryScreen.OFFLINE)
-                    },
-                    onUserScripts = {
-                        showAppMenu = false
-                        pushSecondary(SecondaryScreen.USERSCRIPTS)
-                    },
-                    onPrivacyReport = {
-                        showAppMenu = false
-                        pushSecondary(SecondaryScreen.PRIVACY)
-                    },
-                    onPickElement = {
-                        showAppMenu = false
-                        controller.startElementPicker()
-                    },
-                    onSiteSettings = {
-                        showAppMenu = false
-                        pushSecondary(SecondaryScreen.SITE)
-                    },
-                    onTabGroups = {
-                        showAppMenu = false
-                        pushSecondary(SecondaryScreen.GROUPS)
-                    },
-                    backdrop = if (isHome) homeBackdrop else null,
-                    snapshot = if (isHome) null else sheetSnapshot,
-                    useDialogWindow = false,
-                    scrollOffsetPx = sheetScrollDelta,
-                    desktopSite = controller.isDesktopForCurrentSite(),
-                    onToggleDesktopSite = { controller.toggleDesktopForCurrentSite() },
-                    adBlockPaused = controller.isAdBlockPausedForCurrentSite(),
-                    onToggleAdBlockSite = { controller.toggleAdBlockForCurrentSite() },
-                )
-            }
-
-        }
-    }
 
     val html = readerHtml
     if (html != null) {
@@ -911,15 +549,382 @@ fun BrowserScreen(
                                 }
             }
 
-            if (navStack.size > 1) {
-                com.ravenxud.allegro.ui.nav.BrowserNavHost(
-                    stack = navStack,
-                    // 栈即事实源：pop 后 screen 自动派生，不需要额外同步
-                onBack = { navStack.popSecondary() },
-                    rootContent = { },
-                    secondaryContent = { RenderSecondary(it) },
-                )
+
+    /** 2b3：浏览器 UI 现在是 NavDisplay 的 Root entry。 */
+    @Composable
+    fun BrowserRootView() {
+            Scaffold(
+                modifier = Modifier
+                    .padding(start = railWidth.dp)
+                    .graphicsLayer {
+                    val p = backProgress.coerceIn(0f, 1f)
+                    scaleX = 1f - 0.06f * p
+                    scaleY = 1f - 0.06f * p
+                    alpha = 1f - 0.25f * p
+                },
+                topBar = {
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                            .graphicsLayer {
+                                alpha = chromeAlpha * (1f - tabsProgress)
+                                translationY = -32.dp.toPx() * (tabsProgress + (1f - chromeAlpha))
+                            },
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            TextField(
+                                value = field,
+                                onValueChange = { field = it },
+                                modifier = Modifier.weight(1f).onFocusChanged { focused = it.isFocused },
+                                singleLine = true,
+                                label = stringResource(R.string.address_hint),
+                                useLabelAsPlaceholder = true,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                                keyboardActions = KeyboardActions(onGo = { submit() }),
+                                trailingIcon = {
+                                    IconButton(onClick = {
+                                        val clip = (context.getSystemService(Context.CLIPBOARD_SERVICE)
+                                            as android.content.ClipboardManager).primaryClip
+                                        val text = clip?.takeIf { it.itemCount > 0 }
+                                            ?.getItemAt(0)?.text?.toString().orEmpty()
+                                        if (text.isBlank()) {
+                                            Toast.makeText(context, R.string.paste_empty, Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            field = TextFieldValue(text, TextRange(text.length))
+                                            submit()
+                                        }
+                                    }) {
+                                        Icon(AllegroIcons.Paste, stringResource(R.string.cd_paste_search))
+                                    }
+                                },
+                            )
+                            // 之前加载中会变成 ✕，容易被当成"关闭标签页"；统一用刷新图标，
+                            // 加载中点击=停止加载（行为不变，语义变清楚）
+                            IconButton(onClick = {
+                                if (tab?.isLoading == true) controller.stopLoading() else controller.reload()
+                            }) {
+                                Icon(
+                                    imageVector = AllegroIcons.Refresh,
+                                    contentDescription = stringResource(
+                                        if (tab?.isLoading == true) R.string.cd_stop_loading else R.string.cd_refresh,
+                                    ),
+                                )
+                            }
+                        }
+                        if (tab?.isLoading == true) {
+                            LinearProgressIndicator(
+                                progress = (tab?.progress ?: 0) / 100f,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+                },
+                bottomBar = {
+                    val barColor by animateColorAsState(
+                        targetValue = MiuixTheme.colorScheme.surface,
+                        animationSpec = Motion.color(),
+                        label = "bottomBar",
+                    )
+                    Surface(
+                        // 透明底 + 渐变 scrim：网页可见时底栏不再是一块死色，同时保证图标可读
+                        color = Color.Transparent,
+                        modifier = Modifier.graphicsLayer {
+                            alpha = chromeAlpha * (1f - tabsProgress)
+                            translationY = 32.dp.toPx() * (tabsProgress + (1f - chromeAlpha))
+                        },
+                    ) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                                        0f to barColor.copy(alpha = 0.55f),
+                                        0.45f to barColor.copy(alpha = 0.92f),
+                                        1f to barColor,
+                                    ),
+                                ),
+                        ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .navigationBarsPadding()
+                                .height(56.dp)
+                                .pointerInput(Unit) {
+                                    var accumulated = 0f
+                                    detectHorizontalDragGestures(
+                                        onDragStart = { accumulated = 0f },
+                                        onHorizontalDrag = { change, amount ->
+                                            change.consume()
+                                            accumulated += amount
+                                            val threshold = 72.dp.toPx()
+                                            if (kotlin.math.abs(accumulated) > threshold) {
+                                                controller.switchTab(if (accumulated > 0) -1 else 1)
+                                                accumulated = 0f
+                                            }
+                                        },
+                                    )
+                                },
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            ToolbarButton(AllegroIcons.Back, stringResource(R.string.cd_back)) {
+                                if (tab?.canGoBack == true) {
+                                    controller.goBack()
+                                } else {
+                                    pageToast = "已经是第一页"
+                                }
+                            }
+                            ToolbarButton(AllegroIcons.Forward, stringResource(R.string.cd_forward)) {
+                                if (tab?.canGoForward == true) {
+                                    controller.goForward()
+                                } else {
+                                    pageToast = "没有可前进的页面"
+                                }
+                            }
+                            if (!layout.isLarge) TabCountButton(count = state.tabs.size) {
+                                controller.refreshPreview()
+                                if (lowRam) {
+                                    // 低端机不做截图，直接用占位块 + 短动画
+                                    tabsStub = null
+                                    tabsMounted = true
+                                    showTabs = true
+                                } else {
+                                    // 先截图再开面板：PixelCopy 异步返回后再上动画
+                                    controller.captureStub { bitmap ->
+                                        tabsStub = bitmap
+                                        tabsMounted = true
+                                        showTabs = true
+                                    }
+                                }
+                            }
+                            ToolbarButton(AllegroIcons.More, stringResource(R.string.app_menu)) {
+                                if (tab == null || tab.url == "about:blank") {
+                                    showAppMenu = true
+                                } else {
+                                    // 每次打开都现场抓：缓存快照会因滚动/换页而过期，显示成"无关模糊"
+                                    controller.captureForSheet { showAppMenu = true }
+                                }
+                            }
+                        }
+                        }
+                    }
+                },
+            ) { innerPadding ->
+                Box(Modifier.padding(innerPadding).fillMaxSize()) {
+                    val swipe = remember { mutableStateOf<PullRefreshLayout?>(null) }
+                    AndroidView(
+                        factory = { ctx ->
+                            val container = FrameLayout(ctx)
+                            PullRefreshLayout(ctx).apply {
+                                addView(
+                                    container,
+                                    android.view.ViewGroup.LayoutParams(
+                                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ),
+                                )
+                                onRefresh = { controller.reload() }
+                                atTopProvider = { controller.isActiveTabAtTop() }
+                                swipe.value = this
+                                controller.attachHost(container)
+                            }
+                        },
+                        update = { view -> view.visibility = if (overlayActive) View.GONE else View.VISIBLE },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                // A1/A2：二级页打开时背景轻微后缩（1 → 0.94），返回时回弹
+                                val p = secondaryProgress.value
+                                val s2 = 1f - 0.06f * p
+                                scaleX = s2
+                                scaleY = s2
+                            },
+                    )
+        
+                    // A1/A2：随二级页进度压暗背景（8%）；alpha 在 drawBehind 内读，避免每帧重组
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .drawBehind {
+                                val p = secondaryProgress.value
+                                if (p > 0.001f) drawRect(Color.Black.copy(alpha = 0.08f * p))
+                            },
+                    )
+        
+                    LaunchedEffect(tab?.isLoading) {
+                        if (tab?.isLoading == false) swipe.value?.isRefreshing = false
+                    }
+        
+                    AnimatedVisibility(
+                        visible = isHome,
+                        enter = fadeIn(Motion.enter()) + slideInVertically(Motion.slide()) { it / 24 },
+                        exit = fadeOut(Motion.exit()),
+                    ) {
+                        androidx.compose.foundation.layout.Box(
+                            Modifier
+                                .fillMaxSize()
+                                .layerBackdrop(homeBackdrop),
+                        ) {
+                            HomeScreen(
+                                controller = controller,
+                                searchEngine = searchEngine,
+                                bookmarks = bookmarks,
+                                showBookmarks = showHomeBookmarks,
+                            )
+                        }
+                    }
+        
+                    AnimatedVisibility(
+                        visibleState = contextMenuState,
+                        enter = fadeIn(Motion.enter(Motion.Duration.Quick)) + slideInVertically(Motion.slide()) { it / 4 },
+                        exit = fadeOut(Motion.exit()) + slideOutVertically(Motion.exit()) { it / 4 },
+                    ) {
+                        lastMenu?.let { request ->
+                            ContextMenu(
+                                visibleState = contextMenuState,
+                                request = request,
+                                controller = controller,
+                                backdrop = if (isHome) homeBackdrop else null,
+                                snapshot = if (isHome) null else sheetSnapshot,
+                                onDismiss = { controller.dismissMenu() },
+                            )
+                        }
+                    }
+        
+                    com.ravenxud.allegro.ui.components.MiuixSheet(
+                        visible = moveTabId != null,
+                        onDismiss = { moveTabId = null },
+                        title = resources.getString(R.string.move_to_group),
+                    ) {
+                        val target = moveTabId
+                        if (target != null) {
+                            state.groups.forEach { group ->
+                                com.ravenxud.allegro.ui.components.SheetRow(
+                                    icon = AllegroIcons.Folder,
+                                    title = group.name,
+                                ) {
+                                    scope.launch { controller.moveTabToGroup(target, group.id) }
+                                    moveTabId = null
+                                }
+                            }
+                            com.ravenxud.allegro.ui.components.SheetRow(
+                                icon = AllegroIcons.Close,
+                                title = resources.getString(R.string.move_to_group_none),
+                            ) {
+                                scope.launch { controller.moveTabToGroup(target, null) }
+                                moveTabId = null
+                            }
+                        }
+                    }
+        
+                    AnimatedVisibility(
+                        visibleState = appMenuState,
+                        enter = fadeIn(Motion.enter(Motion.Duration.Quick)) + slideInVertically(Motion.slide()) { it / 4 },
+                        exit = fadeOut(Motion.exit()) + slideOutVertically(Motion.exit()) { it / 4 },
+                    ) {
+                        AppMenu(
+                            visibleState = appMenuState,
+                            themeMode = themeMode,
+                            pageDark = tab?.pageDarkEnabled == true,
+                            onDismiss = { showAppMenu = false },
+                            onHome = {
+                                controller.openTab("about:blank")
+                                showAppMenu = false
+                            },
+                            onNavigate = { target ->
+                                showAppMenu = false
+                                pushSecondary(target)
+                            },
+                            onBookmark = {
+                                val current = controller.state.value.activeTab
+                                if (current != null) {
+                                    scope.launch { bookmarks.add(current.title, current.url) }
+                                    Toast.makeText(context, R.string.app_menu_bookmark_added, Toast.LENGTH_SHORT).show()
+                                }
+                                showAppMenu = false
+                            },
+                            onCycleTheme = onCycleTheme,
+                            onTogglePageDark = { controller.togglePageDark() },
+                            onReader = {
+                                showAppMenu = false
+                                controller.openReader { html ->
+                                    if (html == null) {
+                                        Toast.makeText(context, R.string.reader_not_article, Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        readerTitle = controller.state.value.activeTab?.title.orEmpty()
+                                        readerHtml = html
+                                    }
+                                }
+                            },
+                            onReadAloud = {
+                                showAppMenu = false
+                                controller.readPageText { text ->
+                                    if (text.isBlank()) {
+                                        Toast.makeText(context, R.string.reader_not_article, Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        readAloud.init()
+                                        readAloud.speak(text)
+                                    }
+                                }
+                            },
+                            onSaveOffline = {
+                                showAppMenu = false
+                                controller.saveOfflinePage()
+                            },
+                            onSharePage = {
+                                showAppMenu = false
+                                controller.sharePage()
+                            },
+                            onOfflinePages = {
+                                showAppMenu = false
+                                pushSecondary(SecondaryScreen.OFFLINE)
+                            },
+                            onUserScripts = {
+                                showAppMenu = false
+                                pushSecondary(SecondaryScreen.USERSCRIPTS)
+                            },
+                            onPrivacyReport = {
+                                showAppMenu = false
+                                pushSecondary(SecondaryScreen.PRIVACY)
+                            },
+                            onPickElement = {
+                                showAppMenu = false
+                                controller.startElementPicker()
+                            },
+                            onSiteSettings = {
+                                showAppMenu = false
+                                pushSecondary(SecondaryScreen.SITE)
+                            },
+                            onTabGroups = {
+                                showAppMenu = false
+                                pushSecondary(SecondaryScreen.GROUPS)
+                            },
+                            backdrop = if (isHome) homeBackdrop else null,
+                            snapshot = if (isHome) null else sheetSnapshot,
+                            useDialogWindow = false,
+                            scrollOffsetPx = sheetScrollDelta,
+                            desktopSite = controller.isDesktopForCurrentSite(),
+                            onToggleDesktopSite = { controller.toggleDesktopForCurrentSite() },
+                            adBlockPaused = controller.isAdBlockPausedForCurrentSite(),
+                            onToggleAdBlockSite = { controller.toggleAdBlockForCurrentSite() },
+                        )
+                    }
+        
+                }
             }
+    }
+
+            com.ravenxud.allegro.ui.nav.BrowserNavHost(
+                stack = navStack,
+                // 栈即事实源：pop 后 screen 自动派生
+                onBack = { navStack.popSecondary() },
+                rootContent = { BrowserRootView() },
+                secondaryContent = { RenderSecondary(it) },
+            )
     }
 }
 
