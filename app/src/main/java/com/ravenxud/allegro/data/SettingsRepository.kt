@@ -80,6 +80,17 @@ class SettingsRepository(context: Context) {
         _textZoom.value = clamped
     }
 
+    private val _wallpaperUri = MutableStateFlow(prefs.getString(KEY_WALLPAPER, null))
+    /** 首页自定义壁纸（content:// URI，空表示用默认光斑）。 */
+    val wallpaperUri: StateFlow<String?> = _wallpaperUri.asStateFlow()
+
+    fun setWallpaperUri(uri: String?) {
+        prefs.edit().apply {
+            if (uri == null) remove(KEY_WALLPAPER) else putString(KEY_WALLPAPER, uri)
+        }.apply()
+        _wallpaperUri.value = uri
+    }
+
     private val _homeBookmarks = MutableStateFlow(prefs.getBoolean(KEY_HOME_BOOKMARKS, true))
     val homeBookmarksEnabled: StateFlow<Boolean> = _homeBookmarks.asStateFlow()
 
@@ -111,6 +122,7 @@ class SettingsRepository(context: Context) {
         const val KEY_THEME = "theme_mode"
         const val KEY_ENGINE = "search_engine"
         const val KEY_HOME_BOOKMARKS = "home_bookmarks"
+        const val KEY_WALLPAPER = "home_wallpaper"
         const val KEY_TEXT_ZOOM = "text_zoom"
         const val KEY_REDUCE_MOTION = "reduce_motion"
         const val KEY_UPDATE_REPO = "update_repo"

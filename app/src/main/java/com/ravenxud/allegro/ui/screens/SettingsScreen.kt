@@ -1,4 +1,7 @@
 package com.ravenxud.allegro.ui.screens
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.statusBarsPadding
 import com.ravenxud.allegro.ui.design.AllegroCard
@@ -104,6 +107,19 @@ fun SettingsScreen(
 
     // 方案 B：内容铺满整屏并从顶栏下穿过，顶栏浮在上面（AllegroTopBar 自带发丝线）
     // 顶栏玻璃需要一份被记录的页面内容层，故背景色 + 滚动内容一起进 layerBackdrop。
+    val wallpaper by settings.wallpaperUri.collectAsState()
+    val pickWallpaper = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                )
+            }
+            settings.setWallpaperUri(uri.toString())
+        }
+    }
+
     val topBarBackdrop = rememberLayerBackdrop()
     androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
         androidx.compose.foundation.layout.Box(
@@ -130,6 +146,23 @@ fun SettingsScreen(
                         title = stringResource(mode.labelRes()),
                         selected = theme == mode,
                         onClick = { settings.setThemeMode(mode) },
+                    )
+                }
+                ComponentDivider()
+                BasicComponent(
+                    title = stringResource(R.string.settings_wallpaper),
+                    summary = if (wallpaper == null) {
+                        stringResource(R.string.settings_wallpaper_summary)
+                    } else {
+                        stringResource(R.string.settings_wallpaper_on)
+                    },
+                    onClick = { pickWallpaper.launch(arrayOf("image/*")) },
+                )
+                if (wallpaper != null) {
+                    ComponentDivider()
+                    BasicComponent(
+                        title = stringResource(R.string.settings_wallpaper_reset),
+                        onClick = { settings.setWallpaperUri(null) },
                     )
                 }
             }

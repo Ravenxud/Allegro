@@ -1,21 +1,27 @@
 package com.ravenxud.allegro.ui
 
-import com.ravenxud.allegro.ui.theme.AllegroIcons
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.slideInVertically
+import android.content.Context
+import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -25,17 +31,25 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ravenxud.allegro.R
@@ -44,198 +58,396 @@ import com.ravenxud.allegro.browser.UrlParser
 import com.ravenxud.allegro.data.entity.ClosedTabEntity
 import com.ravenxud.allegro.data.model.SearchEngine
 import com.ravenxud.allegro.data.repo.BookmarkRepository
-import com.ravenxud.allegro.ui.home.HomeDate
-import com.ravenxud.allegro.ui.theme.Radius
-import com.ravenxud.allegro.ui.theme.Motion
+import com.ravenxud.allegro.data.repo.HistoryRepository
+import com.ravenxud.allegro.ui.theme.AllegroIcons
 import com.ravenxud.allegro.ui.theme.Spacing
-import top.yukonga.miuix.kmp.basic.BasicComponent
-import com.kyant.backdrop.backdrops.layerBackdrop
-import com.ravenxud.allegro.ui.glass.appGlass
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TextFieldDefaults
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Folder
-import top.yukonga.miuix.kmp.icon.extended.Refresh
-import top.yukonga.miuix.kmp.icon.extended.Search
+import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.glass.glass
+import top.yukonga.miuix.kmp.material.GlassMaterials
+import top.yukonga.miuix.kmp.material.GlassShape
+import top.yukonga.miuix.kmp.material.GlassStyles
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+/** 壁纸上文字的主色：白字 + 深浅两档透明度。 */
+private val OnWallpaper = Color.White
+private val OnWallpaperDim = Color.White.copy(alpha = 0.72f)
+private val OnWallpaperFaint = Color.White.copy(alpha = 0.55f)
+
 /**
- * 新标签页：问候语 + 毛玻璃搜索 + 最近关闭 + 书签。
- * 不放置任何推荐站点，保持空白开始页。
+ * 新标签页（Luna 形态）：
+ * 壁纸铺底 → 玻璃搜索钮 → 隐私报告 → 最常访问 → 书签。
+ *
+ * 玻璃走 miuix-glass：先把「壁纸 + 压暗层」录进 backdrop，再让卡片采样，
+ * 所以卡片里看到的是被折射过的壁纸，而不是半透明色块。
  */
 @Composable
 fun HomeScreen(
     controller: BrowserController,
     searchEngine: SearchEngine,
     bookmarks: BookmarkRepository,
+    history: HistoryRepository? = null,
+    blockedCount: Int = 0,
+    wallpaperUri: String? = null,
     showBookmarks: Boolean = true,
+    onOpenPrivacy: () -> Unit = {},
+    onOpenHistory: () -> Unit = {},
+    onOpenBookmarks: () -> Unit = {},
 ) {
     val focusManager = LocalFocusManager.current
+    val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf(TextFieldValue("")) }
     var recent by remember { mutableStateOf<List<ClosedTabEntity>>(emptyList()) }
-    val bookmarkList by bookmarks.observeAll().collectAsState(initial = emptyList())
 
-    var appear by remember { mutableStateOf(false) }
+    val bookmarkList by bookmarks.observeAll().collectAsState(initial = emptyList())
+    val historyList = history?.let { repo ->
+        repo.observeRecent(40).collectAsState(initial = emptyList())
+    }?.value.orEmpty()
+
     LaunchedEffect(Unit) {
         recent = runCatching { controller.recentClosed(3) }.getOrDefault(emptyList())
-        appear = true
     }
 
-    // 背景是彩色光斑，玻璃卡能"吸"到颜色；捕获层只包背景，避免卡片自捕获
-    val surface = MiuixTheme.colorScheme.background
-    val bgLayer = androidx.compose.ui.graphics.rememberGraphicsLayer()
-    val bgBackdrop = com.kyant.backdrop.backdrops.rememberLayerBackdrop(bgLayer) {
-        drawRect(surface)
-        drawContent()
+    // 最常访问：历史里按最近访问去重（同一域名只留一条，避免整屏都是 baidu.com）
+    val frequent = remember(historyList) {
+        historyList.filter { it.url.startsWith("http") }
+            .distinctBy { hostOf(it.url) }
+            .take(4)
     }
+
+    val backdrop = rememberLayerBackdrop()
 
     Box(Modifier.fillMaxSize()) {
-        Box(Modifier.fillMaxSize().layerBackdrop(bgBackdrop)) {
-            Backdrop()
+        // 只记录「壁纸 + 压暗」，卡片本身不进层，避免自采样
+        Box(Modifier.fillMaxSize().layerBackdrop(backdrop)) {
+            Wallpaper(wallpaperUri)
+            Scrim()
         }
 
-        AnimatedVisibility(
-            visible = appear,
-            enter = fadeIn(Motion.enter(Motion.Duration.Long)) + slideInVertically(Motion.slide(Motion.Duration.Long)) { it / 28 },
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .statusBarsPadding()
+                .padding(horizontal = Spacing.l),
         ) {
-            Column(
+            Spacer(Modifier.height(Spacing.m))
+
+            SearchPill(
+                query = query,
+                onQueryChange = { query = it },
+                backdrop = backdrop,
+                onGo = {
+                    controller.openTab(UrlParser.toUrl(query.text, searchEngine.queryUrl))
+                    query = TextFieldValue("")
+                    focusManager.clearFocus()
+                },
+            )
+
+            run {
+                SectionHeader(title = stringResource(R.string.home_privacy_title), onAction = onOpenPrivacy)
+                GlassCard(backdrop = backdrop) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = AllegroIcons.Blocklist,
+                            contentDescription = null,
+                            modifier = Modifier.height(28.dp).width(28.dp),
+                            tint = OnWallpaper,
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            text = stringResource(R.string.home_privacy_summary, blockedCount),
+                            modifier = Modifier.weight(1f),
+                            fontSize = 14.sp,
+                            color = OnWallpaper,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Icon(
+                            imageVector = AllegroIcons.ChevronForward,
+                            contentDescription = null,
+                            tint = OnWallpaperFaint,
+                        )
+                    }
+                }
+            }
+
+            if (frequent.isNotEmpty()) {
+                SectionHeader(title = stringResource(R.string.home_section_frequent), onAction = onOpenHistory)
+                GlassCard(backdrop = backdrop) {
+                    frequent.forEachIndexed { index, entry ->
+                        if (index > 0) CardDivider()
+                        SiteRow(
+                            title = entry.title.ifBlank { entry.url },
+                            subtitle = hostOf(entry.url),
+                            onClick = { controller.openTab(entry.url) },
+                        )
+                    }
+                }
+            } else if (recent.isNotEmpty()) {
+                SectionHeader(title = stringResource(R.string.home_section_recent), onAction = onOpenHistory)
+                GlassCard(backdrop = backdrop) {
+                    recent.forEachIndexed { index, item ->
+                        if (index > 0) CardDivider()
+                        SiteRow(
+                            title = item.title.ifBlank { item.url },
+                            subtitle = hostOf(item.url),
+                            onClick = { controller.openTab(item.url) },
+                        )
+                    }
+                }
+            }
+
+            if (showBookmarks && bookmarkList.isNotEmpty()) {
+                SectionHeader(title = stringResource(R.string.home_section_bookmarks), onAction = onOpenBookmarks)
+                GlassCard(backdrop = backdrop) {
+                    bookmarkList.take(4).forEachIndexed { index, item ->
+                        if (index > 0) CardDivider()
+                        SiteRow(
+                            title = item.title.ifBlank { item.url },
+                            subtitle = hostOf(item.url),
+                            onClick = { controller.openTab(item.url) },
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(120.dp))
+        }
+    }
+}
+
+/** 顶部搜索：玻璃药丸，高度 52dp。 */
+@Composable
+private fun SearchPill(
+    query: TextFieldValue,
+    onQueryChange: (TextFieldValue) -> Unit,
+    backdrop: Backdrop,
+    onGo: () -> Unit,
+) {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .glassPill(backdrop = backdrop, corner = 26.dp),
+    ) {
+        TextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = stringResource(R.string.home_search_hint),
+            useLabelAsPlaceholder = true,
+            cornerRadius = 26.dp,
+            leadingIcon = { Icon(AllegroIcons.Search, contentDescription = null) },
+            colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Transparent),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+            keyboardActions = KeyboardActions(onGo = { onGo() }),
+        )
+    }
+}
+
+/** 二级标题：19sp 半粗白字，右侧可带一个动作。 */
+@Composable
+private fun SectionHeader(title: String, onAction: (() -> Unit)? = null) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = Spacing.xl, bottom = Spacing.s),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f),
+            fontSize = 19.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = OnWallpaper,
+        )
+        if (onAction != null) {
+            Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = Spacing.l),
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.White.copy(alpha = 0.001f))
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Spacer(Modifier.height(64.dp))
-
-                Text(HomeDate.greeting(), fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.height(4.dp))
                 Text(
-                    HomeDate.todayLabel(),
+                    text = stringResource(R.string.home_see_all),
                     fontSize = 13.sp,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    color = OnWallpaperDim,
                 )
-
-                Spacer(Modifier.height(Spacing.xl))
-
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .appGlass(
-                            backdrop = bgBackdrop,
-                            shape = com.ravenxud.allegro.ui.theme.Shapes.Card,
-                            spec = com.ravenxud.allegro.ui.glass.GlassSpec(blur = 28.dp, surfaceAlpha = 0.18f),
-                        ),
-                ) {
-                TextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = stringResource(R.string.home_search_hint),
-                    useLabelAsPlaceholder = true,
-                    cornerRadius = Radius.field,
-                    leadingIcon = { Icon(AllegroIcons.Search, contentDescription = null) },
-                    colors = TextFieldDefaults.textFieldColors(
-                        backgroundColor = Color.Transparent,
-                    ),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-                    keyboardActions = KeyboardActions(onGo = {
-                        controller.openTab(UrlParser.toUrl(query.text, searchEngine.queryUrl))
-                        query = TextFieldValue("")
-                        focusManager.clearFocus()
-                    }),
+                Icon(
+                    imageVector = AllegroIcons.ChevronForward,
+                    contentDescription = null,
+                    modifier = Modifier.height(14.dp).width(14.dp),
+                    tint = OnWallpaperDim,
                 )
-                }
-
-                if (recent.isNotEmpty()) {
-                    SectionHeader(stringResource(R.string.home_section_recent))
-                    GlassCard(backdrop = bgBackdrop) {
-                        recent.forEachIndexed { index, item ->
-                            if (index > 0) HorizontalDivider(Modifier.padding(start = 16.dp))
-                            BasicComponent(
-                                title = item.title.ifBlank { item.url },
-                                summary = item.url,
-                                startAction = { Icon(AllegroIcons.Refresh, contentDescription = null) },
-                                onClick = { controller.openTab(item.url) },
-                            )
-                        }
-                    }
-                }
-
-                if (showBookmarks && bookmarkList.isNotEmpty()) {
-                    SectionHeader(stringResource(R.string.home_section_bookmarks))
-                    GlassCard(backdrop = bgBackdrop) {
-                        bookmarkList.take(4).forEachIndexed { index, item ->
-                            if (index > 0) HorizontalDivider(Modifier.padding(start = 16.dp))
-                            BasicComponent(
-                                title = item.title.ifBlank { item.url },
-                                summary = item.url,
-                                startAction = { Icon(AllegroIcons.Folder, contentDescription = null) },
-                                onClick = { controller.openTab(item.url) },
-                            )
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(Spacing.xxl))
             }
         }
     }
 }
 
-/** 首页的玻璃卡：模糊背后的彩色光斑，而不是"半透明色块"。 */
+/** 玻璃卡：miuix-glass 折射壁纸，圆角 24dp。 */
 @Composable
 private fun GlassCard(
-    backdrop: com.kyant.backdrop.Backdrop,
-    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
+    backdrop: Backdrop,
+    corner: androidx.compose.ui.unit.Dp = 24.dp,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
-    androidx.compose.foundation.layout.Column(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .appGlass(
-                backdrop = backdrop,
-                shape = com.ravenxud.allegro.ui.theme.Shapes.Card,
-                spec = com.ravenxud.allegro.ui.glass.GlassSpec(blur = 24.dp),
-            ),
+            .glassPill(backdrop = backdrop, corner = corner),
         content = content,
     )
 }
 
+/** 一行的站点：标题 + 域名。 */
 @Composable
-private fun SectionHeader(text: String) {
-    Text(
-        text = text,
-        modifier = Modifier.fillMaxWidth().padding(top = Spacing.l, bottom = Spacing.s, start = 4.dp),
-        fontSize = 13.sp,
-        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-    )
+private fun SiteRow(title: String, subtitle: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.Transparent)
+            .clickableNoIndication(onClick)
+            .padding(horizontal = 16.dp, vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = title,
+                fontSize = 15.sp,
+                color = OnWallpaper,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = subtitle,
+                fontSize = 12.sp,
+                color = OnWallpaperFaint,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Icon(
+            imageVector = AllegroIcons.ChevronForward,
+            contentDescription = null,
+            modifier = Modifier.height(16.dp).width(16.dp),
+            tint = OnWallpaperFaint,
+        )
+    }
 }
 
 @Composable
-private fun Backdrop() {
+private fun CardDivider() {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp)
+            .height(1.dp)
+            .background(Color.White.copy(alpha = 0.10f)),
+    )
+}
+
+/** miuix 玻璃：圆角 + 内容裁剪，材质跟随深色模式。 */
+@Composable
+private fun Modifier.glassPill(backdrop: Backdrop, corner: androidx.compose.ui.unit.Dp): Modifier =
+    this
+        .glass(
+            backdrop = backdrop,
+            shape = GlassShape(cornerRadius = corner),
+            style = GlassStyles.CommonMediumRegularLowLight,
+            material = GlassMaterials.puredThinGlass(isSystemInDarkTheme()),
+            shading = false,
+        )
+        .clip(RoundedCornerShape(corner))
+
+private fun Modifier.clickableNoIndication(onClick: () -> Unit): Modifier =
+    this.clickable(onClick = onClick)
+
+@Composable
+private fun Wallpaper(uri: String?) {
+    val context = LocalContext.current
+    var image by remember(uri) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(uri) {
+        image = if (uri.isNullOrBlank()) null else withContext(Dispatchers.IO) { loadWallpaper(context, uri) }
+    }
+    val bitmap = image
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+    } else {
+        DefaultBackdrop()
+    }
+}
+
+/** 没设壁纸时的默认底：主题色光斑，模糊后当壁纸用。 */
+@Composable
+private fun DefaultBackdrop() {
     val primary = MiuixTheme.colorScheme.primary
     Box(Modifier.fillMaxSize().background(MiuixTheme.colorScheme.background)) {
         Box(Modifier.fillMaxSize().blur(72.dp)) {
             Canvas(Modifier.fillMaxSize()) {
                 drawCircle(
-                    color = primary.copy(alpha = 0.30f),
-                    radius = size.minDimension * 0.60f,
-                    center = Offset(size.width * 0.15f, size.height * 0.10f),
+                    color = primary.copy(alpha = 0.55f),
+                    radius = size.minDimension * 0.62f,
+                    center = Offset(size.width * 0.18f, size.height * 0.12f),
                 )
                 drawCircle(
-                    color = Color(0xFF6EE7F9).copy(alpha = 0.20f),
-                    radius = size.minDimension * 0.52f,
-                    center = Offset(size.width * 0.92f, size.height * 0.26f),
+                    color = Color(0xFF6EE7F9).copy(alpha = 0.42f),
+                    radius = size.minDimension * 0.55f,
+                    center = Offset(size.width * 0.92f, size.height * 0.28f),
                 )
                 drawCircle(
-                    color = primary.copy(alpha = 0.14f),
-                    radius = size.minDimension * 0.46f,
-                    center = Offset(size.width * 0.55f, size.height * 0.82f),
+                    color = Color(0xFFFFA26B).copy(alpha = 0.35f),
+                    radius = size.minDimension * 0.50f,
+                    center = Offset(size.width * 0.55f, size.height * 0.85f),
                 )
             }
         }
     }
 }
+
+/** 上下压暗：保证白字在亮壁纸上也读得清。 */
+@Composable
+private fun Scrim() {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    0.00f to Color.Black.copy(alpha = 0.38f),
+                    0.35f to Color.Black.copy(alpha = 0.16f),
+                    0.75f to Color.Black.copy(alpha = 0.24f),
+                    1.00f to Color.Black.copy(alpha = 0.42f),
+                ),
+            ),
+    )
+}
+
+private fun loadWallpaper(context: Context, uri: String): ImageBitmap? = runCatching {
+    val parsed = Uri.parse(uri)
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    context.contentResolver.openInputStream(parsed)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+    var sample = 1
+    while (bounds.outWidth / sample > 1600) sample *= 2
+    val opts = BitmapFactory.Options().apply { inSampleSize = sample }
+    context.contentResolver.openInputStream(parsed)?.use { BitmapFactory.decodeStream(it, null, opts) }
+        ?.asImageBitmap()
+}.getOrNull()
+
+private fun hostOf(url: String): String =
+    runCatching { Uri.parse(url).host.orEmpty() }.getOrDefault("").removePrefix("www.")

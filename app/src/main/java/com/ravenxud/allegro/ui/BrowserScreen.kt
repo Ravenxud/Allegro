@@ -320,6 +320,8 @@ fun BrowserScreen(
     )
 
     val showHomeBookmarks by settings.homeBookmarksEnabled.collectAsState()
+    val homeWallpaper by settings.wallpaperUri.collectAsState()
+    val blockedCount by adBlock.blocked.collectAsState()
 
     val tabsTransition = updateTransition(targetState = showTabs, label = "tabsTransition")
     val reduceMotion = com.ravenxud.allegro.ui.theme.Motion.reduceMotion(context)
@@ -746,7 +748,13 @@ fun BrowserScreen(
                                 controller = controller,
                                 searchEngine = searchEngine,
                                 bookmarks = bookmarks,
+                                history = history,
+                                blockedCount = blockedCount,
+                                wallpaperUri = homeWallpaper,
                                 showBookmarks = showHomeBookmarks,
+                                onOpenPrivacy = { pushSecondary(SecondaryScreen.PRIVACY) },
+                                onOpenHistory = { pushSecondary(SecondaryScreen.HISTORY) },
+                                onOpenBookmarks = { pushSecondary(SecondaryScreen.BOOKMARKS) },
                             )
                         }
                     }

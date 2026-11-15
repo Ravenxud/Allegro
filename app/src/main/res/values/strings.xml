@@ -80,6 +80,14 @@
     <string name="empty_downloads_hint">下载的文件会出现在这里</string>
     <string name="home_section_recent">最近关闭</string>
     <string name="home_section_bookmarks">书签</string>
+    <string name="home_privacy_title">隐私报告</string>
+    <string name="home_privacy_summary">过去 7 天，Allegro 拦截了 %1$d 个广告与跟踪请求。</string>
+    <string name="home_section_frequent">最常访问</string>
+    <string name="home_see_all">查看全部</string>
+    <string name="settings_wallpaper">首页壁纸</string>
+    <string name="settings_wallpaper_summary">自定义壁纸 · 未设置时用主题光斑</string>
+    <string name="settings_wallpaper_on">已自定义</string>
+    <string name="settings_wallpaper_reset">恢复默认壁纸</string>
     <string name="tabs_close_others">关闭其他标签</string>
     <string name="tabs_close_tab">关闭此标签</string>
     <string name="tabs_copy_link">复制链接</string>
